@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humvance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0A0A0A;--white:#FFFFFF;--warm:#F6F5F1;--grey:#777777;--border:#E2E1DD;--border-strong:#C8C7C3;--surface:#FFFFFF;--text:#0A0A0A;--text-2:#444444;--text-3:#777777;--error:#C0392B;--success:#1A7A4A;--font-en:'Inter',system-ui,sans-serif;--font-ar:'IBM Plex Sans Arabic','Arial',sans-serif;--r:8px;--r-lg:14px}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--warm:#111110;--surface:#1A1A19;--border:#2E2E2C;--border-strong:#444442;--text:#F0EFE9;--text-2:#BBBBBB;--text-3:#888785;--black:#F0EFE9}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-ar);font-size:16px;color:var(--text);background:var(--warm);direction:rtl;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+body.en{direction:ltr;font-family:var(--font-en)}
+h1,h2,h3,h4,h5{line-height:1.25;text-wrap:balance;color:var(--text)}
+p{color:var(--text-2);line-height:1.75}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:16px}
+a{color:var(--text);text-decoration:none}
+img,svg{max-width:100%}
+.hidden{display:none!important}
+.container{width:100%;max-width:1160px;margin:0 auto;padding-inline:24px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 28px;font-size:15px;font-weight:600;border-radius:var(--r);transition:all 150ms;white-space:nowrap;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--black);color:var(--white)}.btn-primary:hover{background:#222}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border-strong)}.btn-outline:hover{border-color:var(--black)}
+.btn-ghost{color:var(--text-3);padding:10px 16px;font-size:14px}.btn-ghost:hover{color:var(--text);background:var(--border)}
+.btn-lg{padding:16px 36px;font-size:16px}.btn-sm{padding:8px 18px;font-size:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:14px;font-weight:600;color:var(--text)}
+.form-input{width:100%;padding:12px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:15px;font-family:inherit;transition:border 150ms}
+.form-input:focus{outline:none;border-color:var(--black)}
+.form-input::placeholder{color:var(--text-3)}
+.form-error{font-size:12px;color:var(--error);margin-top:2px}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23777' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 14px center;padding-left:38px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all 150ms;font-size:15px}
+.choice:hover{border-color:var(--border-strong)}
+.choice.selected{border-color:var(--black);background:var(--warm)}
+.choice input[type=radio],.choice input[type=checkbox]{width:17px;height:17px;accent-color:var(--black);flex-shrink:0}
+.rating-row{display:flex;gap:8px}
+.rating-btn{flex:1;padding:10px 4px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);font-size:13px;font-weight:700;color:var(--text-3);cursor:pointer;text-align:center;transition:all 150ms}
+.rating-btn:hover{border-color:var(--border-strong);color:var(--text)}
+.rating-btn.sel{background:var(--black);border-color:var(--black);color:var(--white)}
+.rating-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-3);margin-top:4px}
+.progress-bar{height:3px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:var(--black);border-radius:99px;transition:width .4s ease}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.badge-grey{background:var(--border);color:var(--text-3)}.badge-black{background:var(--black);color:var(--white)}
+.badge-success{background:#D4EFDF;color:#1A7A4A}.badge-warning{background:#FDEBD0;color:#A04000}.badge-error{background:#FADBD8;color:#C0392B}
+#toasts{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:min(360px,90vw)}
+.toast{padding:13px 18px;background:var(--black);color:var(--white);border-radius:var(--r);font-size:14px;font-weight:500;animation:toastIn .25s ease}
+.toast.success{background:#1A7A4A}.toast.error{background:#C0392B}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.logo-name{font-family:var(--font-en);font-size:17px;font-weight:800;color:var(--black);letter-spacing:-.3px}
+.logo-domain{font-family:var(--font-en);font-size:10px;color:var(--text-3);letter-spacing:.4px}
+.header-nav{display:flex;align-items:center;gap:8px}
+.lang-toggle{font-family:var(--font-en);font-size:12px;font-weight:700;padding:6px 12px;border:1.5px solid var(--border);border-radius:99px;color:var(--text-3);cursor:pointer;transition:all 150ms;background:var(--surface)}
+.lang-toggle:hover{border-color:var(--black);color:var(--text)}
+.hero{padding:72px 0 80px;background:var(--surface);border-bottom:1px solid var(--border)}
+.hero-eyebrow{font-family:var(--font-en);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-bottom:20px}
+.hero-title{font-size:clamp(36px,5vw,60px);font-weight:800;color:var(--black);line-height:1.1;margin-bottom:20px;letter-spacing:-.02em}
+.hero-title em{font-style:normal;color:var(--text-3)}
+.hero-sub{font-size:17px;color:var(--text-2);max-width:520px;line-height:1.7;margin-bottom:36px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.services{padding:72px 0;background:var(--warm)}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
+.section-title{font-size:clamp(24px,3vw,36px);font-weight:800;margin-bottom:16px}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px;margin-top:48px;border:1px solid var(--border)}
+.service-item{background:var(--surface);padding:28px 24px}.service-item:hover{background:var(--warm)}
+.service-num{font-family:var(--font-en);font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.08em;margin-bottom:12px}
+.service-name{font-size:15px;font-weight:700;margin-bottom:6px}
+.service-desc{font-size:13px;color:var(--text-3);line-height:1.6}
+.process{padding:72px 0;background:var(--black);color:var(--white)}
+.process-steps{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0;margin-top:48px;border-top:1px solid rgba(255,255,255,.1)}
+.process-step{padding:28px 20px 28px 0;border-left:1px solid rgba(255,255,255,.1)}
+.process-step:last-child{border-left:none}
+.process-step-num{font-family:var(--font-en);font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.1em;margin-bottom:12px}
+.process-step-name{font-size:14px;font-weight:700;color:var(--white);margin-bottom:6px}
+.process-step-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6}
+.landing-cta{padding:72px 0;background:var(--warm);text-align:center}
+.cta-box{max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:48px 40px}
+.footer{background:var(--black);color:rgba(255,255,255,.4);padding:24px;text-align:center;font-family:var(--font-en);font-size:12px}
+.survey-layout{display:grid;grid-template-columns:1fr 320px;min-height:calc(100vh - 60px)}
+.survey-main{padding:40px 48px;background:var(--warm);display:flex;flex-direction:column}
+.survey-aside{background:var(--black);color:var(--white);padding:40px 28px;display:flex;flex-direction:column;gap:20px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+.survey-section-title{font-size:28px;font-weight:800;color:var(--black);margin-bottom:6px}
+.survey-section-sub{font-size:14px;color:var(--text-3);margin-bottom:32px;line-height:1.6}
+.survey-questions{display:flex;flex-direction:column;gap:24px;flex:1}
+.survey-nav{display:flex;align-items:center;justify-content:space-between;padding-top:32px;border-top:1px solid var(--border);margin-top:auto}
+.aside-logo-name{font-family:var(--font-en);font-size:15px;font-weight:800;color:var(--white)}
+.aside-steps{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.aside-step{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;font-size:13px;color:rgba(255,255,255,.4);transition:all 150ms}
+.aside-step.active{background:rgba(255,255,255,.1);color:var(--white);font-weight:600}
+.aside-step.done{color:rgba(255,255,255,.6)}
+.aside-step-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.aside-privacy{margin-top:auto;padding:14px;background:rgba(255,255,255,.06);border-radius:var(--r);font-size:11px;color:rgba(255,255,255,.35);line-height:1.5}
+.confirm-page{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--warm)}
+.confirm-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:52px 44px;max-width:560px;width:100%;text-align:center}
+.confirm-icon{width:64px;height:64px;background:var(--black);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;color:var(--white)}
+.confirm-ref{font-family:var(--font-en);font-size:22px;font-weight:900;color:var(--black);letter-spacing:.04em;padding:14px 28px;background:var(--warm);border:1.5px dashed var(--border-strong);border-radius:var(--r);display:inline-block;margin:16px 0}
+.nsl-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;color:var(--text-2);line-height:1.5}
+.nsl-num{width:22px;height:22px;background:var(--black);color:var(--white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.admin-login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);padding:24px}
+.admin-login-card{background:var(--surface);border-radius:14px;padding:44px 40px;width:100%;max-width:400px}
+.admin-layout{display:flex;min-height:calc(100vh - 60px)}
+.admin-sidebar{width:220px;background:var(--surface);border-left:1px solid var(--border);padding:20px 0;flex-shrink:0;display:flex;flex-direction:column;gap:2px}
+.admin-nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:14px;color:var(--text-3);cursor:pointer;transition:all 150ms;text-align:right;width:100%}
+.admin-nav-item:hover{color:var(--text);background:var(--warm)}.admin-nav-item.active{color:var(--text);font-weight:700;background:var(--warm)}
+.admin-content{flex:1;padding:36px 40px;background:var(--warm);overflow-y:auto}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.stat-value{font-family:var(--font-en);font-size:32px;font-weight:900;color:var(--black);line-height:1;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--text-3)}
+.data-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.data-table th{padding:12px 16px;text-align:right;font-size:12px;font-weight:700;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--warm);white-space:nowrap}
+.data-table td{padding:14px 16px;text-align:right;font-size:14px;color:var(--text-2);border-bottom:1px solid var(--border)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tbody tr{cursor:pointer;transition:background 150ms}.data-table tbody tr:hover td{background:var(--warm)}
+.client-grid{display:grid;grid-template-columns:1fr 300px;gap:20px}
+.section-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.section-block-title{font-size:13px;font-weight:700;color:var(--black);border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.04em}
+.info-row{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);gap:16px;font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text-3);flex-shrink:0;font-size:13px}.info-val{color:var(--text);font-weight:500;text-align:left}
+.score-display{text-align:center;padding:24px}
+.score-num{font-family:var(--font-en);font-size:56px;font-weight:900;color:var(--black);line-height:1}
+.action-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.priority-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.p-high{background:#C0392B}.p-medium{background:#E67E22}.p-low{background:#1A7A4A}
+.analysis-box{background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:16px;font-size:14px;color:var(--text-2);line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--black);border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.form-textarea{resize:vertical;min-height:80px}
+@media(max-width:768px){
+  .survey-layout{grid-template-columns:1fr}.survey-aside{display:none}.survey-main{padding:24px 20px}
+  .admin-layout{flex-direction:column}.admin-sidebar{width:100%;flex-direction:row;flex-wrap:wrap;padding:10px;border-left:none;border-bottom:1px solid var(--border)}
+  .admin-content{padding:20px 16px}.client-grid{grid-template-columns:1fr}.grid-2{grid-template-columns:1fr}
+  .hero{padding:48px 0 56px}.cta-box{padding:32px 24px}.confirm-card{padding:36px 24px}
+}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="root"></div>
+<script>
+// ══════════════════════════════════════
+// HUMVANCE — HR & OD Platform
+// humvance.com | info@humvance.com
+// People. Structure. Performance.
+// ══════════════════════════════════════
+
+const LOGO_SVG = `<svg viewBox="0 0 100 76" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="18" cy="17" r="7.5"/>
+  <path d="M6 30 Q6 26 18 26 Q30 26 30 30 L27 72 L9 72 Z" opacity=".85"/>
+  <circle cx="50" cy="10" r="8.5"/>
+  <path d="M36 26 Q36 22 50 22 Q64 22 64 26 L61 75 L39 75 Z"/>
+  <circle cx="82" cy="17" r="7.5"/>
+  <path d="M70 30 Q70 26 82 26 Q94 26 94 30 L91 72 L73 72 Z" opacity=".85"/>
+</svg>`;
+
+// ── Language System ──
+let lang = localStorage.getItem('hv_lang') || 'ar';
+const T = {
+  ar: {
+    adminLogin:'دخول الإدارة', startSurvey:'ابدأ الاستبيان', back:'العودة',
+    heroEyebrow:'People. Structure. Performance.',
+    heroTitle:'نظّم شركتك.<br>طوّر فريقك.<br><em>انطلق بثقة.</em>',
+    heroSub:'Humvance تساعد الشركات السعودية على تشخيص وضع الموارد البشرية وبناء أنظمة عمل تدعم النمو والاستدامة.',
+    startFree:'ابدأ التشخيص المجاني', contactUs:'تواصل معنا',
+    servicesLabel:'خدماتنا', servicesTitle:'ماذا تقدم Humvance؟',
+    servicesSub:'نعمل مع الشركات الصغيرة والمتوسطة والناشئة والعائلية لبناء أسس موارد بشرية قوية.',
+    howWeWork:'كيف نعمل', clientJourney:'رحلة العميل مع Humvance',
+    ctaTitle:'هل أنت جاهز للتغيير؟', ctaSub:'ابدأ باستبيان تشخيصي مجاني. يستغرق 10–15 دقيقة ونتواصل معك خلال يوم عمل.',
+    startNow:'ابدأ الاستبيان الآن', copyright:'جميع الحقوق محفوظة.',
+    surveyTitle:'استبيان التشخيص', autoSave:'حفظ تلقائي',
+    prev:'السابق', next:'التالي', submit:'إرسال الاستبيان',
+    required:'هذا الحقل مطلوب', fieldRequired:'يرجى إكمال الحقول المطلوبة',
+    surveyAsideTitle:'استبيان تشخيص الموارد البشرية',
+    surveyAsideSub:'إجاباتك تساعدنا على فهم وضع شركتك وتحديد الفرص والأولويات بدقة.',
+    privacyNote:'🔒 بياناتك محمية وتستخدم فقط لأغراض التشخيص والخدمات المتفق عليها مع Humvance.',
+    confirmTitle:'تم إرسال استبيانك بنجاح', refLabel:'رقمك المرجعي',
+    confirmNote:'احتفظ بهذا الرقم للرجوع إليه. سيتواصل معك فريق Humvance خلال يوم عمل.',
+    initialScore:'نتيجة التقييم الأولي', nextSteps:'الخطوات التالية',
+    backHome:'العودة للرئيسية',
+    score0:'يحتاج تأسيساً شاملاً', score40:'فجوات جوهرية', score65:'وضع متوسط مع فرص للتطوير', score80:'وضع جيد مع مساحات للتحسين',
+    adminPanel:'لوحة الإدارة', adminSetupTitle:'إعداد لوحة الإدارة — أول مرة',
+    newPwd:'كلمة المرور الجديدة', confirmPwd:'تأكيد كلمة المرور',
+    pwdPlaceholder:'اختر كلمة مرور قوية', pwdConfirmPlaceholder:'أعد كتابة كلمة المرور',
+    createAccount:'إنشاء الحساب', pwdSecurity:'احتفظ بكلمة المرور في مكان آمن.',
+    pwdMin:'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
+    pwdMismatch:'كلمتا المرور غير متطابقتين',
+    loginTitle:'لوحة الإدارة', pwdLabel:'كلمة المرور', pwdLoginPlaceholder:'أدخل كلمة المرور',
+    login:'دخول', logout:'خروج', dashboard:'لوحة التحكم',
+    totalSurveys:'إجمالي الاستبيانات', newSurveys:'استبيانات جديدة',
+    avgMaturity:'متوسط درجة النضج', activeClients:'عملاء نشطون',
+    noData:'لا توجد استبيانات بعد. شارك رابط الاستبيان لتبدأ باستقبال الردود.',
+    contactInfo:'بيانات التواصل', companyInfo:'بيانات الشركة',
+    diagSummary:'التشخيص الموجز', clientNotes:'ملاحظات العميل',
+    aiAnalysis:'التحليل بالذكاء الاصطناعي', runAnalysis:'⚡ توليد التحليل الذكي',
+    analyzing:'جاري التحليل...',
+    maturityScore:'درجة النضج', updateStatus:'تحديث الحالة',
+    urgentActions:'إجراءات عاجلة', actions:'إجراءات',
+    emailClient:'📧 مراسلة العميل', prepareProposal:'📄 إعداد عرض خدمة',
+    allClients:'← الكل',
+    statusNew:'جديد', statusReviewing:'قيد المراجعة', statusMeeting:'تم الاجتماع',
+    statusProposal:'عرض مرسل', statusNegotiating:'تفاوض', statusContracted:'تعاقد',
+    statusInProgress:'قيد التنفيذ', statusDelivered:'تم التسليم', statusClosed:'مغلق',
+    scoreLabel0:'يحتاج تأسيساً', scoreLabel40:'فجوات جوهرية', scoreLabel65:'وضع متوسط', scoreLabel80:'وضع جيد',
+    continueDraft:'يوجد استبيان غير مكتمل. هل تريد الاستمرار؟',
+    submitError:'حدث خطأ أثناء الإرسال. حاول مرة أخرى.',
+    statusUpdated:'تم تحديث الحالة',
+    analysisError:'خطأ في التحليل'
+  },
+  en: {
+    adminLogin:'Admin Login', startSurvey:'Start Survey', back:'Back',
+    heroEyebrow:'People. Structure. Performance.',
+    heroTitle:'Organize your company.<br>Develop your team.<br><em>Grow with confidence.</em>',
+    heroSub:'Humvance helps Saudi companies diagnose their HR status and build work systems that support growth and sustainability.',
+    startFree:'Start Free Diagnosis', contactUs:'Contact Us',
+    servicesLabel:'Our Services', servicesTitle:'What does Humvance offer?',
+    servicesSub:'We work with SMEs, family businesses, and startups to build strong HR foundations.',
+    howWeWork:'How We Work', clientJourney:'Client Journey with Humvance',
+    ctaTitle:'Ready for change?', ctaSub:'Start a free diagnostic survey. Takes 10–15 minutes and we\'ll contact you within one business day.',
+    startNow:'Start the Survey Now', copyright:'All rights reserved.',
+    surveyTitle:'Diagnostic Survey', autoSave:'Auto-saved',
+    prev:'Previous', next:'Next', submit:'Submit Survey',
+    required:'This field is required', fieldRequired:'Please complete all required fields',
+    surveyAsideTitle:'HR Diagnostic Survey',
+    surveyAsideSub:'Your answers help us understand your company\'s situation and identify priorities accurately.',
+    privacyNote:'🔒 Your data is protected and used only for diagnosis and agreed services with Humvance.',
+    confirmTitle:'Survey submitted successfully', refLabel:'Your Reference Number',
+    confirmNote:'Keep this number for reference. The Humvance team will contact you within one business day.',
+    initialScore:'Initial Assessment Score', nextSteps:'Next Steps',
+    backHome:'Back to Home',
+    score0:'Needs full foundation', score40:'Critical gaps', score65:'Average status with improvement opportunities', score80:'Good status with room for enhancement',
+    adminPanel:'Admin Panel', adminSetupTitle:'Admin Setup — First Time',
+    newPwd:'New Password', confirmPwd:'Confirm Password',
+    pwdPlaceholder:'Choose a strong password', pwdConfirmPlaceholder:'Re-enter password',
+    createAccount:'Create Account', pwdSecurity:'Keep your password in a safe place.',
+    pwdMin:'Password must be at least 6 characters',
+    pwdMismatch:'Passwords do not match',
+    loginTitle:'Admin Panel', pwdLabel:'Password', pwdLoginPlaceholder:'Enter password',
+    login:'Login', logout:'Logout', dashboard:'Dashboard',
+    totalSurveys:'Total Surveys', newSurveys:'New Surveys',
+    avgMaturity:'Avg. Maturity Score', activeClients:'Active Clients',
+    noData:'No surveys yet. Share the survey link to start receiving responses.',
+    contactInfo:'Contact Information', companyInfo:'Company Information',
+    diagSummary:'Diagnostic Summary', clientNotes:'Client Notes',
+    aiAnalysis:'AI Analysis', runAnalysis:'⚡ Generate AI Analysis',
+    analyzing:'Analyzing...',
+    maturityScore:'Maturity Score', updateStatus:'Update Status',
+    urgentActions:'Urgent Actions', actions:'Actions',
+    emailClient:'📧 Email Client', prepareProposal:'📄 Prepare Proposal',
+    allClients:'← All Clients',
+    statusNew:'New', statusReviewing:'Under Review', statusMeeting:'Meeting Done',
+    statusProposal:'Proposal Sent', statusNegotiating:'Negotiating', statusContracted:'Contracted',
+    statusInProgress:'In Progress', statusDelivered:'Delivered', statusClosed:'Closed',
+    scoreLabel0:'Needs Foundation', scoreLabel40:'Critical Gaps', scoreLabel65:'Average', scoreLabel80:'Good',
+    continueDraft:'Incomplete survey found. Continue where you left off?',
+    submitError:'Submission failed. Please try again.',
+    statusUpdated:'Status updated',
+    analysisError:'Analysis error'
+  }
+};
+function t(k){ return T[lang][k] || T.ar[k] || k; }
+function setLang(l){
+  lang = l;
+  localStorage.setItem('hv_lang', l);
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+  document.body.classList.toggle('en', l === 'en');
+  render();
+}
+
+// ── Survey steps (bilingual) ──
+function getSteps(){
+  const a = lang === 'ar';
+  return [
+    { id:'register', title: a?'بيانات التواصل':'Contact Info', sub: a?'معلومات الشخص المسؤول وبيانات التواصل':'Contact person and communication details',
+      questions:[
+        {id:'contactName',type:'text',label:a?'الاسم الكامل':'Full Name',required:true,placeholder:a?'أدخل اسمك الكامل':'Enter your full name'},
+        {id:'contactTitle',type:'text',label:a?'المسمى الوظيفي':'Job Title',required:true,placeholder:a?'مثال: المدير العام':'e.g. CEO, Founding Partner'},
+        {id:'phone',type:'tel',label:a?'رقم الجوال':'Phone Number',required:true,placeholder:'+966 5X XXX XXXX'},
+        {id:'email',type:'email',label:a?'البريد الإلكتروني':'Email Address',required:true,placeholder:'email@company.com'},
+        {id:'preferredContact',type:'radio',label:a?'طريقة التواصل المفضلة':'Preferred Contact Method',required:true,
+          options:[{v:'whatsapp',l:a?'واتساب':'WhatsApp'},{v:'call',l:a?'مكالمة هاتفية':'Phone Call'},{v:'email',l:'Email'}]},
+        {id:'consent',type:'consent'}
+      ]},
+    { id:'company', title:a?'بيانات الشركة':'Company Info', sub:a?'معلومات أساسية عن الشركة':'Basic information about your company',
+      questions:[
+        {id:'companyName',type:'text',label:a?'اسم الشركة':'Company Name',required:true,placeholder:a?'الاسم التجاري الرسمي':'Official trade name'},
+        {id:'sector',type:'select',label:a?'القطاع':'Sector',required:true,
+          options: a?['اختر..','تقنية المعلومات','تجزئة وتوزيع','مقاولات وعقارات','خدمات مهنية','تعليم وتدريب','صحة وطب','صناعة','مالية وبنوك','ضيافة وسياحة','لوجستيات','أخرى']:
+                    ['Select..','Information Technology','Retail & Distribution','Construction & Real Estate','Professional Services','Education & Training','Healthcare','Manufacturing','Finance & Banking','Hospitality & Tourism','Logistics','Other']},
+        {id:'city',type:'text',label:a?'المدينة الرئيسية':'Main City',required:true,placeholder:a?'مثال: الرياض':'e.g. Riyadh'},
+        {id:'country',type:'text',label:a?'الدولة':'Country',placeholder:a?'المملكة العربية السعودية':'Saudi Arabia',defaultVal:a?'المملكة العربية السعودية':'Saudi Arabia'},
+        {id:'companyAge',type:'select',label:a?'عمر الشركة':'Company Age',
+          options:a?['اختر..','أقل من سنة','1–3 سنوات','4–7 سنوات','8–15 سنة','أكثر من 15 سنة']:
+                   ['Select..','Less than 1 year','1–3 years','4–7 years','8–15 years','More than 15 years']},
+        {id:'website',type:'text',label:a?'الموقع الإلكتروني (اختياري)':'Website (optional)',placeholder:'www.example.com'}
+      ]},
+    { id:'strategy', title:a?'الاستراتيجية والحوكمة':'Strategy & Governance', sub:a?'رؤية الشركة وأهدافها وبنيتها القيادية':'Company vision, goals and leadership structure',
+      questions:[
+        {id:'hasVision',type:'radio',label:a?'هل توجد رؤية ورسالة مكتوبة وواضحة؟':'Does the company have a written vision and mission?',required:true,
+          options:[{v:'yes',l:a?'نعم، موثقة ومعتمدة':'Yes, documented and approved'},{v:'informal',l:a?'موجودة لكن غير موثقة':'Exists but not documented'},{v:'no',l:a?'لا توجد':'No'}]},
+        {id:'visionText',type:'textarea',label:a?'اذكر رؤية الشركة باختصار':'Briefly state the company vision',rows:2,placeholder:a?'رؤيتنا...':'Our vision...',showIf:{field:'hasVision',values:['yes','informal']}},
+        {id:'mainGoals',type:'textarea',label:a?'أهم الأهداف الاستراتيجية للسنتين القادمتين':'Key strategic goals for the next 2 years',rows:3,placeholder:a?'مثال: التوسع، زيادة الإيرادات...':'e.g. Expansion, revenue growth...'},
+        {id:'ownershipType',type:'select',label:a?'نوع الملكية':'Ownership Type',
+          options:a?['اختر..','مؤسسة فردية','شركة ذات مسؤولية محدودة','شركة مساهمة مقفلة','شركة عائلية','شركة ناشئة','أخرى']:
+                   ['Select..','Sole Proprietorship','LLC','Closed Joint Stock','Family Business','Startup','Other']},
+        {id:'numOwners',type:'number',label:a?'عدد الشركاء أو الملاك':'Number of Partners/Owners',placeholder:'2'},
+        {id:'hasBoard',type:'radio',label:a?'هل يوجد مجلس إدارة أو لجنة تنفيذية منظمة؟':'Is there a structured board of directors or executive committee?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'no',l:a?'لا':'No'}]},
+        {id:'expansionPlans',type:'radio',label:a?'هل هناك خطط للتوسع في السنتين القادمتين؟':'Are there expansion plans in the next 2 years?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'maybe',l:a?'ربما':'Maybe'},{v:'no',l:a?'لا':'No'}]},
+        {id:'biggestChallenges',type:'textarea',label:a?'أبرز التحديات التي تواجهها الشركة حالياً':'Key challenges the company currently faces',rows:3,placeholder:a?'اذكر 2-3 تحديات رئيسية...':'List 2-3 main challenges...'}
+      ]},
+    { id:'structure', title:a?'الهيكل والقوى العاملة':'Structure & Workforce', sub:a?'حجم الشركة وتوزيع الموظفين':'Company size and employee distribution',
+      questions:[
+        {id:'hasOrgChart',type:'radio',label:a?'هل يوجد هيكل تنظيمي موثق؟':'Is there a documented organizational chart?',
+          options:[{v:'yes',l:a?'نعم، محدّث':'Yes, updated'},{v:'old',l:a?'نعم، لكن قديم':'Yes, but outdated'},{v:'no',l:a?'لا يوجد':'No'}]},
+        {id:'numFulltime',type:'number',label:a?'عدد الموظفين بدوام كامل':'Full-time Employees',required:true,placeholder:'0'},
+        {id:'numParttime',type:'number',label:a?'عدد العمل بدوام جزئي أو مستقلين':'Part-time / Freelancers',placeholder:'0'},
+        {id:'numBranches',type:'number',label:a?'عدد الفروع أو المواقع':'Number of Branches/Locations',placeholder:'1'},
+        {id:'saudiPercent',type:'number',label:a?'نسبة الموظفين السعوديين تقريباً (%)':'Saudi Employee Percentage (%)',placeholder:'0–100'},
+        {id:'annualTurnover',type:'select',label:a?'معدل الدوران الوظيفي السنوي (تقريبي)':'Annual Employee Turnover Rate (approx.)',
+          options:a?['اختر..','أقل من 5%','5–15%','15–30%','30–50%','أكثر من 50%','لا أعرف']:
+                   ['Select..','Less than 5%','5–15%','15–30%','30–50%','More than 50%','Don\'t know']}
+      ]},
+    { id:'hrMgmt', title:a?'إدارة الموارد البشرية':'HR Management', sub:a?'الوضع الحالي لإدارة شؤون الموظفين':'Current state of HR management',
+      questions:[
+        {id:'hasHRDept',type:'radio',label:a?'هل توجد إدارة أو قسم للموارد البشرية؟':'Is there an HR department?',required:true,
+          options:[{v:'yes',l:a?'نعم، إدارة متخصصة':'Yes, dedicated department'},{v:'partial',l:a?'شخص أو اثنان يتولون المهام':'1-2 people handling HR'},{v:'no',l:a?'لا يوجد':'No'}]},
+        {id:'hrTeamSize',type:'number',label:a?'حجم فريق الموارد البشرية':'HR Team Size',placeholder:'0',showIf:{field:'hasHRDept',values:['yes','partial']}},
+        {id:'hasPoliciesManual',type:'radio',label:a?'هل توجد لائحة تنظيم العمل معتمدة؟':'Is there an approved HR policy manual?',showIf:{field:'hasHRDept',values:['yes','partial']},
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'draft',l:a?'مسودة':'Draft'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasDelegationMatrix',type:'radio',label:a?'هل توجد مصفوفة صلاحيات واضحة؟':'Is there a clear authority delegation matrix?',showIf:{field:'hasHRDept',values:['yes','partial']},
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hrMaturity',type:'rating',label:a?'كيف تقيّم نضج إدارة الموارد البشرية؟':'How do you rate HR management maturity?',showIf:{field:'hasHRDept',values:['yes','partial']},minLabel:a?'ضعيف':'Poor',maxLabel:a?'ممتاز':'Excellent'},
+        {id:'hrCurrentHandler',type:'text',label:a?'من يتولى شؤون الموظفين حالياً؟':'Who currently handles HR matters?',placeholder:a?'مثال: المدير العام':'e.g. CEO, Accountant',showIf:{field:'hasHRDept',values:['no']}},
+        {id:'biggestHRProblem',type:'textarea',label:a?'ما أكبر تحدٍّ في إدارة الموظفين؟':'What is the biggest HR challenge?',rows:3,showIf:{field:'hasHRDept',values:['no']}}
+      ]},
+    { id:'recruitment', title:a?'التوظيف والعقود':'Recruitment & Contracts', sub:a?'عمليات الاستقطاب وتوثيق العلاقة الوظيفية':'Hiring processes and employment documentation',
+      questions:[
+        {id:'currentVacancies',type:'number',label:a?'عدد الوظائف الشاغرة حالياً':'Current Vacancies',placeholder:'0'},
+        {id:'hasRecruitmentProcess',type:'radio',label:a?'هل يوجد إجراء موثق للتوظيف؟':'Is there a documented recruitment process?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'informal',l:a?'غير رسمي':'Informal'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasOnboarding',type:'radio',label:a?'هل يوجد برنامج استقبال للموظفين الجدد؟':'Is there an employee onboarding program?',
+          options:[{v:'yes',l:a?'نعم، منظم':'Yes, structured'},{v:'informal',l:a?'غير رسمي':'Informal'},{v:'no',l:a?'لا':'No'}]},
+        {id:'contractsStatus',type:'select',label:a?'حالة عقود العمل':'Employment Contracts Status',
+          options:a?['اختر..','جميع الموظفين لديهم عقود موقعة','أغلبهم','القليل منهم','لا توجد عقود رسمية']:
+                   ['Select..','All employees have signed contracts','Most of them','Few of them','No formal contracts']},
+        {id:'hasProbationEval',type:'radio',label:a?'هل يوجد تقييم رسمي لفترة التجربة؟':'Is there a formal probation period evaluation?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'no',l:a?'لا':'No'}]}
+      ]},
+    { id:'compensation', title:a?'الرواتب والمزايا':'Compensation & Benefits', sub:a?'هيكل التعويضات والمزايا':'Compensation structure and employee benefits',
+      questions:[
+        {id:'hasSalaryScale',type:'radio',label:a?'هل يوجد سلم رواتب ودرجات وظيفية؟':'Is there a salary scale and job grades?',
+          options:[{v:'yes',l:a?'نعم، معتمد':'Yes, approved'},{v:'draft',l:a?'مسودة':'Draft'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasPerformanceBonus',type:'radio',label:a?'هل توجد مكافآت أداء أو حوافز؟':'Are there performance bonuses or incentives?',
+          options:[{v:'yes',l:a?'نعم، واضحة':'Yes, defined'},{v:'ad_hoc',l:a?'أحياناً':'Sometimes'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasHealthInsurance',type:'radio',label:a?'هل يوجد تأمين صحي للموظفين؟':'Is there health insurance for employees?',
+          options:[{v:'all',l:a?'نعم، للجميع':'Yes, for all'},{v:'some',l:a?'لبعض الفئات':'For some'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasLeavePolicy',type:'radio',label:a?'هل سياسة الإجازات موثقة ومطبقة؟':'Is the leave policy documented and applied?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'partial',l:a?'جزئياً':'Partially'},{v:'no',l:a?'لا':'No'}]},
+        {id:'wpsCompliance',type:'radio',label:a?'هل الشركة ملتزمة بنظام حماية الأجور (WPS)؟':'Is the company compliant with the Wage Protection System (WPS)?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'partial',l:a?'جزئياً':'Partially'},{v:'no',l:a?'لا':'No'},{v:'unknown',l:a?'لا أعرف':'Don\'t know'}]},
+        {id:'salaryCompetitiveness',type:'rating',label:a?'كيف تقيّم تنافسية الرواتب مقارنة بالسوق؟':'How competitive are your salaries vs. market?',minLabel:a?'أقل من السوق':'Below market',maxLabel:a?'أعلى من السوق':'Above market'}
+      ]},
+    { id:'performance', title:a?'الأداء والتطوير':'Performance & Development', sub:a?'نظام إدارة الأداء وتطوير الموظفين':'Performance management and employee development',
+      questions:[
+        {id:'hasPerformanceReview',type:'radio',label:a?'هل يوجد نظام تقييم أداء رسمي؟':'Is there a formal performance review system?',
+          options:[{v:'yes',l:a?'نعم، يطبق بانتظام':'Yes, applied regularly'},{v:'informal',l:a?'غير رسمي':'Informal'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasKPIs',type:'radio',label:a?'هل توجد مؤشرات أداء (KPIs) لكل وظيفة؟':'Are there KPIs defined for each role?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'some',l:a?'لبعض الوظائف':'For some roles'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasTrainingPlan',type:'radio',label:a?'هل يوجد خطة تدريبية سنوية؟':'Is there an annual training plan?',
+          options:[{v:'yes',l:a?'نعم، معتمدة':'Yes, approved'},{v:'ad_hoc',l:a?'حسب الحاجة':'As needed'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasCareerPaths',type:'radio',label:a?'هل توجد مسارات مهنية واضحة للموظفين؟':'Are there clear career paths for employees?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'some',l:a?'لبعض الوظائف':'For some'},{v:'no',l:a?'لا':'No'}]},
+        {id:'hasSuccessionPlan',type:'radio',label:a?'هل توجد خطة إحلال للأدوار الرئيسية؟':'Is there a succession plan for key roles?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'no',l:a?'لا':'No'}]}
+      ]},
+    { id:'compliance', title:a?'الالتزام النظامي':'Regulatory Compliance', sub:a?'مدى الالتزام بمتطلبات نظام العمل في المملكة':'Compliance with Saudi Labor Law requirements',
+      questions:[
+        {id:'laborRegistered',type:'radio',label:a?'هل الشركة مسجلة في بوابة مسار / وزارة الموارد البشرية؟':'Is the company registered with the Ministry of HR (Musaned/Qiwa)?',
+          options:[{v:'yes',l:a?'نعم':'Yes'},{v:'no',l:a?'لا':'No'},{v:'unknown',l:a?'لا أعرف':'Don\'t know'}]},
+        {id:'gosiCompliant',type:'radio',label:a?'هل الشركة ملتزمة بالتأمينات الاجتماعية (GOSI)؟':'Is the company GOSI compliant for all employees?',
+          options:[{v:'yes',l:a?'نعم، جميعهم':'Yes, all'},{v:'partial',l:a?'جزء منهم':'Some'},{v:'no',l:a?'لا':'No'}]},
+        {id:'nitaqatTier',type:'select',label:a?'شريحة نطاقات المعمول بها حالياً':'Current Nitaqat (Saudization) Tier',
+          options:a?['اختر..','بلاتيني','أخضر مرتفع','أخضر منخفض','أصفر','أحمر','لا أعرف']:
+                   ['Select..','Platinum','High Green','Low Green','Yellow','Red','Don\'t know']},
+        {id:'actualSaudization',type:'number',label:a?'نسبة السعودة الفعلية (%)':'Actual Saudization Percentage (%)',placeholder:'0–100'},
+        {id:'hasViolationsHistory',type:'radio',label:a?'هل سبق صدور مخالفات عمالية بحق الشركة؟':'Have there been any labor violations against the company?',
+          options:[{v:'no',l:a?'لا':'No'},{v:'minor',l:a?'مخالفات بسيطة':'Minor violations'},{v:'major',l:a?'مخالفات جوهرية':'Major violations'}]},
+        {id:'employeeFilesComplete',type:'radio',label:a?'هل ملفات الموظفين (عقود، وثائق) مكتملة ومحفوظة؟':'Are employee files (contracts, documents) complete and filed?',
+          options:[{v:'yes',l:a?'نعم، جميعها':'Yes, all'},{v:'partial',l:a?'جزء منها':'Some'},{v:'no',l:a?'لا':'No'}]}
+      ]},
+    { id:'expectations', title:a?'التوقعات والأولويات':'Expectations & Priorities', sub:a?'ما الذي تحتاجه وكيف يمكننا مساعدتك':'What you need and how we can help',
+      questions:[
+        {id:'mainProblems',type:'multicheck',label:a?'أبرز المشكلات التي تريد حلها':'Key problems you want to solve',
+          options:[
+            {v:'no_structure',l:a?'لا يوجد هيكل تنظيمي':'No organizational structure'},
+            {v:'no_policies',l:a?'غياب السياسات والإجراءات':'Missing policies and procedures'},
+            {v:'no_jd',l:a?'لا توجد أوصاف وظيفية':'No job descriptions'},
+            {v:'salary_issues',l:a?'مشاكل في الرواتب والعدالة':'Salary and equity issues'},
+            {v:'recruitment_slow',l:a?'ضعف عملية التوظيف':'Weak recruitment process'},
+            {v:'high_turnover',l:a?'ارتفاع معدل الدوران الوظيفي':'High employee turnover'},
+            {v:'no_performance',l:a?'لا يوجد نظام تقييم أداء':'No performance review system'},
+            {v:'compliance_risk',l:a?'مخاطر عدم الالتزام النظامي':'Regulatory compliance risks'},
+            {v:'growth_ready',l:a?'التحضير للتوسع أو الاستثمار':'Preparing for growth or investment'},
+            {v:'no_training',l:a?'ضعف التدريب والتطوير':'Weak training and development'},
+            {v:'culture_issues',l:a?'مشاكل في الثقافة وبيئة العمل':'Culture and work environment issues'}
+          ]},
+        {id:'serviceInterest',type:'radio',label:a?'الخدمة التي تحتاجها بشكل أساسي':'Primary service needed',
+          options:[
+            {v:'diagnostic',l:a?'تشخيص وضع الموارد البشرية فقط':'HR diagnostic only'},
+            {v:'foundation',l:a?'تأسيس إدارة موارد بشرية من الصفر':'Build HR from scratch'},
+            {v:'development',l:a?'تطوير إدارة موارد بشرية قائمة':'Develop existing HR'},
+            {v:'org_dev',l:a?'مشروع تطوير تنظيمي شامل':'Full organizational development project'},
+            {v:'subscription',l:a?'اشتراك شهري كمستشار موارد بشرية':'Monthly HR advisor subscription'}
+          ]},
+        {id:'budgetRange',type:'select',label:a?'التوقع العام للميزانية':'General Budget Expectation',
+          options:a?['اختر..','أقل من 20,000 ريال','20,000–50,000 ريال','50,000–100,000 ريال','100,000–250,000 ريال','أكثر من 250,000 ريال','لم أحدد بعد']:
+                   ['Select..','Less than SAR 20,000','SAR 20,000–50,000','SAR 50,000–100,000','SAR 100,000–250,000','More than SAR 250,000','Not decided yet']},
+        {id:'timeline',type:'select',label:a?'متى تحتاج البدء في العمل؟':'When do you need to start?',
+          options:a?['اختر..','فوراً (خلال أسبوعين)','خلال شهر','خلال 3 أشهر','خلال 6 أشهر','لست متأكداً']:
+                   ['Select..','Immediately (within 2 weeks)','Within 1 month','Within 3 months','Within 6 months','Not sure']},
+        {id:'additionalNotes',type:'textarea',label:a?'ملاحظات أو معلومات إضافية':'Additional Notes or Information',rows:3,placeholder:a?'أي شيء آخر يساعدنا...':'Anything else that helps us understand your situation...'},
+        {id:'hearAboutUs',type:'select',label:a?'كيف عرفت بـ Humvance؟':'How did you hear about Humvance?',
+          options:a?['اختر..','توصية من معرفة','محركات البحث','لينكد إن','تويتر / X','إعلان رقمي','حضور فعالية','أخرى']:
+                   ['Select..','Referral','Search engines','LinkedIn','Twitter / X','Digital ad','Event attendance','Other']}
+      ]}
+  ];
+}
+
+// ── State ──
+const S = { view:'landing', step:0, data:{}, adminAuthed:false, clients:[], selectedId:null, token:sessionStorage.getItem('hv_token')||null, analysisCache:{} };
+
+// ── Utilities ──
+function $(sel){ return document.querySelector(sel); }
+function toast(msg, type='info', dur=3500){ const el=document.createElement('div'); el.className=`toast ${type}`; el.textContent=msg; $('#toasts').appendChild(el); setTimeout(()=>el.remove(),dur); }
+function genRef(){ return `HUM-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9000)+1000)}`; }
+function now(){ return new Date().toLocaleString(lang==='ar'?'ar-SA':'en-US'); }
+function escapeHTML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function saveLocal(){ try{ localStorage.setItem('hv_draft', JSON.stringify({step:S.step, data:S.data})); }catch(e){} }
+function loadLocal(){ try{ const d=JSON.parse(localStorage.getItem('hv_draft')||'{}'); if(d.data){S.data=d.data;S.step=d.step||0;return true;} }catch(e){} return false; }
+
+function calcScore(d){
+  let s=0;
+  if(d.hasVision==='yes')s+=4; if(d.hasBoard==='yes')s+=3; if(d.hasOrgChart==='yes')s+=4;
+  if(d.hasHRDept==='yes')s+=6; if(d.hasHRDept==='partial')s+=3;
+  if(d.hasPoliciesManual==='yes')s+=5; if(d.hasDelegationMatrix==='yes')s+=4;
+  if(d.laborRegistered==='yes')s+=6; if(d.gosiCompliant==='yes')s+=6; if(d.wpsCompliance==='yes')s+=5;
+  if(d.employeeFilesComplete==='yes')s+=4; if(d.hasSalaryScale==='yes')s+=5;
+  if(d.hasHealthInsurance==='all')s+=4; if(d.hasLeavePolicy==='yes')s+=3;
+  if(d.hasRecruitmentProcess==='yes')s+=4; if(d.hasOnboarding==='yes')s+=4;
+  if(d.hasPerformanceReview==='yes')s+=5; if(d.hasKPIs==='yes')s+=4;
+  if(d.hasTrainingPlan==='yes')s+=4; if(d.hasCareerPaths==='yes')s+=4;
+  if(d.hasSuccessionPlan==='yes')s+=4; if(d.hasViolationsHistory==='no')s+=3;
+  return Math.min(s,100);
+}
+
+function scoreText(s){ s=parseInt(s)||0; return s<40?t('score0'):s<65?t('score40'):s<80?t('score65'):t('score80'); }
+function scoreLabelBadge(s){ s=parseInt(s)||0; if(s<40)return`<span class="badge badge-error">${t('scoreLabel0')}</span>`; if(s<65)return`<span class="badge badge-warning">${t('scoreLabel40')}</span>`; if(s<80)return`<span class="badge badge-grey">${t('scoreLabel65')}</span>`; return`<span class="badge badge-success">${t('scoreLabel80')}</span>`; }
+function statusLabel(s){ return {new:t('statusNew'),reviewing:t('statusReviewing'),meeting:t('statusMeeting'),proposal:t('statusProposal'),negotiating:t('statusNegotiating'),contracted:t('statusContracted'),in_progress:t('statusInProgress'),delivered:t('statusDelivered'),closed:t('statusClosed')}[s]||s; }
+function statusColor(s){ return {new:'black',reviewing:'warning',meeting:'warning',proposal:'grey',negotiating:'grey',contracted:'success',in_progress:'success',delivered:'success',closed:'grey'}[s]||'grey'; }
+
+function go(view){ S.view=view; render(); window.scrollTo(0,0); }
+
+// ── Logo ──
+function logoHTML(dark=false){ const col=dark?'#fff':'#0A0A0A'; return `<div class="logo" onclick="go('landing')"><div style="width:36px;height:27px;color:${col};flex-shrink:0">${LOGO_SVG}</div><div style="display:flex;flex-direction:column;line-height:1"><span style="font-family:'Inter',sans-serif;font-size:17px;font-weight:800;color:${col};letter-spacing:-.3px">Humvance</span><span style="font-family:'Inter',sans-serif;font-size:10px;color:${dark?'rgba(255,255,255,.4)':'#777'};letter-spacing:.4px">humvance.com</span></div></div>`; }
+
+// ── Field helpers ──
+function fieldVisible(q){ if(!q.showIf)return true; return q.showIf.values.includes(S.data[q.showIf.field]); }
+
+function renderField(q){
+  if(!fieldVisible(q))return '';
+  const val=S.data[q.id]||q.defaultVal||'';
+  const err=`<div id="err-${q.id}" class="form-error hidden"></div>`;
+  const req=q.required?`<span style="color:var(--error);margin-right:2px">*</span>`:'';
+  const dir=lang==='en'?'ltr':'rtl';
+
+  if(q.type==='consent') return `<div class="form-group"><div style="background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:16px"><label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer"><input type="checkbox" id="consent" ${S.data.consent?'checked':''} onchange="S.data.consent=this.checked;saveLocal()" style="width:16px;height:16px;accent-color:var(--black);flex-shrink:0;margin-top:2px"><span style="font-size:14px;color:var(--text-2);line-height:1.6">${lang==='ar'?'أوافق على استخدام البيانات المقدمة في هذا الاستبيان لأغراض التشخيص وإعداد الخدمات المقترحة من Humvance حصراً. تلتزم Humvance بالحفاظ على سرية هذه المعلومات.':'I agree to the use of the data provided in this survey for diagnostic and service purposes by Humvance exclusively. Humvance commits to maintaining the confidentiality of this information.'}<br><span style="font-size:12px;color:var(--text-3)">info@humvance.com</span></span></label></div>${err}</div>`;
+
+  if(q.type==='text'||q.type==='email'||q.type==='tel'||q.type==='number') return `<div class="form-group"><label class="form-label" for="${q.id}">${q.label}${req}</label><input id="${q.id}" class="form-input" type="${q.type}" value="${escapeHTML(String(val))}" placeholder="${q.placeholder||''}" style="direction:${dir}" oninput="S.data['${q.id}']=this.value;saveLocal();reRenderStep()" ${q.required?'required':''}>${err}</div>`;
+
+  if(q.type==='textarea') return `<div class="form-group"><label class="form-label" for="${q.id}">${q.label}${req}</label><textarea id="${q.id}" class="form-input form-textarea" rows="${q.rows||3}" placeholder="${q.placeholder||''}" style="direction:${dir}" oninput="S.data['${q.id}']=this.value;saveLocal()" ${q.required?'required':''}>${escapeHTML(String(val))}</textarea>${err}</div>`;
+
+  if(q.type==='select'){ const opts=q.options.map(o=>`<option value="${o}" ${val===o?'selected':''}>${o}</option>`).join(''); return `<div class="form-group"><label class="form-label" for="${q.id}">${q.label}${req}</label><select id="${q.id}" class="form-input form-select" onchange="S.data['${q.id}']=this.value;saveLocal();reRenderStep()" ${q.required?'required':''}>${opts}</select>${err}</div>`; }
+
+  if(q.type==='radio'){ const opts=q.options.map(o=>`<label class="choice ${val===o.v?'selected':''}"><input type="radio" name="${q.id}" value="${o.v}" ${val===o.v?'checked':''} onchange="S.data['${q.id}']=this.value;saveLocal();reRenderStep()"><span class="choice-label">${o.l}</span></label>`).join(''); return `<div class="form-group"><div class="form-label">${q.label}${req}</div><div class="choices">${opts}</div>${err}</div>`; }
+
+  if(q.type==='multicheck'){ const vals=S.data[q.id]||[]; const opts=q.options.map(o=>`<label class="choice ${vals.includes(o.v)?'selected':''}"><input type="checkbox" value="${o.v}" ${vals.includes(o.v)?'checked':''} onchange="toggleMulti('${q.id}','${o.v}',this.checked)"><span class="choice-label">${o.l}</span></label>`).join(''); return `<div class="form-group"><div class="form-label">${q.label}</div><div class="choices">${opts}</div></div>`; }
+
+  if(q.type==='rating'){ const r=parseInt(val)||0; const btns=[1,2,3,4,5].map(n=>`<button type="button" class="rating-btn ${r===n?'sel':''}" onclick="S.data['${q.id}']=${n};saveLocal();reRenderStep()">${n}</button>`).join(''); return `<div class="form-group"><div class="form-label">${q.label}</div><div class="rating-row">${btns}</div><div class="rating-labels"><span>${q.minLabel||'1'}</span><span>${q.maxLabel||'5'}</span></div></div>`; }
+  return '';
+}
+
+function toggleMulti(id,val,checked){ let arr=S.data[id]||[]; if(checked){if(!arr.includes(val))arr.push(val);}else arr=arr.filter(v=>v!==val); S.data[id]=arr; saveLocal(); const labels=document.querySelectorAll(`input[value="${val}"]`); labels.forEach(inp=>{if(inp.closest('.choices'))inp.closest('.choice').classList.toggle('selected',checked);}); }
+function reRenderStep(){ const c=$('#survey-questions'); if(!c)return; c.innerHTML=getSteps()[S.step].questions.map(renderField).join(''); }
+
+function validateStep(){ const steps=getSteps(); const step=steps[S.step]; let ok=true; step.questions.forEach(q=>{ if(!fieldVisible(q))return; if(q.required||q.type==='consent'){ const val=S.data[q.id]; const errEl=document.getElementById(`err-${q.id}`); let fail=q.type==='consent'?!val:(!val||(typeof val==='string'&&!val.trim())); if(errEl){errEl.textContent=fail?t('required'):'';errEl.classList.toggle('hidden',!fail);} if(fail)ok=false; } }); return ok; }
+
+// ── Landing ──
+function renderLanding(){
+  const a=lang==='ar';
+  const services=a?[
+    ['التشخيص التنظيمي','تقييم شامل لوضع الموارد البشرية وتحديد الفجوات والأولويات'],
+    ['تأسيس الموارد البشرية','بناء إدارة موارد بشرية متكاملة من الصفر'],
+    ['التطوير التنظيمي','تطوير الهياكل والسياسات وأنظمة العمل القائمة'],
+    ['الهيكل التنظيمي','تصميم هياكل واضحة مع توزيع الأدوار والصلاحيات'],
+    ['الوصف الوظيفي','إعداد أوصاف وظيفية متكاملة لجميع المسميات'],
+    ['سلم الرواتب','تصميم هياكل تعويضات منصفة وتنافسية'],
+    ['الأداء والكفاءات','بناء أنظمة إدارة الأداء ومؤشرات القياس'],
+    ['المستشار الشهري','خدمة HR as a Service للشركات التي لا تحتاج فريقاً كاملاً']
+  ]:[
+    ['Organizational Diagnosis','Comprehensive assessment to identify HR gaps and priorities'],
+    ['HR Foundation','Build a complete HR department from scratch'],
+    ['Organizational Development','Develop existing structures, policies, and work systems'],
+    ['Org Chart Design','Design clear structures with defined roles and authorities'],
+    ['Job Descriptions','Prepare comprehensive job descriptions for all positions'],
+    ['Salary Scale','Design fair and competitive compensation structures'],
+    ['Performance & KPIs','Build performance management systems and measurement indicators'],
+    ['Monthly HR Advisor','HR as a Service for companies that don\'t need a full HR team']
+  ];
+  const process=a?[
+    ['الاستبيان','تعبئة استبيان تشخيصي شامل عن وضع الشركة'],
+    ['التحليل','مراجعة البيانات واستخراج المؤشرات والمخاطر'],
+    ['الاجتماع','جلسة اكتشاف لمناقشة الأولويات وتوضيح الصورة'],
+    ['العرض','تقديم عرض خدمة مخصص لاحتياجاتك'],
+    ['التنفيذ','تسليم المخرجات ومتابعة التطبيق الميداني']
+  ]:[
+    ['Survey','Complete a comprehensive diagnostic survey about your company'],
+    ['Analysis','Review data and extract indicators and risks'],
+    ['Meeting','Discovery session to discuss priorities and clarify the picture'],
+    ['Proposal','Present a customized service proposal for your needs'],
+    ['Execution','Deliver outputs and follow up on field implementation']
+  ];
+
+  $('#root').innerHTML=`
+    <header class="site-header">
+      ${logoHTML()}
+      <nav class="header-nav">
+        <button class="lang-toggle" onclick="setLang('${a?'en':'ar'}')">${a?'EN':'عربي'}</button>
+        <button class="btn btn-ghost btn-sm" onclick="checkAdminAccess()">${t('adminLogin')}</button>
+        <button class="btn btn-primary btn-sm" onclick="startSurvey()">${t('startSurvey')}</button>
+      </nav>
+    </header>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-eyebrow">${t('heroEyebrow')}</div>
+        <h1 class="hero-title">${t('heroTitle')}</h1>
+        <p class="hero-sub">${t('heroSub')}</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-lg" onclick="startSurvey()">${t('startFree')}</button>
+          <a href="mailto:info@humvance.com" class="btn btn-outline btn-lg">${t('contactUs')}</a>
+        </div>
+        <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--text-3);letter-spacing:.06em;margin-top:48px;border-top:1px solid var(--border);padding-top:24px">humvance.com &nbsp;|&nbsp; info@humvance.com</div>
+      </div>
+    </section>
+    <section class="services">
+      <div class="container">
+        <div class="section-label">${t('servicesLabel')}</div>
+        <h2 class="section-title">${t('servicesTitle')}</h2>
+        <p style="font-size:16px;color:var(--text-3);line-height:1.6">${t('servicesSub')}</p>
+        <div class="services-grid">${services.map(([n,d],i)=>`<div class="service-item"><div class="service-num">0${i+1}</div><div class="service-name">${n}</div><div class="service-desc">${d}</div></div>`).join('')}</div>
+      </div>
+    </section>
+    <section class="process">
+      <div class="container">
+        <div class="section-label" style="color:rgba(255,255,255,.4)">${t('howWeWork')}</div>
+        <h2 class="section-title" style="color:#fff">${t('clientJourney')}</h2>
+        <div class="process-steps">${process.map(([n,d],i)=>`<div class="process-step"><div class="process-step-num">0${i+1}</div><div class="process-step-name">${n}</div><div class="process-step-desc">${d}</div></div>`).join('')}</div>
+      </div>
+    </section>
+    <section class="landing-cta">
+      <div class="container">
+        <div class="cta-box">
+          <h2 style="font-size:28px;font-weight:800;margin-bottom:12px">${t('ctaTitle')}</h2>
+          <p style="font-size:16px;color:var(--text-3);margin-bottom:28px">${t('ctaSub')}</p>
+          <button class="btn btn-primary btn-lg" onclick="startSurvey()">${t('startNow')}</button>
+        </div>
+      </div>
+    </section>
+    <footer class="footer">© ${new Date().getFullYear()} Humvance. ${t('copyright')} &nbsp;|&nbsp; humvance.com &nbsp;|&nbsp; info@humvance.com</footer>`;
+}
+
+// ── Survey ──
+function startSurvey(){ const hasDraft=loadLocal(); if(hasDraft&&S.step>0){if(!confirm(t('continueDraft'))){S.data={};S.step=0;try{localStorage.removeItem('hv_draft');}catch(e){}}} go('survey'); }
+
+function renderSurvey(){
+  const steps=getSteps(); const step=steps[S.step]; const pct=Math.round((S.step/steps.length)*100); const isLast=S.step===steps.length-1;
+  const asideSteps=steps.map((st,i)=>`<div class="aside-step ${i===S.step?'active':i<S.step?'done':''}"><div class="aside-step-dot"></div>${st.title}</div>`).join('');
+  $('#root').innerHTML=`
+    <header class="site-header">
+      <div style="display:flex;align-items:center;gap:16px">${logoHTML()}<div style="font-size:13px;color:var(--text-3);padding-right:12px;border-right:1px solid var(--border)">${t('surveyTitle')}</div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="lang-toggle" onclick="setLang('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'EN':'عربي'}</button>
+        <span style="font-size:11px;color:var(--text-3)">${t('autoSave')}</span>
+        <button class="btn btn-ghost btn-sm" onclick="go('landing')">${t('back')}</button>
+      </div>
+    </header>
+    <div class="survey-layout">
+      <main class="survey-main">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em">${step.title}</span>
+          <span style="font-family:'Inter',sans-serif;font-size:12px;color:var(--text-3)">${S.step+1} / ${steps.length}</span>
+        </div>
+        <div class="progress-bar" style="margin-bottom:28px"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <h2 class="survey-section-title">${step.title}</h2>
+        <p class="survey-section-sub">${step.sub}</p>
+        <div class="survey-questions" id="survey-questions">${step.questions.map(renderField).join('')}</div>
+        <div class="survey-nav">
+          <button class="btn btn-outline" onclick="prevStep()" ${S.step===0?'disabled':''}>${lang==='ar'?'→ ':''} ${t('prev')} ${lang==='en'?'←':''}</button>
+          <button class="btn btn-primary" onclick="${isLast?'submitSurvey()':'nextStep()'}">
+            ${isLast?t('submit'):`${t('next')} ${lang==='ar'?'←':''}`}
+          </button>
+        </div>
+      </main>
+      <aside class="survey-aside">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:22px;color:#fff">${LOGO_SVG}</div><span class="aside-logo-name">Humvance</span></div>
+        <div><div style="font-size:20px;font-weight:700;color:#fff;line-height:1.35">${t('surveyAsideTitle')}</div><div style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;margin-top:8px">${t('surveyAsideSub')}</div></div>
+        <div class="aside-steps">${asideSteps}</div>
+        <div class="progress-bar" style="background:rgba(255,255,255,.15)"><div class="progress-fill" style="width:${pct}%;background:#fff"></div></div>
+        <div class="aside-privacy">${t('privacyNote')}</div>
+      </aside>
+    </div>`;
+}
+
+function nextStep(){ if(!validateStep()){toast(t('fieldRequired'),'error');return;} if(S.step<getSteps().length-1){S.step++;saveLocal();go('survey');} }
+function prevStep(){ if(S.step>0){S.step--;go('survey');} }
+
+async function submitSurvey(){
+  if(!validateStep()){toast(t('fieldRequired'),'error');return;}
+  const ref=genRef(); const score=calcScore(S.data);
+  const submission={ref,score,status:'new',createdAt:Date.now(),createdAtDisplay:now(),...S.data};
+  const btn=$('.survey-nav .btn-primary');
+  if(btn){btn.disabled=true;btn.textContent=lang==='ar'?'جاري الإرسال...':'Submitting...';}
+  try{
+    const r=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(submission)});
+    if(!r.ok)throw new Error(await r.text());
+    try{localStorage.removeItem('hv_draft');}catch(e){}
+    S.data.ref=ref; S.data.score=score; go('confirm');
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent=t('submit');}
+    toast(t('submitError'),'error');
+  }
+}
+
+// ── Confirm ──
+function renderConfirm(){
+  const ref=S.data.ref||'---'; const score=S.data.score||0;
+  const ns=lang==='ar'?[['مراجعة الاستبيان','سيراجع فريقنا إجاباتك خلال 24 ساعة'],['الاجتماع التشخيصي','نتواصل لتحديد موعد جلسة اكتشاف (30–60 دقيقة)'],['العرض المخصص','نُعدّ عرض خدمة مخصص بناءً على احتياجاتك']]:
+    [['Survey Review','Our team will review your answers within 24 hours'],['Discovery Meeting','We\'ll contact you to schedule a discovery session (30–60 min)'],['Custom Proposal','We\'ll prepare a tailored service proposal based on your needs']];
+  $('#root').innerHTML=`
+    <header class="site-header">${logoHTML()}<button class="lang-toggle" onclick="setLang('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'EN':'عربي'}</button></header>
+    <div class="confirm-page"><div class="confirm-card">
+      <div class="confirm-icon"><svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2 style="font-size:26px;font-weight:800;margin-bottom:8px">${t('confirmTitle')}</h2>
+      <p style="color:var(--text-3);font-size:15px;margin-bottom:4px">${t('refLabel')}</p>
+      <div class="confirm-ref">${ref}</div>
+      <p style="color:var(--text-3);font-size:13px;line-height:1.6;margin-top:8px">${t('confirmNote')} <strong>${S.data.email||''}</strong></p>
+      <div style="background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:16px">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:4px">${t('initialScore')}</div>
+        <div style="font-size:28px;font-weight:900;color:var(--black)">${score}<span style="font-size:16px;color:var(--text-3)">/100</span></div>
+        <div style="font-size:12px;color:var(--text-3)">${scoreText(score)}</div>
+      </div>
+      <div style="margin-top:28px;text-align:${lang==='ar'?'right':'left'}">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">${t('nextSteps')}</div>
+        ${ns.map(([title,desc],i)=>`<div class="nsl-item"><div class="nsl-num">${i+1}</div><div><strong>${title}</strong> — ${desc}</div></div>`).join('')}
+      </div>
+      <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="go('landing')">${t('backHome')}</button>
+        <a href="mailto:info@humvance.com" class="btn btn-outline">${t('contactUs')}</a>
+      </div>
+    </div></div>`;
+}
+
+// ── Admin Auth ──
+async function checkAdminAccess(){
+  if(S.adminAuthed&&S.token){go('admin');return;}
+  try{ const r=await fetch('/api/auth/status'); const d=await r.json(); go(d.setupDone?'admin-login':'admin-setup'); }
+  catch(e){ go('admin-login'); }
+}
+
+function renderAdminSetup(){
+  $('#root').innerHTML=`
+    <div class="admin-login-page"><div class="admin-login-card">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="width:48px;height:36px;margin:0 auto 12px;color:var(--black)">${LOGO_SVG}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:900">Humvance</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">${t('adminSetupTitle')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-group"><label class="form-label">${t('newPwd')}</label><input id="setup-pwd" class="form-input" type="password" placeholder="${t('pwdPlaceholder')}" style="direction:ltr"></div>
+        <div class="form-group"><label class="form-label">${t('confirmPwd')}</label><input id="setup-pwd2" class="form-input" type="password" placeholder="${t('pwdConfirmPlaceholder')}" style="direction:ltr"></div>
+        <button class="btn btn-primary" onclick="doSetup()" style="width:100%">${t('createAccount')}</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-3);text-align:center;margin-top:16px">${t('pwdSecurity')}</p>
+    </div></div>`;
+}
+
+async function doSetup(){
+  const p=$('#setup-pwd').value; const p2=$('#setup-pwd2').value;
+  if(!p||p.length<6){toast(t('pwdMin'),'error');return;}
+  if(p!==p2){toast(t('pwdMismatch'),'error');return;}
+  const btn=document.querySelector('.admin-login-card .btn-primary');
+  if(btn){btn.disabled=true;btn.textContent=lang==='ar'?'جاري الإنشاء...':'Creating...';}
+  try{
+    const r=await fetch('/api/auth/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:p})});
+    const d=await r.json();
+    if(!r.ok){if(btn){btn.disabled=false;btn.textContent=t('createAccount');}toast(d.error||'Error','error');return;}
+    S.token=d.token; S.adminAuthed=true; sessionStorage.setItem('hv_token',d.token);
+    toast(lang==='ar'?'تم إنشاء الحساب بنجاح':'Account created successfully','success'); go('admin');
+  }catch(e){if(btn){btn.disabled=false;btn.textContent=t('createAccount');}toast(e.message,'error');}
+}
+
+function renderAdminLogin(){
+  $('#root').innerHTML=`
+    <div class="admin-login-page"><div class="admin-login-card">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="width:48px;height:36px;margin:0 auto 12px;color:var(--black)">${LOGO_SVG}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:900">Humvance</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">${t('loginTitle')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="form-group"><label class="form-label">${t('pwdLabel')}</label><input id="login-pwd" class="form-input" type="password" placeholder="${t('pwdLoginPlaceholder')}" style="direction:ltr" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn btn-primary" onclick="doLogin()" style="width:100%">${t('login')}</button>
+      </div>
+      <button class="btn btn-ghost" onclick="go('landing')" style="width:100%;margin-top:8px">${lang==='ar'?'← ':''} ${t('back')} ${lang==='en'?'→':''}</button>
+    </div></div>`;
+  setTimeout(()=>{try{document.getElementById('login-pwd').focus();}catch(e){}},100);
+}
+
+async function doLogin(){
+  const pwd=document.getElementById('login-pwd')?.value;
+  if(!pwd){toast(lang==='ar'?'أدخل كلمة المرور':'Enter password','error');return;}
+  const btn=document.querySelector('.admin-login-card .btn-primary');
+  if(btn){btn.disabled=true;btn.textContent=lang==='ar'?'جاري التحقق...':'Verifying...';}
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})});
+    const d=await r.json();
+    if(!r.ok){if(btn){btn.disabled=false;btn.textContent=t('login');}toast(d.error||t('pwdMismatch'),'error');return;}
+    S.token=d.token; S.adminAuthed=true; sessionStorage.setItem('hv_token',d.token);
+    toast(lang==='ar'?'مرحباً بك':'Welcome','success'); go('admin');
+  }catch(e){if(btn){btn.disabled=false;btn.textContent=t('login');}toast(e.message,'error');}
+}
+
+// ── Admin Dashboard ──
+const DEMO_CLIENTS=[
+  {ref:'HUM-2026-4412',companyName:'شركة الرافدين للخدمات',sector:'خدمات مهنية',city:'الرياض',contactName:'أحمد الغامدي',phone:'0501234567',email:'aghamdi@rafidain.com',numFulltime:'45',score:38,status:'reviewing',createdAtDisplay:'14 سبتمبر 2026',hasHRDept:'no',laborRegistered:'yes',serviceInterest:'foundation'},
+  {ref:'HUM-2026-3891',companyName:'مجموعة النخيل',sector:'تجزئة وتوزيع',city:'جدة',contactName:'نورة السعدي',phone:'0559876543',email:'n.saadi@nakheel.sa',numFulltime:'120',score:62,status:'meeting',createdAtDisplay:'12 سبتمبر 2026',hasHRDept:'partial',laborRegistered:'yes',serviceInterest:'development'},
+  {ref:'HUM-2026-2254',companyName:'تقنية المستقبل',sector:'تقنية المعلومات',city:'الرياض',contactName:'فهد العمري',phone:'0505554433',email:'fahad@futuretech.sa',numFulltime:'30',score:71,status:'proposal',createdAtDisplay:'10 سبتمبر 2026',hasHRDept:'yes',laborRegistered:'yes',serviceInterest:'subscription'}
+];
+
+async function renderAdmin(){
+  if(!S.adminAuthed){go('admin-login');return;}
+  $('#root').innerHTML=`<div style="text-align:center;padding:60px;color:var(--text-3)">${lang==='ar'?'جاري التحميل...':'Loading...'}</div>`;
+  try{
+    const r=await fetch('/api/clients',{headers:{'Authorization':`Bearer ${S.token}`}});
+    if(r.status===401){adminLogout();return;}
+    S.clients=await r.json();
+  }catch(e){ S.clients=DEMO_CLIENTS; }
+
+  const total=S.clients.length;
+  const newCount=S.clients.filter(c=>c.status==='new').length;
+  const avgScore=total?Math.round(S.clients.reduce((a,c)=>a+(c.score||0),0)/total):0;
+  const active=S.clients.filter(c=>['contracted','in_progress','delivered'].includes(c.status)).length;
+  const statusOpts=Object.entries({new:t('statusNew'),reviewing:t('statusReviewing'),meeting:t('statusMeeting'),proposal:t('statusProposal'),negotiating:t('statusNegotiating'),contracted:t('statusContracted'),in_progress:t('statusInProgress'),delivered:t('statusDelivered'),closed:t('statusClosed')});
+  const rows=S.clients.map(c=>`<tr onclick="viewClient('${c.ref}')"><td><span style="font-family:'Inter',sans-serif;font-weight:700;font-size:13px">${c.ref}</span></td><td style="font-weight:600">${c.companyName||'—'}</td><td>${c.sector||'—'}</td><td>${c.city||'—'}</td><td>${c.contactName||'—'}</td><td><span style="font-family:'Inter',sans-serif;font-weight:700">${c.score||0}</span>/100</td><td>${scoreLabelBadge(c.score)}</td><td><span class="badge badge-${statusColor(c.status)}">${statusLabel(c.status)}</span></td><td style="font-size:12px;color:var(--text-3)">${c.createdAtDisplay||'—'}</td></tr>`).join('');
+
+  $('#root').innerHTML=`
+    <header class="site-header">${logoHTML()}<div style="display:flex;align-items:center;gap:8px"><button class="lang-toggle" onclick="setLang('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'EN':'عربي'}</button><span style="font-size:14px;color:var(--text-3)">${t('adminPanel')}</span><button class="btn btn-ghost btn-sm" onclick="adminLogout()">${t('logout')}</button></div></header>
+    <div class="admin-layout">
+      <aside class="admin-sidebar"><button class="admin-nav-item active">📊 ${t('dashboard')}</button></aside>
+      <main class="admin-content">
+        <div style="font-size:26px;font-weight:800;margin-bottom:6px">${t('dashboard')}</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">${t('totalSurveys')}</div></div>
+          <div class="stat-card"><div class="stat-value">${newCount}</div><div class="stat-label">${t('newSurveys')}</div></div>
+          <div class="stat-card"><div class="stat-value">${avgScore}</div><div class="stat-label">${t('avgMaturity')}</div></div>
+          <div class="stat-card"><div class="stat-value">${active}</div><div class="stat-label">${t('activeClients')}</div></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">${statusOpts.map(([k,l])=>`<div style="padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;color:var(--text-3);background:var(--surface)"><strong>${S.clients.filter(c=>c.status===k).length}</strong> ${l}</div>`).join('')}</div>
+        ${total===0?`<div style="text-align:center;padding:48px;color:var(--text-3)">${t('noData')}</div>`:`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>${lang==='ar'?'رقم مرجعي':'Reference'}</th><th>${lang==='ar'?'الشركة':'Company'}</th><th>${lang==='ar'?'القطاع':'Sector'}</th><th>${lang==='ar'?'المدينة':'City'}</th><th>${lang==='ar'?'المسؤول':'Contact'}</th><th>${lang==='ar'?'الدرجة':'Score'}</th><th>${lang==='ar'?'المستوى':'Level'}</th><th>${lang==='ar'?'الحالة':'Status'}</th><th>${lang==='ar'?'التاريخ':'Date'}</th></tr></thead><tbody>${rows}</tbody></table></div>`}
+      </main>
+    </div>`;
+}
+
+async function viewClient(ref){
+  S.selectedId=ref;
+  let client=S.clients.find(c=>c.ref===ref);
+  if(!client&&S.token){ try{ const r=await fetch(`/api/client?ref=${ref}`,{headers:{'Authorization':`Bearer ${S.token}`}}); if(r.ok){client=await r.json(); S.clients.push(client);} }catch(e){} }
+  if(!client)return;
+  const score=client.score||0;
+  const statusOpts=Object.entries({new:t('statusNew'),reviewing:t('statusReviewing'),meeting:t('statusMeeting'),proposal:t('statusProposal'),negotiating:t('statusNegotiating'),contracted:t('statusContracted'),in_progress:t('statusInProgress'),delivered:t('statusDelivered'),closed:t('statusClosed')}).map(([k,l])=>`<option value="${k}" ${client.status===k?'selected':''}>${l}</option>`).join('');
+
+  function row(label,val){ return `<div class="info-row"><span class="info-label">${label}</span><span class="info-val">${val||'—'}</span></div>`; }
+
+  const acts=[];
+  if(client.hasHRDept==='no')acts.push({p:'high',t:lang==='ar'?'تأسيس إدارة الموارد البشرية':'Establish HR Department',d:lang==='ar'?'الشركة تفتقر إلى إدارة متخصصة':'No dedicated HR department'});
+  if(client.laborRegistered!=='yes')acts.push({p:'high',t:lang==='ar'?'التسجيل في وزارة الموارد البشرية':'Register with Ministry of HR',d:lang==='ar'?'التسجيل إلزامي نظاماً':'Mandatory registration'});
+  if(client.gosiCompliant!=='yes')acts.push({p:'high',t:lang==='ar'?'الالتزام بالتأمينات الاجتماعية GOSI':'GOSI Compliance',d:lang==='ar'?'مخاطر نظامية عالية':'High regulatory risk'});
+  if(client.wpsCompliance!=='yes')acts.push({p:'high',t:lang==='ar'?'الالتزام بنظام حماية الأجور WPS':'WPS Compliance',d:lang==='ar'?'مطلوب نظاماً':'Legally required'});
+  if(client.hasPoliciesManual!=='yes')acts.push({p:'medium',t:lang==='ar'?'إعداد لائحة تنظيم العمل':'Prepare HR Policy Manual',d:lang==='ar'?'أساس الضبط المؤسسي':'Foundation of HR compliance'});
+  if(client.hasOrgChart==='no')acts.push({p:'medium',t:lang==='ar'?'رسم الهيكل التنظيمي':'Design Organizational Chart',d:lang==='ar'?'تحديد الأدوار والمسؤوليات':'Define roles and responsibilities'});
+  if(client.hasPerformanceReview!=='yes')acts.push({p:'medium',t:lang==='ar'?'بناء نظام تقييم الأداء':'Build Performance Review System',d:lang==='ar'?'قياس وتطوير الأداء':'Measure and improve performance'});
+
+  const cached=S.analysisCache[ref];
+
+  $('#root').innerHTML=`
+    <header class="site-header">${logoHTML()}<div style="display:flex;align-items:center;gap:12px"><button class="lang-toggle" onclick="setLang('${lang==='ar'?'en':'ar'}')">${lang==='ar'?'EN':'عربي'}</button><span style="font-size:13px;color:var(--text-3)">${client.companyName||'Client'}</span><span style="font-family:'Inter',sans-serif;font-size:12px;background:var(--warm);border:1px solid var(--border);padding:4px 10px;border-radius:99px">${S.selectedId}</span><button class="btn btn-ghost btn-sm" onclick="renderAdmin()">${t('allClients')}</button></div></header>
+    <div class="admin-layout">
+      <aside class="admin-sidebar"><button class="admin-nav-item" onclick="renderAdmin()">📊 ${t('dashboard')}</button><button class="admin-nav-item active">👤 ${lang==='ar'?'تفاصيل العميل':'Client Details'}</button></aside>
+      <main class="admin-content">
+        <div class="client-grid">
+          <div>
+            <div class="section-block"><div class="section-block-title">${t('contactInfo')}</div>${row(lang==='ar'?'المسؤول':'Contact',client.contactName)}${row(lang==='ar'?'المسمى':'Title',client.contactTitle)}${row(lang==='ar'?'الجوال':'Phone',client.phone)}${row(lang==='ar'?'البريد':'Email',client.email)}</div>
+            <div class="section-block"><div class="section-block-title">${t('companyInfo')}</div><div class="grid-2">${row(lang==='ar'?'الشركة':'Company',client.companyName)}${row(lang==='ar'?'القطاع':'Sector',client.sector)}${row(lang==='ar'?'المدينة':'City',client.city)}${row(lang==='ar'?'الموظفون':'Employees',client.numFulltime)}${row(lang==='ar'?'السعودة %':'Saudization %',client.saudiPercent?client.saudiPercent+'%':'—')}${row(lang==='ar'?'الفروع':'Branches',client.numBranches)}</div></div>
+            <div class="section-block"><div class="section-block-title">${t('diagSummary')}</div>${row(lang==='ar'?'الموارد البشرية':'HR',client.hasHRDept==='yes'?'✅ '+t('statusNew'):client.hasHRDept==='partial'?'⚠️':client.hasHRDept==='no'?'❌':'—')}${row('GOSI',client.gosiCompliant==='yes'?'✅':client.gosiCompliant==='partial'?'⚠️':'❌')}${row('WPS',client.wpsCompliance==='yes'?'✅':client.wpsCompliance==='partial'?'⚠️':client.wpsCompliance==='no'?'❌':'—')}${row(lang==='ar'?'لائحة العمل':'HR Policy',client.hasPoliciesManual==='yes'?'✅':client.hasPoliciesManual==='draft'?'⚠️':'❌')}${row(lang==='ar'?'تقييم الأداء':'Performance Review',client.hasPerformanceReview==='yes'?'✅':client.hasPerformanceReview==='informal'?'⚠️':'❌')}${row(lang==='ar'?'الخدمة المطلوبة':'Service Interest',client.serviceInterest||'—')}${row(lang==='ar'?'الميزانية':'Budget',client.budgetRange||'—')}</div>
+            ${client.additionalNotes?`<div class="section-block"><div class="section-block-title">${t('clientNotes')}</div><p style="font-size:14px;color:var(--text-2);line-height:1.7">${escapeHTML(client.additionalNotes)}</p></div>`:''}
+            <div class="section-block"><div class="section-block-title">${t('aiAnalysis')}</div>${cached?`<div class="analysis-box">${escapeHTML(cached)}</div>`:`<p style="font-size:13px;color:var(--text-3);margin-bottom:16px">${lang==='ar'?'اضغط لتحليل إجابات العميل وتوليد تقرير أولي':'Click to analyze client responses and generate a preliminary report.'}</p><button class="btn btn-primary btn-sm" onclick="runAnalysis('${ref}')">${t('runAnalysis')}</button>`}<div id="analysis-output" style="margin-top:12px"></div></div>
+          </div>
+          <div>
+            <div class="section-block"><div class="section-block-title">${t('maturityScore')}</div><div class="score-display"><div class="score-num">${score}</div><div style="font-size:12px;color:var(--text-3)">/100</div><div style="font-size:13px;color:var(--text-2);margin-top:8px">${scoreText(score)}</div><div style="margin-top:12px"><div class="progress-bar" style="height:8px"><div class="progress-fill" style="width:${score}%"></div></div></div></div></div>
+            <div class="section-block"><div class="section-block-title">${t('updateStatus')}</div><select class="form-input form-select" onchange="updateStatus('${ref}',this.value)">${statusOpts}</select></div>
+            <div class="section-block"><div class="section-block-title">${t('urgentActions')}</div>${acts.slice(0,6).map(a=>`<div class="action-item"><div class="priority-dot p-${a.p}"></div><div><div style="font-size:14px;font-weight:600">${a.t}</div><div style="font-size:12px;color:var(--text-3);margin-top:2px">${a.d}</div></div></div>`).join('')}</div>
+            <div class="section-block"><div class="section-block-title">${t('actions')}</div><div style="display:flex;flex-direction:column;gap:8px"><a href="mailto:${client.email}?subject=Humvance" class="btn btn-outline btn-sm">${t('emailClient')}</a><button class="btn btn-ghost btn-sm" onclick="toast('${lang==='ar'?'قريباً':'Coming soon'}','info')">${t('prepareProposal')}</button></div></div>
+          </div>
+        </div>
+      </main>
+    </div>`;
+}
+
+async function updateStatus(ref,newStatus){
+  const idx=S.clients.findIndex(c=>c.ref===ref);
+  if(idx>=0)S.clients[idx].status=newStatus;
+  if(S.token){ try{ await fetch(`/api/client?ref=${ref}`,{method:'PATCH',headers:{'Authorization':`Bearer ${S.token}`,'Content-Type':'application/json'},body:JSON.stringify({status:newStatus})}); }catch(e){} }
+  toast(t('statusUpdated'),'success');
+}
+
+async function runAnalysis(ref){
+  if(!S.token){toast(lang==='ar'?'يجب تسجيل الدخول':'Must be logged in','error');return;}
+  const client=S.clients.find(c=>c.ref===ref);
+  if(!client)return;
+  const out=document.getElementById('analysis-output');
+  if(out)out.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:16px;color:var(--text-3);font-size:14px"><div class="spinner"></div>${t('analyzing')}</div>`;
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Authorization':`Bearer ${S.token}`,'Content-Type':'application/json'},body:JSON.stringify({client})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
+    S.analysisCache[ref]=d.analysis;
+    if(out)out.innerHTML=`<div class="analysis-box">${escapeHTML(d.analysis)}</div>`;
+  }catch(e){ if(out)out.innerHTML=`<div style="color:var(--error);font-size:13px">${t('analysisError')}: ${e.message}</div>`; }
+}
+
+function adminLogout(){ S.adminAuthed=false; S.token=null; sessionStorage.removeItem('hv_token'); go('landing'); toast(lang==='ar'?'تم تسجيل الخروج':'Logged out'); }
+
+// ── Router ──
+function render(){
+  switch(S.view){
+    case 'landing': renderLanding(); break;
+    case 'survey': renderSurvey(); break;
+    case 'confirm': renderConfirm(); break;
+    case 'admin-setup': renderAdminSetup(); break;
+    case 'admin-login': renderAdminLogin(); break;
+    case 'admin': renderAdmin(); break;
+    case 'admin-client': if(S.selectedId)viewClient(S.selectedId); else renderAdmin(); break;
+    default: renderLanding();
+  }
+}
+
+// ── Init ──
+if(sessionStorage.getItem('hv_token')){S.adminAuthed=true;}
+document.documentElement.lang=lang;
+document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+document.body.classList.toggle('en',lang==='en');
+renderLanding();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "humvance",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'static'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "@vercel/kv": "^2.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
