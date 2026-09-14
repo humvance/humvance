@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv } from './_db.js';
 import { verifyToken } from './_auth.js';
 
 export default async function handler(req, res) {

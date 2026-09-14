@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { kv } from '@vercel/kv';
+import { kv } from './_db.js';
 import { verifyToken } from './_auth.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
