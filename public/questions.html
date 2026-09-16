@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أسئلة Humvance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0A0A0A;--white:#fff;--warm:#F6F5F1;--border:#E2E1DD;--text:#0A0A0A;--text-2:#444;--text-3:#777;--r:8px;--font-ar:'IBM Plex Sans Arabic','Arial',sans-serif;--font-en:'Inter',sans-serif}
+@media(prefers-color-scheme:dark){:root{--warm:#111110;--white:#1A1A19;--border:#2E2E2C;--text:#F0EFE9;--text-2:#BBBBBB;--text-3:#888785}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-ar);font-size:16px;color:var(--text);background:var(--warm);direction:rtl;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+.header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center}
+.logo-name{font-family:var(--font-en);font-size:17px;font-weight:800;color:var(--black)}
+.page{max-width:680px;margin:0 auto;padding:40px 24px 80px}
+.intro-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:28px;margin-bottom:32px}
+.company-label{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.company-name{font-size:20px;font-weight:800;color:var(--black);margin-bottom:12px}
+.intro-text{font-size:14px;color:var(--text-2);line-height:1.7}
+.q-list{display:flex;flex-direction:column;gap:20px}
+.q-item{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+.q-num{font-family:var(--font-en);font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.08em;margin-bottom:6px}
+.q-area{display:inline-flex;align-items:center;padding:2px 10px;background:var(--warm);border:1px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:12px}
+.q-text{font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5}
+.q-textarea{width:100%;min-height:100px;padding:12px 14px;background:var(--warm);border:1.5px solid var(--border);border-radius:var(--r);font-family:var(--font-ar);font-size:15px;color:var(--text);resize:vertical;transition:border 150ms;line-height:1.6}
+.q-textarea:focus{outline:none;border-color:var(--black)}
+.q-textarea::placeholder{color:var(--text-3)}
+.actions{margin-top:32px;text-align:center}
+.btn-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 40px;background:var(--black);color:var(--white);font-family:var(--font-ar);font-size:16px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;transition:all 150ms}
+.btn-submit:hover{background:#222}
+.btn-submit:disabled{opacity:.4;cursor:not-allowed}
+.success-box{text-align:center;padding:60px 24px}
+.success-icon{font-size:48px;margin-bottom:16px}
+.success-title{font-size:22px;font-weight:800;margin-bottom:8px}
+.success-text{color:var(--text-2);font-size:15px;line-height:1.7}
+.error-box{background:#FADBD8;border:1px solid #C0392B;border-radius:var(--r);padding:16px;color:#C0392B;font-size:14px;margin-bottom:24px}
+.loading{text-align:center;padding:60px 24px;color:var(--text-3);font-size:15px}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo-name">Humvance</div>
+</header>
+<div class="page" id="root">
+  <div class="loading">جاري تحميل الأسئلة...</div>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const ref = params.get('ref');
+const t = params.get('t');
+const root = document.getElementById('root');
+
+async function load() {
+  if (!ref || !t) { root.innerHTML = '<div class="error-box">الرابط غير صحيح. يرجى التواصل مع فريق Humvance.</div>'; return; }
+  try {
+    const r = await fetch(`/api/questions?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(t)}`);
+    const d = await r.json();
+    if (!r.ok) { root.innerHTML = `<div class="error-box">${d.error || 'حدث خطأ'}</div>`; return; }
+    if (d.alreadyAnswered) { renderSuccess(); return; }
+    renderQuestions(d);
+  } catch (e) {
+    root.innerHTML = '<div class="error-box">تعذر تحميل الأسئلة. يرجى المحاولة مجدداً.</div>';
+  }
+}
+
+function renderQuestions(data) {
+  const qs = data.questions || [];
+  root.innerHTML = `
+    <div class="intro-card">
+      <div class="company-label">للشركة</div>
+      <div class="company-name">${esc(data.companyName || '')}</div>
+      <div class="intro-text">شكراً لتواصلكم مع Humvance. لمساعدتكم بشكل أفضل، نحتاج إلى فهم وضعكم الحالي بشكل أعمق. يرجى الإجابة على الأسئلة التالية بصراحة وتفصيل — إجاباتكم تساعدنا على تقديم خدمة مخصصة لاحتياجاتكم.</div>
+    </div>
+    <div class="q-list" id="q-list">
+      ${qs.map((q, i) => `
+        <div class="q-item">
+          <div class="q-num">السؤال ${i + 1} من ${qs.length}</div>
+          <div class="q-area">${esc(q.area || '')}</div>
+          <div class="q-text">${esc(q.question)}</div>
+          <textarea class="q-textarea" id="ans-${q.id}" placeholder="اكتب إجابتك هنا..."></textarea>
+        </div>
+      `).join('')}
+    </div>
+    <div class="actions">
+      <button class="btn-submit" id="submit-btn" onclick="submit()">إرسال الإجابات</button>
+    </div>
+  `;
+  window._questions = qs;
+}
+
+async function submit() {
+  const qs = window._questions || [];
+  const answers = qs.map(q => ({ id: q.id, answer: (document.getElementById('ans-' + q.id)?.value || '').trim() }));
+  const empty = answers.filter(a => !a.answer).length;
+  if (empty > 0) {
+    const confirmed = confirm(`${empty} سؤال/أسئلة بدون إجابة. هل تريد الإرسال على أي حال؟`);
+    if (!confirmed) return;
+  }
+  const btn = document.getElementById('submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري الإرسال...'; }
+  try {
+    const r = await fetch(`/api/questions?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(t)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers })
+    });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error || 'حدث خطأ'); if (btn) { btn.disabled = false; btn.textContent = 'إرسال الإجابات'; } return; }
+    renderSuccess();
+  } catch (e) {
+    alert('تعذر الإرسال. يرجى المحاولة مجدداً.');
+    if (btn) { btn.disabled = false; btn.textContent = 'إرسال الإجابات'; }
+  }
+}
+
+function renderSuccess() {
+  root.innerHTML = `
+    <div class="success-box">
+      <div class="success-icon">✅</div>
+      <div class="success-title">تم إرسال إجاباتك بنجاح</div>
+      <div class="success-text">شكراً لوقتك. سيراجع فريق Humvance إجاباتك وسيتواصل معك قريباً لتحديد الخطوات التالية.</div>
+    </div>
+  `;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humvance — نظام الإدارة الداخلي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0A0A0A;--white:#FFFFFF;--warm:#F6F5F1;--border:#E2E1DD;--border-strong:#C8C7C3;--surface:#FFFFFF;--text:#0A0A0A;--text-2:#444444;--text-3:#777777;--accent:#1A5CFF;--success:#1A7A4A;--warning:#A04000;--error:#C0392B;--font-en:'Inter',system-ui,sans-serif;--font-ar:'IBM Plex Sans Arabic','Arial',sans-serif;--r:8px;--sidebar:240px}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--warm:#111110;--surface:#1A1A19;--border:#2E2E2C;--border-strong:#444442;--text:#F0EFE9;--text-2:#BBBBBB;--text-3:#888785}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-ar);font-size:15px;color:var(--text);background:var(--warm);direction:rtl;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:15px}
+/* ── Layout ── */
+html,body{height:100%;overflow:hidden}
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:var(--sidebar);background:var(--black);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:100}
+.main{margin-right:var(--sidebar);flex:1;display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+/* ── Sidebar ── */
+.sb-logo{padding:20px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-logo-name{font-family:var(--font-en);font-size:16px;font-weight:800;color:#fff}
+.sb-logo-tag{font-size:10px;color:rgba(255,255,255,.35);font-family:var(--font-en);letter-spacing:.06em}
+.sb-section{padding:16px 12px 8px;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:rgba(255,255,255,.55);border-radius:6px;margin:0 8px;cursor:pointer;transition:all 150ms}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-item.active{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+.sb-item .ic{font-size:16px;width:20px;text-align:center}
+.sb-footer{margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.08)}
+.sb-logout{width:100%;text-align:center;padding:9px;font-size:13px;color:rgba(255,255,255,.4);border-radius:6px;cursor:pointer;transition:all 150ms}
+.sb-logout:hover{background:rgba(255,255,255,.07);color:#fff}
+/* ── Top bar ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:15px;font-weight:700}
+.topbar-breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-3)}
+.topbar-breadcrumb .sep{color:var(--border-strong)}
+.topbar-breadcrumb .crumb{cursor:pointer;color:var(--text-3)}
+.topbar-breadcrumb .crumb:hover{color:var(--text)}
+.topbar-breadcrumb .current{color:var(--text);font-weight:600}
+/* ── Content ── */
+.content{padding:28px;flex:1}
+/* ── Stats ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;text-align:center}
+.stat-val{font-family:var(--font-en);font-size:28px;font-weight:900;color:var(--text);line-height:1}
+.stat-lbl{font-size:12px;color:var(--text-3);margin-top:6px;font-weight:500}
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 22px;font-size:14px;font-weight:600;border-radius:var(--r);transition:all 150ms;white-space:nowrap;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--black);color:#fff}.btn-primary:hover{background:#222}
+.btn-outline{border:1.5px solid var(--border-strong);color:var(--text)}.btn-outline:hover{border-color:var(--black)}
+.btn-ghost{color:var(--text-3);padding:8px 14px;font-size:13px}.btn-ghost:hover{color:var(--text);background:var(--border)}
+.btn-danger{background:#FADBD8;color:var(--error);border:1px solid #F1948A}.btn-danger:hover{background:#F1948A;color:#fff}
+.btn-sm{padding:7px 14px;font-size:13px}
+.btn-xs{padding:5px 10px;font-size:12px}
+/* ── Pipeline list ── */
+.stage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.stage-title{font-size:18px;font-weight:800}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.filter-chip{padding:6px 14px;border:1.5px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;background:var(--surface);transition:all 150ms}
+.filter-chip:hover{border-color:var(--black);color:var(--text)}
+.filter-chip.active{background:var(--black);color:#fff;border-color:var(--black)}
+.client-list{display:flex;flex-direction:column;gap:10px}
+.client-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 22px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 150ms}
+.client-card:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.client-ref{font-family:var(--font-en);font-size:11px;font-weight:700;color:var(--text-3)}
+.client-name{font-size:15px;font-weight:700;margin-top:2px}
+.client-meta{font-size:12px;color:var(--text-3);margin-top:2px}
+.client-stage-badge{margin-right:auto;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.stage-new{background:#EBF5FB;color:#1A5276}.stage-p1{background:#FEF9E7;color:#7D6608}.stage-p2{background:#FEF5E7;color:#A04000}.stage-waiting{background:#F9EBEA;color:#922B21}.stage-p3{background:#EAFAF1;color:#1A7A4A}.stage-done{background:#D5F5E3;color:#1A7A4A}.stage-lost{background:var(--warm);color:var(--text-3)}
+/* ── Client workspace ── */
+.workspace{display:flex;flex-direction:column;gap:0}
+.phase-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:0;overflow-x:auto}
+.phase-tab{padding:14px 18px;font-size:13px;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;transition:all 150ms;display:flex;align-items:center;gap:7px}
+.phase-tab:hover{color:var(--text)}
+.phase-tab.active{color:var(--black);border-color:var(--black)}
+.phase-tab.done .phase-dot{background:var(--success)}
+.phase-tab.locked{opacity:.4;cursor:default;pointer-events:none}
+.phase-dot{width:7px;height:7px;border-radius:50%;background:var(--border-strong)}
+.phase-tab.active .phase-dot{background:var(--black)}
+.phase-content{padding:28px}
+/* ── Client info sidebar ── */
+.ws-layout{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.info-card-title{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.info-row{display:flex;align-items:flex-start;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);gap:12px;font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text-3);flex-shrink:0}
+.info-val{color:var(--text);font-weight:500;text-align:left}
+.score-badge{background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;margin-top:12px}
+.score-big{font-family:var(--font-en);font-size:36px;font-weight:900;color:var(--black)}
+.score-lbl{font-size:11px;color:var(--text-3);margin-top:2px}
+/* ── Agent output ── */
+.agent-section{margin-bottom:20px}
+.agent-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px}
+.agent-card-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.agent-card-body{font-size:14px;color:var(--text-2);line-height:1.75}
+.agent-card.highlight{border-color:var(--black);background:var(--warm)}
+.agent-card.highlight .agent-card-body{color:var(--text);font-weight:600}
+.agent-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.agent-list li{font-size:14px;color:var(--text-2);padding:6px 12px;background:var(--warm);border-radius:6px;line-height:1.6}
+.agent-list li::before{content:'•';margin-left:8px;color:var(--text-3)}
+/* ── Section block ── */
+.section-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+.section-title{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+/* ── Question items ── */
+.q-list{display:flex;flex-direction:column;gap:10px}
+.q-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.q-item-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.q-num{font-family:var(--font-en);font-size:13px;font-weight:800;color:var(--black);min-width:28px}
+.q-area-tag{padding:2px 10px;background:var(--warm);border:1px solid var(--border);border-radius:99px;font-size:11px;font-weight:600;color:var(--text-2);white-space:nowrap}
+.q-item-actions{margin-right:auto;display:flex;gap:6px;flex-shrink:0}
+.q-text{font-size:14px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:8px}
+.q-why{font-size:12px;color:var(--text-3);padding:6px 10px;background:var(--warm);border-radius:4px;border-right:3px solid var(--border-strong)}
+.q-edit-form{display:flex;flex-direction:column;gap:8px}
+.form-input{width:100%;padding:10px 12px;background:var(--warm);border:1.5px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;font-family:inherit;transition:border 150ms;line-height:1.6}
+.form-input:focus{outline:none;border-color:var(--black)}
+.form-input::placeholder{color:var(--text-3)}
+textarea.form-input{resize:vertical;min-height:80px}
+.form-label{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:3px}
+/* ── Answers view ── */
+.answer-item{border-bottom:1px solid var(--border);padding:14px 0}
+.answer-item:last-child{border-bottom:none}
+.answer-q{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.answer-text{font-size:13px;color:var(--text-2);line-height:1.7;padding:8px 12px;background:var(--warm);border-radius:var(--r)}
+/* ── Status badges ── */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;gap:5px}
+.badge-new{background:#EBF5FB;color:#1A5276}
+.badge-sent{background:#FEF5E7;color:#A04000}
+.badge-waiting{background:#FEF9E7;color:#7D6608}
+.badge-answered{background:#EAFAF1;color:#1A7A4A}
+.badge-done{background:#D5F5E3;color:#1A7A4A}
+/* ── Notes ── */
+.notes-area{width:100%;padding:12px 14px;background:var(--warm);border:1.5px solid var(--border);border-radius:var(--r);font-family:var(--font-ar);font-size:14px;color:var(--text);resize:vertical;min-height:80px;line-height:1.7;transition:border 150ms}
+.notes-area:focus{outline:none;border-color:var(--black)}
+/* ── Phase stub ── */
+.phase-stub{text-align:center;padding:60px 24px;color:var(--text-3)}
+.phase-stub-icon{font-size:36px;margin-bottom:14px}
+.phase-stub-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.phase-stub-desc{font-size:13px;line-height:1.7}
+/* ── Link box ── */
+.link-box{background:var(--warm);border:1.5px solid var(--border-strong);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:10px;word-break:break-all}
+.link-url{font-family:var(--font-en);font-size:13px;color:var(--text-2);flex:1;direction:ltr;text-align:left}
+/* ── Toast ── */
+#toasts{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:min(360px,90vw)}
+.toast{padding:12px 18px;background:var(--black);color:#fff;border-radius:var(--r);font-size:14px;font-weight:500;animation:tIn .25s ease}
+.toast.success{background:var(--success)}.toast.error{background:var(--error)}
+@keyframes tIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+/* ── Login ── */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--warm)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:44px 40px;width:min(400px,90vw);text-align:center}
+.login-logo{font-family:var(--font-en);font-size:20px;font-weight:900;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text-3);margin-bottom:28px}
+.login-field{text-align:right;margin-bottom:16px}
+.login-label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-2)}
+/* ── Empty state ── */
+.empty{text-align:center;padding:60px 24px;color:var(--text-3)}
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--border);border-top-color:var(--black);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-row{display:flex;align-items:center;gap:10px;color:var(--text-3);font-size:14px;padding:16px 0}
+/* ── Responsive ── */
+@media(max-width:768px){.sidebar{display:none}.main{margin-right:0}.stats-row{grid-template-columns:1fr 1fr}.ws-layout{grid-template-columns:1fr}}
+/* ── Diagnostic Engine ── */
+.conf-bar-wrap{background:var(--border);border-radius:99px;height:6px;overflow:hidden;width:120px;flex-shrink:0}
+.conf-bar{height:100%;border-radius:99px;transition:width .4s}
+.conf-low{background:#E74C3C}.conf-medium{background:#F39C12}.conf-high{background:#2ECC71}.conf-confirmed{background:#1A7A4A}
+.hyp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.hyp-card.status-approved{border-right:4px solid var(--success)}
+.hyp-card.status-rejected{opacity:.5}
+.hyp-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.hyp-id{font-family:var(--font-en);font-size:11px;font-weight:800;background:var(--warm);border:1px solid var(--border);padding:2px 8px;border-radius:4px;color:var(--text-3)}
+.hyp-conf{font-family:var(--font-en);font-size:12px;font-weight:700;min-width:38px;text-align:left}
+.hyp-text{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px}
+.sev-critical{color:#C0392B;background:#FADBD8;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.sev-major{color:#A04000;background:#FDEBD0;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.sev-minor{color:#777;background:var(--warm);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.diag-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.diag-tab{padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.diag-tab:hover{color:var(--text)}
+.diag-tab.active{color:var(--black);border-color:var(--black)}
+.domain-chip{display:inline-flex;padding:4px 12px;background:var(--warm);border:1px solid var(--border);border-radius:99px;font-size:12px;font-weight:600;color:var(--text-2);margin:3px}
+.domain-chip.primary{background:#EBF5FB;border-color:#AED6F1;color:#1A5276}
+.ev-item{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.ev-item:last-child{border-bottom:none}
+.ev-source{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.find-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.find-card.status-approved{border-right:4px solid var(--success)}
+.diag-answer-form{background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toasts"></div>
+<script>
+// ── Constants ──
+const STAGES = {
+  'new':          'طلب جديد',
+  'p1_review':    'المرحلة 1 — مراجعة أولية',
+  'p2_questions': 'المرحلة 2 — أسئلة أولية',
+  'p2_sent':      'أسئلة مرسلة',
+  'p2_waiting':   'انتظار رد العميل',
+  'p3_analysis':  'المرحلة 3 — تحليل الإجابات',
+  'p4_meeting':   'المرحلة 4 — اجتماع الاستكشاف',
+  'p5_post':      'المرحلة 5 — تحليل ما بعد الاجتماع',
+  'p6_deep':      'المرحلة 6 — الاستكشاف العميق',
+  'p6_waiting':   'انتظار الاستكشاف العميق',
+  'p7_final':     'المرحلة 7 — الاجتماع التفصيلي',
+  'p8_internal':  'المرحلة 8 — التحليل الداخلي',
+  'p9_scope':     'المرحلة 9 — تصميم الحل',
+  'p10_pricing':  'المرحلة 10 — التسعير',
+  'p11_approval': 'المرحلة 11 — اعتماد المؤسس',
+  'p12_ready':    'العرض جاهز',
+  'p13_sent':     'العرض مرسل',
+  'won':          'تم التعاقد ✓',
+  'lost':         'لم يكتمل'
+};
+const STAGE_CSS = {
+  'new':'stage-new','p1_review':'stage-p1','p2_questions':'stage-p2',
+  'p2_sent':'stage-waiting','p2_waiting':'stage-waiting',
+  'p3_analysis':'stage-p3','won':'stage-done','lost':'stage-lost'
+};
+const PHASE_TABS = [
+  {id:'p1',label:'المراجعة الأولية',num:'01'},
+  {id:'p2',label:'الأسئلة الأولية',num:'02'},
+  {id:'p3',label:'تحليل الإجابات',num:'03'},
+  {id:'p4',label:'اجتماع الاستكشاف',num:'04'},
+  {id:'p5',label:'تحليل ما بعد الاجتماع',num:'05'},
+  {id:'p6',label:'الاستكشاف العميق',num:'06'},
+  {id:'p7',label:'الاجتماع التفصيلي',num:'07'},
+  {id:'p8',label:'التحليل الداخلي',num:'08'},
+  {id:'p9',label:'تصميم الحل',num:'09'},
+  {id:'p10',label:'العرض والتسعير',num:'10'},
+  {id:'p11',label:'اعتماد المؤسس',num:'11'},
+  {id:'diagnostic',label:'DIAGNOSTIC',num:'⬡'}
+];
+
+// ── State ──
+const S = {
+  token: sessionStorage.getItem('hv_token'),
+  view: 'pipeline',
+  clients: [],
+  currentClient: null,
+  currentPhase: 'p1',
+  stageFilter: 'all',
+  editingQ: null,
+  editingHyp: null,
+  editingFind: null,
+  p2Questions: [],
+  orgs: [],
+  contacts: [],
+  currentDiagnostic: null,
+  diagTab: 'overview',
+  diagAnswers: {}
+};
+
+// ── Utils ──
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('ar-SA',{year:'numeric',month:'short',day:'numeric'}) : '—';
+const genToken = () => Array.from(crypto.getRandomValues(new Uint8Array(14))).map(b=>b.toString(36)).join('').slice(0,16);
+
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── API ──
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (S.token) opts.headers['Authorization'] = `Bearer ${S.token}`;
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  const d = await r.json();
+  if (r.status === 401) { logout(); return null; }
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+// ── Auth ──
+async function init() {
+  if (!S.token) { renderLogin(); return; }
+  try {
+    const s = await fetch('/api/auth/status', { headers: { Authorization: `Bearer ${S.token}` } });
+    const d = await s.json();
+    if (!d.authenticated) { S.token = null; sessionStorage.removeItem('hv_token'); renderLogin(); return; }
+    renderPipeline();
+  } catch { renderPipeline(); }
+}
+
+function renderLogin() {
+  document.getElementById('app').innerHTML = `
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-logo">Humvance</div>
+        <div class="login-sub">نظام الإدارة الداخلي</div>
+        <div class="login-field">
+          <label class="login-label">كلمة المرور</label>
+          <input type="password" id="lpwd" class="form-input" style="width:100%" placeholder="••••••••"
+            onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="doLogin()" id="login-btn">دخول</button>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('lpwd')?.focus(), 50);
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('lpwd')?.value;
+  if (!pwd) return;
+  const btn = document.getElementById('login-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'جاري التحقق...'; }
+  try {
+    const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pwd}) });
+    const d = await r.json();
+    if (!r.ok) { if(btn){btn.disabled=false;btn.textContent='دخول';} toast(d.error||'كلمة مرور غير صحيحة','error'); return; }
+    S.token = d.token;
+    sessionStorage.setItem('hv_token', d.token);
+    sessionStorage.setItem('hv_admin', '1');
+    renderPipeline();
+  } catch (e) { if(btn){btn.disabled=false;btn.textContent='دخول';} toast(e.message,'error'); }
+}
+
+function logout() {
+  S.token = null;
+  sessionStorage.removeItem('hv_token');
+  sessionStorage.removeItem('hv_admin');
+  renderLogin();
+}
+
+// ── Shell ──
+function shellHTML(mainContent) {
+  return `
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="sb-logo">
+          <div>
+            <div class="sb-logo-name">Humvance</div>
+            <div class="sb-logo-tag">INTERNAL OS</div>
+          </div>
+        </div>
+        <div class="sb-section">إدارة العملاء</div>
+        <div class="sb-item ${S.view==='pipeline'?'active':''}" onclick="renderPipeline()"><span class="ic">📋</span> Pipeline</div>
+        <div class="sb-section">CRM</div>
+        <div class="sb-item ${S.view==='orgs'?'active':''}" onclick="renderOrgs()"><span class="ic">🏢</span> الشركات</div>
+        <div class="sb-item ${S.view==='contacts'?'active':''}" onclick="renderContacts()"><span class="ic">👤</span> جهات الاتصال</div>
+        <div class="sb-footer">
+          <div class="sb-logout" onclick="logout()">تسجيل الخروج</div>
+        </div>
+      </aside>
+      <main class="main">${mainContent}</main>
+    </div>`;
+}
+
+// ── Pipeline ──
+async function renderPipeline() {
+  S.view = 'pipeline';
+  S.currentClient = null;
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar"><div class="topbar-title">Pipeline — عملاء Humvance</div></div>
+    <div class="content"><div class="loading-row"><div class="spinner"></div> جاري تحميل العملاء...</div></div>`);
+  try {
+    S.clients = await api('GET', '/api/client') || [];
+  } catch { S.clients = []; }
+  renderPipelineContent();
+}
+
+function stageCSS(stage) { return STAGE_CSS[stage] || 'stage-p1'; }
+
+function renderPipelineContent() {
+  const clients = S.stageFilter === 'all' ? S.clients : S.clients.filter(c => c.pipelineStage === S.stageFilter || (S.stageFilter === 'new' && !c.pipelineStage));
+  const total = S.clients.length;
+  const newCount = S.clients.filter(c => !c.pipelineStage || c.pipelineStage === 'new').length;
+  const active = S.clients.filter(c => c.pipelineStage && c.pipelineStage !== 'new' && c.pipelineStage !== 'won' && c.pipelineStage !== 'lost').length;
+  const won = S.clients.filter(c => c.pipelineStage === 'won').length;
+
+  const rows = clients.length
+    ? clients.map(c => {
+        const stage = c.pipelineStage || 'new';
+        const stageLabel = STAGES[stage] || stage;
+        return `<div class="client-card" onclick="openClient('${esc(c.ref)}')">
+          <div>
+            <div class="client-ref">${esc(c.ref)}</div>
+            <div class="client-name">${esc(c.companyName||'—')}</div>
+            <div class="client-meta">${esc(c.sector||'—')} · ${esc(c.city||'—')} · ${esc(c.numFulltime||'—')} موظف</div>
+          </div>
+          <div class="client-stage-badge ${stageCSS(stage)}">${esc(stageLabel)}</div>
+        </div>`;
+      }).join('')
+    : `<div class="empty">لا يوجد عملاء ${S.stageFilter !== 'all' ? 'في هذه المرحلة' : 'بعد'}</div>`;
+
+  const stageFilters = [['all','الكل'], ...Object.entries(STAGES)];
+
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar"><div class="topbar-title">Pipeline — عملاء Humvance</div></div>
+    <div class="content">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">إجمالي العملاء</div></div>
+        <div class="stat-card"><div class="stat-val">${newCount}</div><div class="stat-lbl">طلبات جديدة</div></div>
+        <div class="stat-card"><div class="stat-val">${active}</div><div class="stat-lbl">قيد العمل</div></div>
+        <div class="stat-card"><div class="stat-val">${won}</div><div class="stat-lbl">تم التعاقد</div></div>
+      </div>
+      <div class="filter-bar">
+        ${stageFilters.map(([k,l])=>`<div class="filter-chip ${S.stageFilter===k?'active':''}" onclick="setFilter('${k}')">${esc(l)}</div>`).join('')}
+      </div>
+      <div class="client-list">${rows}</div>
+    </div>`);
+}
+
+function setFilter(f) { S.stageFilter = f; renderPipelineContent(); }
+
+// ── Client workspace ──
+async function openClient(ref) {
+  S.view = 'client';
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar"><div class="loading-row" style="padding:0"><div class="spinner"></div> جاري تحميل العميل...</div></div>
+    <div class="content"></div>`);
+  try {
+    const client = await api('GET', `/api/client?ref=${encodeURIComponent(ref)}`);
+    if (!client) { toast('العميل غير موجود', 'error'); renderPipeline(); return; }
+    S.currentClient = client;
+    S.p2Questions = [...(client.phases?.p2?.questions || client.phases?.p2?.agentOutput?.questions || [])];
+    renderWorkspace();
+  } catch (e) { toast(e.message, 'error'); renderPipeline(); }
+}
+
+function renderWorkspace() {
+  const c = S.currentClient;
+  if (!c) return;
+  const phases = c.phases || {};
+  const tabs = PHASE_TABS.map(p => {
+    const done = phases[p.id]?.completedAt;
+    const active = S.currentPhase === p.id;
+    return `<div class="phase-tab ${active?'active':''} ${done?'done':''}" onclick="setPhase('${p.id}')">
+      <div class="phase-dot"></div>${p.num} · ${p.label}
+    </div>`;
+  }).join('');
+
+  const infoRows = [
+    ['الشركة', c.companyName], ['القطاع', c.sector], ['المدينة', c.city],
+    ['المسؤول', c.contactName], ['المسمى', c.contactTitle], ['الجوال', c.phone],
+    ['البريد', c.email], ['الموظفون', c.numFulltime ? c.numFulltime + ' موظف' : null],
+    ['السعودة', c.saudiPercent ? c.saudiPercent + '%' : null], ['الفروع', c.numBranches],
+    ['الخدمة المطلوبة', c.serviceInterest], ['الميزانية', c.budgetRange]
+  ].filter(([,v])=>v);
+
+  const stage = c.pipelineStage || 'new';
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="crumb" onclick="renderPipeline()">← Pipeline</span>
+        <span class="sep">/</span>
+        <span class="current">${esc(c.companyName||c.ref)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-family:'Inter',sans-serif;font-size:12px;background:var(--warm);border:1px solid var(--border);padding:4px 10px;border-radius:99px">${esc(c.ref)}</span>
+        <span class="badge ${STAGE_CSS[stage]||'badge-new'} badge">${esc(STAGES[stage]||stage)}</span>
+        <select class="form-input" style="width:auto;padding:6px 12px;font-size:13px" onchange="updateStage('${esc(c.ref)}',this.value)">
+          ${Object.entries(STAGES).map(([k,l])=>`<option value="${k}" ${stage===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="workspace">
+      <div class="phase-nav">${tabs}</div>
+      <div class="phase-content">
+        <div class="ws-layout">
+          <div id="phase-main"></div>
+          <div>
+            <div class="info-card">
+              <div class="info-card-title">بيانات العميل</div>
+              ${infoRows.map(([l,v])=>`<div class="info-row"><span class="info-label">${esc(l)}</span><span class="info-val">${esc(v)}</span></div>`).join('')}
+              <div class="score-badge">
+                <div class="score-big">${c.score||0}</div>
+                <div class="score-lbl">درجة النضج / 100</div>
+              </div>
+            </div>
+            ${c.additionalNotes?`<div class="info-card" style="margin-top:12px"><div class="info-card-title">ملاحظات العميل</div><div style="font-size:13px;color:var(--text-2);line-height:1.7">${esc(c.additionalNotes)}</div></div>`:''}
+            <div class="info-card" style="margin-top:12px" id="crm-link-card">
+              <div class="info-card-title">CRM</div>
+              ${c.orgId
+                ? `<div class="info-row"><span class="info-label">الشركة</span><span class="info-val" style="cursor:pointer;color:var(--accent)" onclick="renderOrgDetail('${esc(c.orgId)}')">${esc(c.orgName||c.companyName||'—')}</span></div>
+                   ${c.contactId?`<div class="info-row"><span class="info-label">جهة الاتصال</span><span class="info-val">${esc(c.contactName||'—')}</span></div>`:''}
+                   <button class="btn btn-ghost btn-xs" style="margin-top:8px;width:100%" onclick="showCrmPanel()">تعديل الربط</button>`
+                : `<div id="crm-panel"><button class="btn btn-outline btn-xs" style="width:100%;margin-top:4px" onclick="showCrmPanel()">+ ربط بجهة CRM</button></div>`
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+  renderPhase(S.currentPhase);
+}
+
+function setPhase(phase) { S.currentPhase = phase; renderPhase(phase); }
+
+function renderPhase(phase) {
+  const c = S.currentClient;
+  const phases = c?.phases || {};
+  $$('.phase-tab').forEach(t => { t.classList.toggle('active', t.getAttribute('onclick')===`setPhase('${phase}')`); });
+  const main = document.getElementById('phase-main');
+  if (!main) return;
+  if (phase === 'p1') renderP1(c, phases.p1);
+  else if (phase === 'p2') renderP2(c, phases.p2);
+  else if (phase === 'p3') renderP3(c, phases.p3);
+  else if (phase === 'diagnostic') { renderDiagnosticTab(c); }
+  else {
+    const tab = PHASE_TABS.find(t => t.id === phase);
+    main.innerHTML = `<div class="phase-stub">
+      <div class="phase-stub-icon">🔒</div>
+      <div class="phase-stub-title">المرحلة ${tab?.num||''} — ${tab?.label||phase}</div>
+      <div class="phase-stub-desc">هذه المرحلة ستُفعَّل بعد اكتمال المراحل السابقة.<br>الميزة قيد التطوير وستكون متاحة قريباً.</div>
+    </div>`;
+  }
+}
+
+// ── Phase 1 — Initial Review ──
+function renderP1(client, p1) {
+  const out = p1?.agentOutput;
+  const main = document.getElementById('phase-main');
+  let agentSection;
+  if (!out) {
+    agentSection = `
+      <div class="section-block" style="text-align:center;padding:32px">
+        <div style="font-size:32px;margin-bottom:12px">🤖</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:6px">Humvance Agent جاهز للتحليل</div>
+        <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">سيقرأ Agent بيانات العميل ويعطيك صورة أولية شاملة</div>
+        <button class="btn btn-primary" id="p1-analyze-btn" onclick="runP1Agent()">تحليل مع Humvance</button>
+        <div id="p1-status" style="margin-top:16px"></div>
+      </div>`;
+  } else {
+    agentSection = `
+      <div class="section-block">
+        <div class="section-title">تحليل Humvance Agent — المراجعة الأولية</div>
+        <div class="agent-card"><div class="agent-card-label">ما فهمناه عن الشركة</div><div class="agent-card-body">${esc(out.understood||'—')}</div></div>
+        <div class="agent-card"><div class="agent-card-label">الاحتياج الظاهر</div><div class="agent-card-body">${esc(out.apparent_needs||'—')}</div></div>
+        <div class="agent-card"><div class="agent-card-label">ما لا نعرفه بعد</div>
+          <ul class="agent-list">${(out.unknown||[]).map(i=>`<li>${esc(i)}</li>`).join('')||'<li>—</li>'}</ul>
+        </div>
+        <div class="agent-card"><div class="agent-card-label">ما يحتاج فهم أعمق</div>
+          <ul class="agent-list">${(out.concerns||[]).map(i=>`<li>${esc(i)}</li>`).join('')||'<li>—</li>'}</ul>
+        </div>
+        <div class="agent-card highlight"><div class="agent-card-label">الخطوة التالية الموصى بها</div><div class="agent-card-body">${esc(out.next_step||'—')}</div></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="runP1Agent()">إعادة التوليد</button>
+          <span style="font-size:12px;color:var(--text-3);align-self:center">تم التوليد: ${fmtDate(p1?.generatedAt)}</span>
+        </div>
+      </div>`;
+  }
+
+  main.innerHTML = `
+    ${agentSection}
+    <div class="section-block">
+      <div class="section-title">ملاحظات المؤسس — المرحلة 1</div>
+      <textarea class="notes-area" id="p1-notes" placeholder="أضف ملاحظاتك وانطباعاتك عن هذا العميل...">${esc(p1?.notes||'')}</textarea>
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="saveP1Notes()">حفظ الملاحظات</button>
+        ${out ? `<button class="btn btn-primary" onclick="completeP1()">اكتملت المراجعة — الانتقال للمرحلة 2 →</button>` : ''}
+      </div>
+    </div>`;
+}
+
+async function runP1Agent() {
+  const btn = document.getElementById('p1-analyze-btn');
+  const status = document.getElementById('p1-status');
+  if (btn) btn.disabled = true;
+  if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> Humvance يحلل البيانات...</div>`;
+  else {
+    const main = document.getElementById('phase-main');
+    if (main) { const s = main.querySelector('.section-block'); if (s) { const d = document.createElement('div'); d.className='loading-row'; d.innerHTML='<div class="spinner"></div> إعادة التوليد...'; s.appendChild(d); } }
+  }
+  try {
+    const d = await api('POST', '/api/agent', { phase: 'p1', ref: S.currentClient.ref });
+    if (!d) return;
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    renderP1(S.currentClient, S.currentClient.phases?.p1);
+    toast('اكتمل التحليل', 'success');
+  } catch (e) { toast(e.message, 'error'); if (btn) btn.disabled = false; }
+}
+
+async function saveP1Notes() {
+  const notes = document.getElementById('p1-notes')?.value || '';
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`, { phases: { p1: { notes } } });
+    S.currentClient.phases = S.currentClient.phases || {};
+    S.currentClient.phases.p1 = { ...(S.currentClient.phases.p1||{}), notes };
+    toast('تم حفظ الملاحظات', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function completeP1() {
+  const notes = document.getElementById('p1-notes')?.value || '';
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`, {
+      phases: { p1: { notes, completedAt: Date.now() } },
+      pipelineStage: 'p2_questions'
+    });
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    toast('تم إكمال المرحلة 1 — جاري تشغيل Diagnostic Engine...', 'success');
+    setPhase('p2');
+    // Auto-trigger diagnostic router so hypotheses are ready before P2 questions
+    try {
+      const d = await api('POST', '/api/agent', { phase: 'diagnostic_router', ref: S.currentClient.ref });
+      if (d?.output) {
+        S.currentDiagnostic = d.output;
+        toast('اكتمل التشخيص الأولي', 'success');
+      }
+    } catch (diagErr) { console.error('[diag_router after P1]', diagErr.message); }
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Phase 2 — Initial Questions ──
+function renderP2(client, p2) {
+  const main = document.getElementById('phase-main');
+  const p1Done = client.phases?.p1?.completedAt;
+  if (!p1Done && !p2?.agentOutput) {
+    main.innerHTML = `<div class="phase-stub"><div class="phase-stub-icon">⚠️</div><div class="phase-stub-title">أكمل المرحلة 1 أولاً</div><div class="phase-stub-desc">يجب اكتمال مرحلة المراجعة الأولية قبل توليد الأسئلة.</div></div>`;
+    return;
+  }
+  const questions = S.p2Questions;
+  const sentAt = p2?.sentAt;
+  const clientAnswers = p2?.clientAnswers;
+  const clientToken = p2?.clientToken;
+  const questionsLink = clientToken ? `${location.origin}/questions?ref=${encodeURIComponent(client.ref)}&t=${encodeURIComponent(clientToken)}` : null;
+
+  let questionsSection;
+  if (clientAnswers) {
+    const qs = p2?.questions || questions;
+    questionsSection = `
+      <div class="section-block">
+        <div class="section-title">رد العميل على الأسئلة الأولية <span class="badge badge-answered" style="margin-right:8px">✓ تم الرد ${fmtDate(p2.answeredAt)}</span></div>
+        ${qs.map((q, i) => {
+          const ans = clientAnswers.find(a => a.id === q.id) || clientAnswers[i] || {};
+          return `<div class="answer-item">
+            <div class="answer-q">${i+1}. ${esc(q.question)}</div>
+            <div class="answer-text">${esc(ans.answer || '—')}</div>
+          </div>`;
+        }).join('')}
+        <div style="margin-top:16px"><button class="btn btn-primary" onclick="setPhase('p3')">الانتقال للمرحلة 3 — تحليل الإجابات →</button></div>
+      </div>`;
+  } else if (sentAt) {
+    questionsSection = `
+      <div class="section-block">
+        <div class="section-title">الأسئلة الأولية <span class="badge badge-sent" style="margin-right:8px">مرسلة ${fmtDate(sentAt)}</span></div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:13px;color:var(--text-3);margin-bottom:8px">رابط العميل — انسخه وأرسله يدوياً:</div>
+          <div class="link-box">
+            <div class="link-url">${esc(questionsLink)}</div>
+            <button class="btn btn-outline btn-sm" onclick="copyLink()">نسخ</button>
+          </div>
+        </div>
+        <div class="q-list">${(p2?.questions||[]).map((q,i)=>`
+          <div class="q-item">
+            <div class="q-item-header">
+              <div class="q-num">${i+1}</div>
+              <div class="q-area-tag">${esc(q.area||'')}</div>
+            </div>
+            <div class="q-text">${esc(q.question)}</div>
+          </div>`).join('')}
+        </div>
+        <div class="loading-row" style="margin-top:16px;color:var(--warning)">⏳ في انتظار رد العميل</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="refreshClient()">تحديث</button>
+      </div>`;
+  } else if (questions.length) {
+    questionsSection = `
+      <div class="section-block">
+        <div class="section-title">مسودة الأسئلة الأولية</div>
+        <div class="q-list" id="q-list">
+          ${questions.map((q, i) => renderQItem(q, i)).join('')}
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="addQuestion()">+ إضافة سؤال</button>
+          <button class="btn btn-ghost btn-sm" onclick="runP2Agent()">إعادة التوليد</button>
+          <button class="btn btn-primary" onclick="approveAndSend()">اعتماد وإرسال للعميل →</button>
+        </div>
+      </div>`;
+  } else {
+    questionsSection = `
+      <div class="section-block" style="text-align:center;padding:32px">
+        <div style="font-size:32px;margin-bottom:12px">💬</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:6px">توليد أسئلة مخصصة لهذا العميل</div>
+        <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">Humvance سيبني أسئلة مخصصة بناءً على وضع الشركة والمراجعة الأولية</div>
+        <button class="btn btn-primary" id="p2-gen-btn" onclick="runP2Agent()">توليد الأسئلة مع Humvance</button>
+        <div id="p2-status" style="margin-top:16px"></div>
+      </div>`;
+  }
+
+  main.innerHTML = `
+    ${questionsSection}
+    <div class="section-block">
+      <div class="section-title">ملاحظات المؤسس — المرحلة 2</div>
+      <textarea class="notes-area" id="p2-notes" placeholder="أضف ملاحظاتك حول الأسئلة أو العميل...">${esc(p2?.notes||'')}</textarea>
+      <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="saveP2Notes()">حفظ</button></div>
+    </div>`;
+}
+
+function renderQItem(q, i, editing=false) {
+  if (editing || S.editingQ === q.id) {
+    return `<div class="q-item" id="qcard-${esc(q.id)}">
+      <div class="q-edit-form">
+        <div><div class="form-label">المجال</div><input class="form-input" id="qarea-${esc(q.id)}" value="${esc(q.area||'')}" placeholder="مثال: الهيكل التنظيمي"></div>
+        <div><div class="form-label">نص السؤال</div><textarea class="form-input" id="qtext-${esc(q.id)}" rows="3" placeholder="اكتب السؤال هنا">${esc(q.question||'')}</textarea></div>
+        <div><div class="form-label">لماذا نسأل هذا (للمؤسس فقط)</div><input class="form-input" id="qwhy-${esc(q.id)}" value="${esc(q.why||'')}" placeholder="الهدف من هذا السؤال"></div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary btn-xs" onclick="saveQEdit('${esc(q.id)}')">حفظ</button>
+          <button class="btn btn-ghost btn-xs" onclick="cancelQEdit()">إلغاء</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return `<div class="q-item" id="qcard-${esc(q.id)}">
+    <div class="q-item-header">
+      <div class="q-num">${i+1}</div>
+      <div class="q-area-tag">${esc(q.area||'')}</div>
+      <div class="q-item-actions">
+        <button class="btn btn-ghost btn-xs" onclick="editQ('${esc(q.id)}')">تعديل</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteQ('${esc(q.id)}')">حذف</button>
+      </div>
+    </div>
+    <div class="q-text">${esc(q.question||'')}</div>
+    ${q.why?`<div class="q-why">💡 ${esc(q.why)}</div>`:''}
+  </div>`;
+}
+
+async function runP2Agent() {
+  const btn = document.getElementById('p2-gen-btn');
+  const status = document.getElementById('p2-status');
+  if (btn) btn.disabled = true;
+  if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> Humvance يبني الأسئلة...</div>`;
+  try {
+    const d = await api('POST', '/api/agent', { phase: 'p2', ref: S.currentClient.ref });
+    if (!d) return;
+    if (d.output?.questions?.length) {
+      S.p2Questions = [...d.output.questions];
+    }
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    if (!S.p2Questions.length) {
+      S.p2Questions = [...(S.currentClient.phases?.p2?.agentOutput?.questions || [])];
+    }
+    renderP2(S.currentClient, S.currentClient.phases?.p2);
+    if (S.p2Questions.length) {
+      toast('تم توليد الأسئلة', 'success');
+    } else {
+      toast('لم تُولَّد أسئلة — يرجى المحاولة مرة أخرى', 'error');
+      if (btn) btn.disabled = false;
+    }
+  } catch (e) { toast(e.message, 'error'); if (btn) btn.disabled = false; }
+}
+
+function editQ(id) { S.editingQ = id; refreshQList(); }
+function cancelQEdit() { S.editingQ = null; refreshQList(); }
+
+function saveQEdit(id) {
+  const idx = S.p2Questions.findIndex(q => q.id === id);
+  if (idx < 0) return;
+  S.p2Questions[idx] = {
+    ...S.p2Questions[idx],
+    area: document.getElementById(`qarea-${id}`)?.value || S.p2Questions[idx].area,
+    question: document.getElementById(`qtext-${id}`)?.value || S.p2Questions[idx].question,
+    why: document.getElementById(`qwhy-${id}`)?.value || S.p2Questions[idx].why
+  };
+  S.editingQ = null;
+  refreshQList();
+}
+
+function deleteQ(id) {
+  if (!confirm('حذف هذا السؤال؟')) return;
+  S.p2Questions = S.p2Questions.filter(q => q.id !== id);
+  refreshQList();
+}
+
+function addQuestion() {
+  const newQ = { id: 'q' + Date.now(), area: '', question: '', why: '' };
+  S.p2Questions.push(newQ);
+  S.editingQ = newQ.id;
+  refreshQList();
+}
+
+function refreshQList() {
+  const list = document.getElementById('q-list');
+  if (!list) return;
+  list.innerHTML = S.p2Questions.map((q, i) => renderQItem(q, i)).join('');
+}
+
+async function approveAndSend() {
+  if (!S.p2Questions.length) { toast('لا توجد أسئلة للإرسال', 'error'); return; }
+  const clientEmail = S.currentClient.email;
+  const confirmMsg = clientEmail
+    ? `اعتماد ${S.p2Questions.length} سؤال وإرسالها بالإيميل إلى:\n${clientEmail}؟`
+    : `اعتماد ${S.p2Questions.length} سؤال؟\n(لا يوجد إيميل للعميل — ستحصل على الرابط فقط)`;
+  if (!confirm(confirmMsg)) return;
+  const token = genToken();
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`, {
+      phases: { p2: { questions: S.p2Questions, clientToken: token, sentAt: Date.now() } },
+      pipelineStage: 'p2_sent'
+    });
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    renderP2(S.currentClient, S.currentClient.phases?.p2);
+    if (clientEmail) {
+      try {
+        const emailRes = await api('POST', `/api/send-questions`, { ref: S.currentClient.ref });
+        if (emailRes) {
+          toast(`تم الإرسال بالإيميل إلى ${emailRes.sentTo}`, 'success');
+          return;
+        }
+      } catch (emailErr) {
+        toast('تم حفظ الأسئلة — فشل الإيميل: ' + emailErr.message, 'error');
+      }
+    }
+    toast('تم الاعتماد — انسخ الرابط وأرسله للعميل', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function copyLink() {
+  const p2 = S.currentClient?.phases?.p2;
+  if (!p2?.clientToken) return;
+  const link = `${location.origin}/questions?ref=${encodeURIComponent(S.currentClient.ref)}&t=${encodeURIComponent(p2.clientToken)}`;
+  navigator.clipboard?.writeText(link).then(() => toast('تم نسخ الرابط', 'success')).catch(() => {
+    prompt('انسخ الرابط:', link);
+  });
+}
+
+async function saveP2Notes() {
+  const notes = document.getElementById('p2-notes')?.value || '';
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`, { phases: { p2: { notes } } });
+    toast('تم الحفظ', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function refreshClient() {
+  try {
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    S.p2Questions = [...(S.currentClient.phases?.p2?.questions || S.currentClient.phases?.p2?.agentOutput?.questions || [])];
+    renderWorkspace();
+    setPhase(S.currentPhase);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Phase 3 — Analyze Initial Answers ──
+function renderP3(client, p3) {
+  const main = document.getElementById('phase-main');
+  const p2 = client.phases?.p2;
+  if (!p2?.clientAnswers) {
+    main.innerHTML = `<div class="phase-stub"><div class="phase-stub-icon">⏳</div><div class="phase-stub-title">في انتظار رد العميل</div><div class="phase-stub-desc">هذه المرحلة تُفعَّل بعد استلام إجابات العميل على الأسئلة الأولية.</div></div>`;
+    return;
+  }
+  const out = p3?.agentOutput;
+  let agentSection;
+  if (!out) {
+    agentSection = `
+      <div class="section-block" style="text-align:center;padding:32px">
+        <div style="font-size:32px;margin-bottom:12px">🔍</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:6px">تحليل إجابات العميل</div>
+        <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">Humvance سيحلل الإجابات ويحدد المشاكل والفرص</div>
+        <button class="btn btn-primary" onclick="runP3Agent()">تحليل الإجابات مع Humvance</button>
+        <div id="p3-status" style="margin-top:16px"></div>
+      </div>`;
+  } else if (out.hypotheses_to_challenge || out.evidence_to_request || out.contradictions_to_discuss) {
+    // New diagnostic-driven P3 format
+    const hypsHtml = (out.hypotheses_to_challenge||[]).map(h => `
+      <div class="find-card" style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);margin-bottom:4px">${esc(h.hypId||'')}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">${esc(h.hypothesis||'')}</div>
+        <div style="font-size:12px;color:var(--primary);margin-bottom:4px">سؤال التحدي: ${esc(h.challenge_question||'')}</div>
+        <div style="font-size:11px;color:var(--text-3)">دليل للتحقق: ${esc(h.evidence_to_verify||'')}</div>
+      </div>`).join('');
+    const evReqHtml = (out.evidence_to_request||[]).map(e => `
+      <div class="find-card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="font-size:12px;color:var(--text-3)">${esc(e.area||'')}</div>
+          <span class="badge badge-waiting" style="font-size:10px">${esc(e.importance||'')}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);margin-top:4px">${esc(e.question||'')}</div>
+      </div>`).join('');
+    const contrHtml = (out.contradictions_to_discuss||[]).map(c => `
+      <div class="find-card" style="margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;color:var(--warm);margin-bottom:4px">${esc(c.description||'')}</div>
+        <div style="font-size:11px;color:var(--text-3)">📌 ${esc(c.item1||'')} vs ${esc(c.item2||'')}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px">مقترح: ${esc(c.resolution_approach||'')}</div>
+      </div>`).join('');
+    const objHtml = (out.meeting_objectives||[]).map(o=>`<li>${esc(o)}</li>`).join('');
+    agentSection = `
+      <div class="section-block">
+        <div class="section-title">Humvance — تحضير اجتماع الاستكشاف (مدفوع بالتشخيص)</div>
+        ${hypsHtml ? `<div class="agent-card"><div class="agent-card-label">فرضيات للاختبار (${(out.hypotheses_to_challenge||[]).length})</div>${hypsHtml}</div>` : ''}
+        ${evReqHtml ? `<div class="agent-card"><div class="agent-card-label">أدلة إضافية مطلوبة</div>${evReqHtml}</div>` : ''}
+        ${contrHtml ? `<div class="agent-card"><div class="agent-card-label">تناقضات للمناقشة</div>${contrHtml}</div>` : ''}
+        ${objHtml ? `<div class="agent-card"><div class="agent-card-label">أهداف الاجتماع</div><ul class="agent-list">${objHtml}</ul></div>` : ''}
+        ${out.agenda_template ? `<div class="agent-card"><div class="agent-card-label">مسودة جدول الأعمال</div><div class="agent-card-body" style="white-space:pre-line">${esc(out.agenda_template)}</div></div>` : ''}
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="runP3Agent()">إعادة التوليد</button>
+          <span style="font-size:12px;color:var(--text-3);align-self:center">تم التوليد: ${fmtDate(p3?.generatedAt)}</span>
+        </div>
+      </div>`;
+  } else {
+    // Legacy P3 format
+    const sections = [
+      ['ما أصبحنا نعرفه', out.now_know, false],
+      ['المشاكل الرئيسية المحددة', out.main_problems, true],
+      ['الأسباب الجذرية المحتملة', out.root_causes, true],
+      ['معلومات لا تزال ناقصة', out.missing, true],
+      ['تناقضات تحتاج توضيح', out.contradictions, true],
+      ['مواضيع للنقاش في الاجتماع', out.discussion_areas, true],
+      ['أهداف اجتماع الاستكشاف', out.meeting_objectives, true]
+    ];
+    agentSection = `
+      <div class="section-block">
+        <div class="section-title">تحليل Humvance Agent — إجابات المرحلة 2</div>
+        ${sections.map(([label, val, isList]) => {
+          if (!val || (Array.isArray(val) && !val.length)) return '';
+          const body = isList && Array.isArray(val)
+            ? `<ul class="agent-list">${val.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`
+            : `<div class="agent-card-body">${esc(String(val))}</div>`;
+          return `<div class="agent-card"><div class="agent-card-label">${label}</div>${body}</div>`;
+        }).join('')}
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="runP3Agent()">إعادة التوليد</button>
+          <span style="font-size:12px;color:var(--text-3);align-self:center">تم التوليد: ${fmtDate(p3?.generatedAt)}</span>
+        </div>
+      </div>`;
+  }
+  main.innerHTML = `
+    ${agentSection}
+    <div class="section-block">
+      <div class="section-title">ملاحظات المؤسس — المرحلة 3</div>
+      <textarea class="notes-area" id="p3-notes" placeholder="ملاحظاتك بعد مراجعة إجابات العميل...">${esc(p3?.notes||'')}</textarea>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="savePhaseNotes('p3','p3-notes')">حفظ</button>
+        ${out?`<button class="btn btn-primary" onclick="setPhase('p4')">التحضير للاجتماع — المرحلة 4 →</button>`:''}
+      </div>
+    </div>`;
+}
+
+async function runP3Agent() {
+  const status = document.getElementById('p3-status');
+  try {
+    // Step 1: update diagnostic from P2 answers before running P3
+    const p2Answers = S.currentClient.phases?.p2?.clientAnswers;
+    if (p2Answers?.length && S.currentDiagnostic) {
+      if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> تحديث التشخيص من إجابات P2...</div>`;
+      try {
+        const diagAnswers = p2Answers.map((a, i) => ({ id: `p2_${i}`, answer: a.answer || '' }));
+        const du = await api('POST', '/api/agent', { phase: 'diagnostic_update', ref: S.currentClient.ref, answers: diagAnswers });
+        if (du?.output) { S.currentDiagnostic = du.output; }
+      } catch (e) { console.error('[diag_update before p3]', e.message); }
+    }
+    // Step 2: run P3 (now diagnostic-driven)
+    if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> تحليل الإجابات...</div>`;
+    await api('POST', '/api/agent', { phase: 'p3', ref: S.currentClient.ref });
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
+    renderP3(S.currentClient, S.currentClient.phases?.p3);
+    toast('اكتمل التحليل', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function savePhaseNotes(phase, fieldId) {
+  const notes = document.getElementById(fieldId)?.value || '';
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`, { phases: { [phase]: { notes } } });
+    toast('تم الحفظ', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Pipeline stage update ──
+async function updateStage(ref, stage) {
+  try {
+    await api('PATCH', `/api/client?ref=${encodeURIComponent(ref)}`, { pipelineStage: stage });
+    if (S.currentClient && S.currentClient.ref === ref) S.currentClient.pipelineStage = stage;
+    const badge = document.querySelector('.badge.badge-new, .badge.stage-new, .badge.stage-p1, .badge.stage-p2, .badge.stage-p3, .badge.stage-waiting, .badge.stage-done, .badge.stage-lost');
+    if (badge) { badge.className = `badge ${STAGE_CSS[stage]||'stage-p1'} badge`; badge.textContent = STAGES[stage]||stage; }
+    toast('تم تحديث المرحلة', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── CRM: Organizations ──
+async function renderOrgs() {
+  S.view = 'orgs';
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar">
+      <div class="topbar-title">الشركات</div>
+      <button class="btn btn-primary btn-sm" id="new-org-btn" onclick="showNewOrgForm()">+ شركة جديدة</button>
+    </div>
+    <div class="content"><div class="loading-row"><div class="spinner"></div> جاري التحميل...</div></div>`);
+  try { S.orgs = await api('GET', '/api/client?type=orgs') || []; }
+  catch { S.orgs = []; }
+  renderOrgsContent();
+}
+
+function renderOrgsContent() {
+  const STATUS_LABELS = { prospect: 'محتمل', active: 'نشط', won: 'متعاقد', lost: 'منتهي' };
+  const STATUS_CSS = { prospect: 'stage-p3', active: 'stage-p2', won: 'stage-done', lost: 'stage-lost' };
+  const rows = S.orgs.length
+    ? S.orgs.map(o => `<div class="client-card" onclick="renderOrgDetail('${esc(o.orgId)}')">
+        <div>
+          <div class="client-name">${esc(o.name||'—')}</div>
+          <div class="client-meta">${esc(o.sector||'—')}${o.city?' · '+esc(o.city):''}${o.linkedRefs?.length?' · '+o.linkedRefs.length+' طلب':''}</div>
+        </div>
+        <div class="client-stage-badge ${STATUS_CSS[o.status]||'stage-p1'}">${esc(STATUS_LABELS[o.status]||o.status||'محتمل')}</div>
+      </div>`).join('')
+    : `<div class="empty">لا توجد شركات بعد — أضف أول شركة للبدء</div>`;
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar">
+      <div class="topbar-title">الشركات (${S.orgs.length})</div>
+      <button class="btn btn-primary btn-sm" onclick="showNewOrgForm()">+ شركة جديدة</button>
+    </div>
+    <div class="content">
+      <div id="new-org-section"></div>
+      <div class="client-list">${rows}</div>
+    </div>`);
+}
+
+function showNewOrgForm(prefill={}) {
+  const sec = document.getElementById('new-org-section');
+  if (!sec) return;
+  sec.innerHTML = `
+    <div class="section-block" style="margin-bottom:24px;border-color:var(--black)">
+      <div class="section-title">شركة جديدة</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><div class="form-label">اسم الشركة *</div><input class="form-input" id="norg-name" value="${esc(prefill.name||'')}"></div>
+        <div><div class="form-label">القطاع</div><input class="form-input" id="norg-sector" value="${esc(prefill.sector||'')}"></div>
+        <div><div class="form-label">المدينة</div><input class="form-input" id="norg-city" value="${esc(prefill.city||'')}"></div>
+        <div><div class="form-label">حجم الشركة</div><input class="form-input" id="norg-size" value="${esc(prefill.size||'')}"></div>
+      </div>
+      <div style="margin-bottom:12px"><div class="form-label">ملاحظات</div><textarea class="form-input" id="norg-notes" rows="2">${esc(prefill.notes||'')}</textarea></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="doCreateOrg()">إنشاء الشركة</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('new-org-section').innerHTML=''">إلغاء</button>
+      </div>
+    </div>`;
+  document.getElementById('norg-name')?.focus();
+}
+
+async function doCreateOrg() {
+  const name = document.getElementById('norg-name')?.value?.trim();
+  if (!name) { toast('اسم الشركة مطلوب', 'error'); return; }
+  try {
+    const org = await api('POST', '/api/client', {
+      type: 'org', name,
+      sector: document.getElementById('norg-sector')?.value||'',
+      city: document.getElementById('norg-city')?.value||'',
+      size: document.getElementById('norg-size')?.value||'',
+      notes: document.getElementById('norg-notes')?.value||''
+    });
+    if (!org) return;
+    toast('تم إنشاء الشركة', 'success');
+    renderOrgs();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function renderOrgDetail(orgId) {
+  S.view = 'orgs';
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar">
+      <div class="topbar-breadcrumb">
+        <span class="crumb" onclick="renderOrgs()">← الشركات</span>
+        <span class="sep">/</span>
+        <span class="current">تفاصيل الشركة</span>
+      </div>
+    </div>
+    <div class="content"><div class="loading-row"><div class="spinner"></div> تحميل...</div></div>`);
+  try {
+    const org = await api('GET', `/api/client?type=org&id=${encodeURIComponent(orgId)}`);
+    if (!org) { toast('الشركة غير موجودة', 'error'); renderOrgs(); return; }
+    const contacts = await api('GET', `/api/client?type=contacts&orgId=${encodeURIComponent(orgId)}`) || [];
+    let submissions = [];
+    if (org.linkedRefs?.length) {
+      submissions = (await Promise.all(org.linkedRefs.map(r => api('GET', `/api/client?ref=${encodeURIComponent(r)}`).catch(()=>null)))).filter(Boolean);
+    }
+    const STATUS_LABELS = { prospect: 'محتمل', active: 'نشط', won: 'متعاقد', lost: 'منتهي' };
+    document.getElementById('app').innerHTML = shellHTML(`
+      <div class="topbar">
+        <div class="topbar-breadcrumb">
+          <span class="crumb" onclick="renderOrgs()">← الشركات</span>
+          <span class="sep">/</span>
+          <span class="current">${esc(org.name)}</span>
+        </div>
+        <span class="badge stage-p3">${esc(STATUS_LABELS[org.status]||org.status)}</span>
+      </div>
+      <div class="content">
+        <div class="ws-layout">
+          <div>
+            ${contacts.length ? `
+            <div class="section-block">
+              <div class="section-title">جهات الاتصال (${contacts.length})</div>
+              ${contacts.map(c=>`<div class="info-row"><span class="info-label">${esc(c.name)}</span><span class="info-val">${esc(c.title||'')} · ${esc(c.email||'')} · ${esc(c.phone||'')}</span></div>`).join('')}
+            </div>` : '<div class="section-block"><div class="section-title">جهات الاتصال</div><div style="font-size:13px;color:var(--text-3)">لا توجد جهات اتصال</div></div>'}
+            ${submissions.length ? `
+            <div class="section-block">
+              <div class="section-title">الطلبات المرتبطة (${submissions.length})</div>
+              ${submissions.map(s=>`<div class="client-card" onclick="openClient('${esc(s.ref)}')">
+                <div>
+                  <div class="client-ref">${esc(s.ref)}</div>
+                  <div class="client-name">${esc(s.companyName||'—')}</div>
+                  <div class="client-meta">${fmtDate(s.submittedAt)}</div>
+                </div>
+                <div class="client-stage-badge ${stageCSS(s.pipelineStage||'new')}">${esc(STAGES[s.pipelineStage||'new']||'جديد')}</div>
+              </div>`).join('')}
+            </div>` : ''}
+          </div>
+          <div>
+            <div class="info-card">
+              <div class="info-card-title">بيانات الشركة</div>
+              ${[['الاسم',org.name],['القطاع',org.sector],['المدينة',org.city],['الحجم',org.size],['الحالة',STATUS_LABELS[org.status]||org.status]].filter(([,v])=>v).map(([l,v])=>`<div class="info-row"><span class="info-label">${esc(l)}</span><span class="info-val">${esc(v)}</span></div>`).join('')}
+              ${org.notes?`<div style="margin-top:10px;font-size:13px;color:var(--text-2);line-height:1.7">${esc(org.notes)}</div>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`);
+  } catch (e) { toast(e.message, 'error'); renderOrgs(); }
+}
+
+// ── CRM: Contacts ──
+async function renderContacts() {
+  S.view = 'contacts';
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar"><div class="topbar-title">جهات الاتصال</div></div>
+    <div class="content"><div class="loading-row"><div class="spinner"></div> جاري التحميل...</div></div>`);
+  try { S.contacts = await api('GET', '/api/client?type=contacts') || []; }
+  catch { S.contacts = []; }
+  renderContactsContent();
+}
+
+function renderContactsContent() {
+  const rows = S.contacts.length
+    ? S.contacts.map(c => `<div class="client-card">
+        <div>
+          <div class="client-name">${esc(c.name||'—')}</div>
+          <div class="client-meta">${[c.title,c.email,c.phone].filter(Boolean).map(esc).join(' · ')}</div>
+          ${c.linkedRefs?.length?`<div style="font-size:11px;color:var(--accent);margin-top:2px">${c.linkedRefs.length} طلب مرتبط</div>`:''}
+        </div>
+      </div>`).join('')
+    : `<div class="empty">لا توجد جهات اتصال بعد</div>`;
+  document.getElementById('app').innerHTML = shellHTML(`
+    <div class="topbar"><div class="topbar-title">جهات الاتصال (${S.contacts.length})</div></div>
+    <div class="content"><div class="client-list">${rows}</div></div>`);
+}
+
+// ── CRM: Link client to org/contact from workspace ──
+function showCrmPanel() {
+  const c = S.currentClient;
+  if (!c) return;
+  const panel = document.getElementById('crm-panel') || document.getElementById('crm-link-card');
+  if (!panel) return;
+  panel.innerHTML = `
+    <div id="crm-panel-inner">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-xs" onclick="showCreateFromClient()">+ إنشاء شركة جديدة</button>
+        <button class="btn btn-outline btn-xs" onclick="showPickExistingOrg()">ربط بموجودة</button>
+      </div>
+      <div id="crm-form-area"></div>
+    </div>`;
+}
+
+function showCreateFromClient() {
+  const c = S.currentClient;
+  const area = document.getElementById('crm-form-area');
+  if (!area) return;
+  area.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div><div class="form-label">اسم الشركة</div><input class="form-input" id="lorg-name" value="${esc(c.companyName||'')}"></div>
+      <div><div class="form-label">القطاع</div><input class="form-input" id="lorg-sector" value="${esc(c.sector||'')}"></div>
+      <div><div class="form-label">المدينة</div><input class="form-input" id="lorg-city" value="${esc(c.city||'')}"></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;font-size:12px;font-weight:700;color:var(--text-3)">جهة الاتصال</div>
+      <div><div class="form-label">الاسم</div><input class="form-input" id="lcnt-name" value="${esc(c.contactName||'')}"></div>
+      <div><div class="form-label">المسمى</div><input class="form-input" id="lcnt-title" value="${esc(c.contactTitle||'')}"></div>
+      <div><div class="form-label">الإيميل</div><input class="form-input" id="lcnt-email" value="${esc(c.email||'')}"></div>
+      <div><div class="form-label">الجوال</div><input class="form-input" id="lcnt-phone" value="${esc(c.phone||'')}"></div>
+      <button class="btn btn-primary btn-xs" style="margin-top:4px" onclick="doCreateAndLink()">إنشاء وربط</button>
+    </div>`;
+}
+
+async function doCreateAndLink() {
+  const c = S.currentClient;
+  const name = document.getElementById('lorg-name')?.value?.trim() || c.companyName;
+  if (!name) { toast('اسم الشركة مطلوب', 'error'); return; }
+  try {
+    const org = await api('POST', '/api/client', {
+      type: 'org', name,
+      sector: document.getElementById('lorg-sector')?.value || c.sector || '',
+      city: document.getElementById('lorg-city')?.value || c.city || ''
+    });
+    if (!org) return;
+    const cntName = document.getElementById('lcnt-name')?.value?.trim() || c.contactName;
+    let cnt = null;
+    if (cntName) {
+      cnt = await api('POST', '/api/client', {
+        type: 'contact', orgId: org.orgId, name: cntName,
+        title: document.getElementById('lcnt-title')?.value || c.contactTitle || '',
+        email: document.getElementById('lcnt-email')?.value || c.email || '',
+        phone: document.getElementById('lcnt-phone')?.value || c.phone || ''
+      });
+    }
+    await api('POST', '/api/client', { type: 'link', ref: c.ref, orgId: org.orgId, contactId: cnt?.contactId });
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(c.ref)}`);
+    S.currentClient.orgName = org.name;
+    if (cnt) S.currentClient.contactName = cnt.name;
+    renderWorkspace();
+    toast('تم الإنشاء والربط بنجاح', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function showPickExistingOrg() {
+  const area = document.getElementById('crm-form-area');
+  if (!area) return;
+  area.innerHTML = `<div class="loading-row"><div class="spinner"></div> تحميل الشركات...</div>`;
+  try {
+    const orgs = await api('GET', '/api/client?type=orgs') || [];
+    if (!orgs.length) {
+      area.innerHTML = `<div style="font-size:12px;color:var(--text-3)">لا توجد شركات — أنشئ شركة جديدة</div>`;
+      return;
+    }
+    area.innerHTML = `<div style="display:flex;flex-direction:column;gap:5px;max-height:180px;overflow-y:auto">
+      ${orgs.map(o=>`<div class="client-card" style="padding:8px 12px;cursor:pointer" onclick="doLinkExistingOrg('${esc(o.orgId)}','${esc(o.name)}')">
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(o.name)}</div>
+          ${o.sector?`<div style="font-size:11px;color:var(--text-3)">${esc(o.sector)}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`;
+  } catch (e) { area.innerHTML = `<div style="font-size:12px;color:var(--error)">${esc(e.message)}</div>`; }
+}
+
+async function doLinkExistingOrg(orgId, orgName) {
+  const c = S.currentClient;
+  try {
+    await api('POST', '/api/client', { type: 'link', ref: c.ref, orgId });
+    S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(c.ref)}`);
+    S.currentClient.orgName = orgName;
+    renderWorkspace();
+    toast(`تم الربط بـ ${orgName}`, 'success');
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Diagnostic Engine UI ──
+const DOMAINS_AR = {
+  strategy_alignment:'Strategy Alignment',
+  org_structure:'Organization Structure',
+  roles_accountability:'Roles & Accountability',
+  decision_rights:'Decision Rights',
+  processes_collaboration:'Processes & Collaboration',
+  workforce_capacity:'Workforce & Capacity',
+  skills_capabilities:'Skills & Capabilities',
+  leadership_management:'Leadership & Management',
+  performance_rewards:'Performance & Rewards',
+  culture_engagement:'Culture & Engagement',
+  hr_operating_model:'HR Operating Model',
+  governance_compliance:'Governance & Compliance',
+  people_data_analytics:'People Data & Analytics',
+  ai_future_workforce:'AI & Future Workforce Readiness'
+};
+const PLAYBOOKS_AR = { decision_dependency:'Decision Dependency', poor_performance:'Poor Performance', growth_structure:'Growth & Structure' };
+const CONF_CSS = { low:'conf-low', medium:'conf-medium', high:'conf-high', confirmed:'conf-confirmed' };
+const CONF_AR = { low:'Low', medium:'Medium', high:'High', confirmed:'Confirmed' };
+
+function confLevel(n) {
+  if (n >= 85) return 'confirmed';
+  if (n >= 70) return 'high';
+  if (n >= 50) return 'medium';
+  return 'low';
+}
+
+async function renderDiagnosticTab(client) {
+  const main = document.getElementById('phase-main');
+  if (!main) return;
+  main.innerHTML = `<div class="loading-row"><div class="spinner"></div> تحميل التشخيص...</div>`;
+  try {
+    const diag = await api('GET', `/api/client?type=diagnostic&ref=${encodeURIComponent(client.ref)}`);
+    S.currentDiagnostic = diag;
+    S.diagAnswers = {};
+    renderDiagnosticContent(client, diag);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderDiagnosticContent(client, diag) {
+  const main = document.getElementById('phase-main');
+  if (!main) return;
+  if (!diag) {
+    main.innerHTML = `
+      <div class="section-block" style="text-align:center;padding:40px">
+        <div style="font-size:40px;margin-bottom:14px">⬡</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:8px">Diagnostic Engine</div>
+        <div style="font-size:13px;color:var(--text-3);margin-bottom:24px;line-height:1.7">
+          النظام سيقرأ كل البيانات المتاحة (الاستبيان + P1 + P2 + P3) ويبني إطاراً تشخيصياً شاملاً<br>
+          مع فرضيات مدعومة بأدلة ودرجات ثقة وأسئلة تشخيصية مخصصة
+        </div>
+        <button class="btn btn-primary" id="start-diag-btn" onclick="startDiagnostic()">⬡ بدء التشخيص الشامل</button>
+        <div id="diag-status" style="margin-top:16px"></div>
+      </div>`;
+    return;
+  }
+  const tabs = [
+    ['overview','النظرة العامة'],['hypotheses','الفرضيات'],
+    ['questions','الأسئلة'],['evidence','الأدلة'],
+    ['conflicts','التناقضات'],['findings','النتائج']
+  ];
+  const tabsHTML = tabs.map(([id, label]) =>
+    `<div class="diag-tab ${S.diagTab===id?'active':''}" onclick="setDiagTab('${id}')">${label}${id==='hypotheses'?' ('+((diag.hypotheses||[]).length)+')':''}</div>`
+  ).join('');
+
+  let tabContent = '';
+  if (S.diagTab === 'overview') tabContent = renderDiagOverview(diag);
+  else if (S.diagTab === 'hypotheses') tabContent = renderDiagHypotheses(diag);
+  else if (S.diagTab === 'questions') tabContent = renderDiagQuestions(diag);
+  else if (S.diagTab === 'evidence') tabContent = renderDiagEvidence(diag);
+  else if (S.diagTab === 'conflicts') tabContent = renderDiagConflicts(diag);
+  else if (S.diagTab === 'findings') tabContent = renderDiagFindings(diag);
+
+  main.innerHTML = `
+    <div class="section-block" style="margin-bottom:0;border-bottom:none;border-radius:var(--r) var(--r) 0 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em">Diagnostic Engine v2.0</div>
+          <div style="font-size:13px;color:var(--text-2);margin-top:4px">${esc(diag.summary||'')}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" id="update-diag-btn" onclick="submitDiagAnswers()">⬡ تحديث التشخيص</button>
+      </div>
+      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:4px">
+        ${(diag.activePlaybooks||[]).map(p=>`<span style="padding:3px 10px;background:var(--black);color:#fff;border-radius:99px;font-size:11px;font-weight:700">${esc(PLAYBOOKS_AR[p]||p)}</span>`).join('')}
+        <span style="font-size:11px;color:var(--text-3);align-self:center;margin-right:6px">آخر تحديث: ${fmtDate(diag.updatedAt)}</span>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);margin-bottom:16px">
+      <div class="diag-tabs" style="border-radius:0;margin-bottom:0;padding:0 20px">${tabsHTML}</div>
+      <div style="padding:20px">${tabContent}</div>
+    </div>
+    <div id="diag-status"></div>`;
+}
+
+function renderDiagOverview(diag) {
+  const primaryChips = (diag.primaryDomains||[]).map(d=>`<span class="domain-chip primary">${esc(DOMAINS_AR[d]||d)}</span>`).join('');
+  const secondaryChips = (diag.secondaryDomains||[]).map(d=>`<span class="domain-chip">${esc(DOMAINS_AR[d]||d)}</span>`).join('');
+  const symptomsList = (diag.symptoms||[]).map(s=>`<li>${esc(s)}</li>`).join('');
+  const stats = [
+    ['الفرضيات',(diag.hypotheses||[]).length],
+    ['الأسئلة',(diag.questions||[]).flatMap(r=>r.items||[]).length],
+    ['الأدلة',(diag.evidence||[]).length],
+    ['النتائج',(diag.findings||[]).length]
+  ];
+  return `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+      ${stats.map(([l,v])=>`<div class="stat-card" style="padding:14px"><div class="stat-val" style="font-size:22px">${v}</div><div class="stat-lbl">${l}</div></div>`).join('')}
+    </div>
+    <div class="agent-card"><div class="agent-card-label">النطاقات الأساسية</div><div>${primaryChips||'—'}</div></div>
+    <div class="agent-card"><div class="agent-card-label">النطاقات الثانوية</div><div>${secondaryChips||'—'}</div></div>
+    <div class="agent-card"><div class="agent-card-label">الأعراض المرصودة</div><ul class="agent-list">${symptomsList||'<li>—</li>'}</ul></div>`;
+}
+
+function renderDiagHypotheses(diag) {
+  const hyps = diag.hypotheses || [];
+  if (!hyps.length) return `<div class="empty">لا توجد فرضيات بعد</div>`;
+  const evidence = diag.evidence || [];
+  const sorted = [...hyps].sort((a,b)=>(b.confidence||0)-(a.confidence||0));
+  return sorted.map(h => {
+    const lvl = h.confidenceLevel || confLevel(h.confidence||0);
+    const pct = h.confidence || 0;
+    // Resolve evidence for/against from evidence array (new model)
+    const evFor = evidence.filter(e => (e.supports||[]).includes(h.id));
+    const evAgainst = evidence.filter(e => (e.contradicts||[]).includes(h.id));
+    const evForHtml = evFor.map(e => `<div style="font-size:11px;color:#27AE60;padding:2px 0">↑ [${esc(e.strength||'')}] ${esc(e.description||'')} <span style="opacity:.5;font-size:10px">${esc(e.id||'')}</span></div>`).join('');
+    const evAgainstHtml = evAgainst.map(e => `<div style="font-size:11px;color:#E67E22;padding:2px 0">↓ [${esc(e.strength||'')}] ${esc(e.description||'')} <span style="opacity:.5;font-size:10px">${esc(e.id||'')}</span></div>`).join('');
+    // Confidence factors breakdown
+    const factorsHtml = (h.confidenceFactors||[]).length
+      ? `<div style="font-size:10px;color:var(--text-3);margin-top:4px">${(h.confidenceFactors).map(f=>`<span style="margin-left:10px">${esc(f.type)}: ${f.delta>0?'+':''}${f.delta}</span>`).join('')}</div>`
+      : '';
+    const capsHtml = (h.confidenceCaps||[]).length
+      ? `<div style="font-size:10px;color:#E67E22;margin-top:2px">${h.confidenceCaps.map(c=>esc(c)).join(' · ')}</div>`
+      : '';
+    // Consultant notes display
+    const notesHtml = (h.consultantNotes||[]).length
+      ? `<div style="margin-top:6px;padding:6px 8px;background:var(--surface-2);border-radius:6px">${h.consultantNotes.map(n=>`<div style="font-size:11px;color:var(--text-2)">📝 ${esc(n)}</div>`).join('')}</div>`
+      : '';
+    // Gate buttons
+    let gateBtns;
+    if (h.status === 'approved') {
+      gateBtns = `<span class="badge badge-done">✓ معتمد</span>`;
+    } else if (h.status === 'rejected') {
+      gateBtns = `<span class="badge" style="background:var(--warm);color:var(--text-3)">مرفوض</span>`;
+    } else {
+      gateBtns = `
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary btn-xs" onclick="approveHypothesis('${esc(h.id)}')">اعتماد</button>
+          <button class="btn btn-ghost btn-xs" onclick="rejectHypothesis('${esc(h.id)}')">رفض</button>
+          <button class="btn btn-outline btn-xs" onclick="convertHypToFinding('${esc(h.id)}')">→ نتيجة</button>
+          <button class="btn btn-ghost btn-xs" onclick="toggleHypEdit('${esc(h.id)}')">تعديل</button>
+          <button class="btn btn-ghost btn-xs" onclick="addHypNote('${esc(h.id)}')">ملاحظة</button>
+          <button class="btn btn-ghost btn-xs" onclick="diagRequestEvidence('${esc(h.id)}','hyp')">طلب أدلة</button>
+          <select class="form-input" style="font-size:11px;padding:2px 6px;height:26px;width:auto;margin-right:4px" onchange="changeHypPriority('${esc(h.id)}',this.value)">
+            <option value="" ${!h.priority?'selected':''}>الأولوية</option>
+            <option value="high" ${h.priority==='high'?'selected':''}>عالية</option>
+            <option value="medium" ${h.priority==='medium'?'selected':''}>متوسطة</option>
+            <option value="low" ${h.priority==='low'?'selected':''}>منخفضة</option>
+          </select>
+        </div>`;
+    }
+    // Inline edit form
+    const editFormHtml = S.editingHyp === h.id ? `
+      <div class="diag-answer-form" style="margin-top:8px">
+        <div class="form-label" style="font-size:11px">تعديل نص الفرضية</div>
+        <textarea class="form-input" rows="3" id="hyp-edit-${esc(h.id)}">${esc(h.hypothesis||'')}</textarea>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-xs" onclick="saveHypEdit('${esc(h.id)}')">حفظ</button>
+          <button class="btn btn-ghost btn-xs" onclick="S.editingHyp=null;renderDiagnosticContent(S.currentClient,S.currentDiagnostic)">إلغاء</button>
+        </div>
+      </div>` : '';
+    return `
+      <div class="hyp-card status-${h.status||'proposed'}">
+        <div class="hyp-header">
+          <span class="hyp-id">${esc(h.id)}</span>
+          <span style="font-size:11px;color:var(--text-3)">${esc(PLAYBOOKS_AR[h.playbook]||h.playbook||'')}</span>
+          ${h.priority?`<span class="badge badge-waiting" style="font-size:10px">${esc(h.priority)}</span>`:''}
+          <span style="color:${lvl==='confirmed'?'#1A7A4A':lvl==='high'?'#27AE60':lvl==='medium'?'#E67E22':'#E74C3C'};font-weight:700;font-size:13px">${pct}%</span>
+          <div class="conf-bar-wrap"><div class="conf-bar conf-${lvl}" style="width:${pct}%"></div></div>
+          <span class="badge ${lvl==='confirmed'?'badge-done':lvl==='high'?'badge-answered':lvl==='medium'?'badge-waiting':'badge-sent'}">${esc(CONF_AR[lvl]||lvl)}</span>
+        </div>
+        <div class="hyp-text">${esc(h.hypothesis||'')}</div>
+        ${factorsHtml}${capsHtml}
+        ${(evFor.length||evAgainst.length) ? `
+          <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+            ${evFor.length?`<div style="font-size:10px;font-weight:700;color:#27AE60;margin-bottom:2px">أدلة داعمة (${evFor.length})</div>${evForHtml}`:''}
+            ${evAgainst.length?`<div style="font-size:10px;font-weight:700;color:#E67E22;margin-top:4px;margin-bottom:2px">أدلة مناقضة (${evAgainst.length})</div>${evAgainstHtml}`:''}
+          </div>` : ''}
+        ${notesHtml}
+        <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:8px">${gateBtns}</div>
+        ${editFormHtml}
+      </div>`;
+  }).join('');
+}
+
+function renderDiagQuestions(diag) {
+  const rounds = diag.questions || [];
+  if (!rounds.length) return `<div class="empty">لا توجد أسئلة تشخيصية بعد</div>`;
+  let html = '';
+  rounds.forEach(round => {
+    html += `<div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">جولة ${round.round} — ${fmtDate(round.generatedAt)}</div>`;
+    (round.items||[]).forEach((q, i) => {
+      const answered = q.answer;
+      html += `
+        <div class="q-item" style="margin-bottom:10px">
+          <div class="q-item-header">
+            <div class="q-num">${i+1}</div>
+            <div class="q-area-tag">${esc(DOMAINS_AR[q.domain]||q.domain||'')}</div>
+            ${answered?`<span class="badge badge-done" style="margin-right:auto">✓ تمت الإجابة</span>`:'<span style="margin-right:auto"></span>'}
+          </div>
+          <div class="q-text">${esc(q.question||'')}</div>
+          ${q.why?`<div class="q-why">💡 ${esc(q.why)}</div>`:''}
+          ${answered
+            ? `<div class="diag-answer-form" style="margin-top:8px"><div style="font-size:12px;color:var(--text-3);margin-bottom:4px">الإجابة المسجلة</div><div style="font-size:13px;color:var(--text-2)">${esc(q.answer)}</div></div>`
+            : `<div class="diag-answer-form"><textarea class="form-input" rows="2" id="danswer-${esc(q.id)}" placeholder="أدخل إجابتك أو ملاحظتك..." onchange="S.diagAnswers['${esc(q.id)}']={id:'${esc(q.id)}',answer:this.value}">${esc(S.diagAnswers[q.id]?.answer||'')}</textarea></div>`
+          }
+        </div>`;
+    });
+  });
+  html += `<div style="margin-top:16px">
+    <button class="btn btn-primary" onclick="submitDiagAnswers()">حفظ الإجابات وتحديث التشخيص</button>
+    <span style="font-size:12px;color:var(--text-3);margin-right:12px">يُحدِّث الفرضيات ويولد أسئلة جديدة إذا لزم</span>
+  </div>`;
+  return html;
+}
+
+function renderDiagEvidence(diag) {
+  const evs = diag.evidence || [];
+  if (!evs.length) return `<div class="empty">لا توجد أدلة مسجلة بعد</div>`;
+  const SOURCES = { survey:'استبيان', p1_analysis:'تحليل P1', p2_answers:'إجابات P2', p3_analysis:'تحليل P3', diagnostic_answer:'إجابة تشخيصية', manual:'يدوي' };
+  const STR_CSS = { strong:'badge-done', moderate:'badge-answered', weak:'badge-waiting' };
+  const STR_AR = { strong:'قوي', moderate:'متوسط', weak:'ضعيف' };
+  return evs.map(e => {
+    const supports = e.supports || e.evidenceFor || [];
+    const contradicts = e.contradicts || e.evidenceAgainst || [];
+    return `
+    <div class="ev-item">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:4px">
+        <div style="flex:1">
+          <div class="ev-source">${esc(SOURCES[e.sourceType||e.source]||e.sourceType||e.source||'')}
+            ${e.strength?`<span class="badge ${STR_CSS[e.strength]||'badge-waiting'}" style="font-size:10px;margin-right:4px">${STR_AR[e.strength]||e.strength}</span>`:''}
+            <span style="font-size:10px;color:var(--text-3);margin-right:4px">${esc(e.id||'')}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text)">${esc(e.description||'')} ${e.value?`<span style="font-weight:600">: ${esc(e.value)}</span>`:''}</div>
+        </div>
+      </div>
+      ${supports.length?`<div style="font-size:10px;color:#27AE60">يدعم: ${supports.join(', ')}</div>`:''}
+      ${contradicts.length?`<div style="font-size:10px;color:#E67E22">يناقض: ${contradicts.join(', ')}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderDiagConflicts(diag) {
+  const confs = diag.conflicts || [];
+  if (!confs.length) return `<div class="empty" style="padding:30px">لا توجد تناقضات — هذا جيد!</div>`;
+  return confs.map(c => `
+    <div class="find-card ${c.resolved?'status-approved':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div>
+          <div style="font-size:12px;color:var(--text-3);margin-bottom:4px">${(c.relatedHypotheses||[]).join(', ')}</div>
+          <div style="font-size:13px;color:var(--text)">${esc(c.description||'')}</div>
+        </div>
+        ${c.resolved
+          ? `<span class="badge badge-done">محلول</span>`
+          : `<button class="btn btn-ghost btn-xs" onclick="resolveConflict('${esc(c.id)}')">تحديد كمحلول</button>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderDiagFindings(diag) {
+  const finds = diag.findings || [];
+  const SEV_CSS = { critical:'sev-critical', major:'sev-major', minor:'sev-minor' };
+  const SEV_AR = { critical:'حرجة', major:'رئيسية', minor:'ثانوية' };
+  if (!finds.length) return `<div class="empty" style="padding:30px">لا توجد نتائج بعد — تُبنى بعد تحليل الإجابات وارتفاع درجات الثقة</div>`;
+  return finds.map(f => `
+    <div class="find-card ${f.status==='approved'?'status-approved':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span class="${SEV_CSS[f.severity]||'sev-minor'}">${esc(SEV_AR[f.severity]||f.severity||'')}</span>
+            <span style="font-size:12px;color:var(--text-3)">${esc(DOMAINS_AR[f.domain]||f.domain||'')}</span>
+          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">${esc(f.title||'')}</div>
+          <div style="font-size:13px;color:var(--text-2);line-height:1.6">${esc(f.description||'')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          ${f.status==='approved'
+            ? `<span class="badge badge-done">✓ معتمد</span><button class="btn btn-ghost btn-xs" onclick="rejectFinding('${esc(f.id)}')">إلغاء</button>`
+            : f.status==='rejected'
+              ? `<span class="badge" style="background:var(--warm);color:var(--text-3)">مرفوض</span><button class="btn btn-ghost btn-xs" onclick="approveFinding('${esc(f.id)}')">إعادة اعتماد</button>`
+              : `<button class="btn btn-primary btn-xs" onclick="approveFinding('${esc(f.id)}')">اعتماد</button>
+                 <button class="btn btn-ghost btn-xs" onclick="rejectFinding('${esc(f.id)}')">رفض</button>`}
+          <button class="btn btn-outline btn-xs" onclick="toggleFindEdit('${esc(f.id)}')">تعديل</button>
+          <button class="btn btn-ghost btn-xs" onclick="addFindingNote('${esc(f.id)}')">ملاحظة</button>
+          <button class="btn btn-ghost btn-xs" onclick="diagRequestEvidence('${esc(f.id)}','finding')">طلب أدلة</button>
+          <button class="btn btn-ghost btn-xs" onclick="returnFindingToHyp('${esc(f.id)}')">→ فرضية</button>
+        </div>
+      </div>
+      ${(f.consultantNotes||[]).length?`<div style="margin-top:6px;padding:6px 8px;background:var(--surface-2);border-radius:6px">${f.consultantNotes.map(n=>`<div style="font-size:11px;color:var(--text-2)">📝 ${esc(n)}</div>`).join('')}</div>`:''}
+      ${S.editingFind===f.id?`
+        <div class="diag-answer-form" style="margin-top:8px">
+          <div class="form-label" style="font-size:11px">تعديل عنوان النتيجة</div>
+          <input class="form-input" id="find-edit-title-${esc(f.id)}" value="${esc(f.title||'')}" style="margin-bottom:6px">
+          <div class="form-label" style="font-size:11px">وصف النتيجة</div>
+          <textarea class="form-input" rows="2" id="find-edit-desc-${esc(f.id)}">${esc(f.description||'')}</textarea>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <button class="btn btn-primary btn-xs" onclick="saveFindingEdit('${esc(f.id)}')">حفظ</button>
+            <button class="btn btn-ghost btn-xs" onclick="S.editingFind=null;renderDiagnosticContent(S.currentClient,S.currentDiagnostic)">إلغاء</button>
+          </div>
+        </div>`:''}
+    </div>`).join('');
+}
+
+function setDiagTab(tab) {
+  S.diagTab = tab;
+  renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+}
+
+async function startDiagnostic() {
+  const btn = document.getElementById('start-diag-btn');
+  const status = document.getElementById('diag-status');
+  if (btn) btn.disabled = true;
+  if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> Diagnostic Engine يحلل كل البيانات...</div>`;
+  try {
+    const d = await api('POST', '/api/agent', { phase: 'diagnostic_router', ref: S.currentClient.ref });
+    if (!d) return;
+    S.currentDiagnostic = d.output;
+    S.diagTab = 'overview';
+    toast('اكتمل التشخيص الأولي', 'success');
+    renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+  } catch (e) { toast(e.message, 'error'); if (btn) btn.disabled = false; }
+}
+
+async function submitDiagAnswers() {
+  const answers = Object.values(S.diagAnswers).filter(a => a.answer && a.answer.trim());
+  if (!answers.length) { toast('لا توجد إجابات جديدة', 'error'); return; }
+  const btn = document.getElementById('update-diag-btn');
+  if (btn) btn.disabled = true;
+  const status = document.getElementById('diag-status');
+  if (status) status.innerHTML = `<div class="loading-row"><div class="spinner"></div> تحديث التشخيص...</div>`;
+  try {
+    // Embed answers into diagnostic questions for persistence
+    const diag = JSON.parse(JSON.stringify(S.currentDiagnostic || {}));
+    (diag.questions || []).forEach(round => {
+      (round.items || []).forEach(item => {
+        const ans = S.diagAnswers[item.id];
+        if (ans?.answer?.trim()) { item.answer = ans.answer.trim(); item.answeredAt = Date.now(); }
+      });
+    });
+    await api('POST', '/api/client', { type: 'diagnostic', ref: S.currentClient.ref, data: diag });
+    const d = await api('POST', '/api/agent', { phase: 'diagnostic_update', ref: S.currentClient.ref, answers });
+    if (!d) return;
+    S.currentDiagnostic = d.output;
+    S.diagAnswers = {};
+    S.diagTab = 'hypotheses';
+    toast('تم تحديث التشخيص', 'success');
+    renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+  } catch (e) { toast(e.message, 'error'); if (btn) btn.disabled = false; }
+}
+
+async function approveHypothesis(hypId) {
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (h) { h.status = 'approved'; h.approvedAt = Date.now(); }
+  }, 'تم اعتماد الفرضية');
+}
+async function rejectHypothesis(hypId) {
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (h) h.status = 'rejected';
+  }, 'تم رفض الفرضية');
+}
+async function approveFinding(findId) {
+  await updateDiagField(d => {
+    const f = (d.findings||[]).find(f => f.id === findId);
+    if (f) { f.status = 'approved'; f.approvedAt = Date.now(); }
+  }, 'تم اعتماد النتيجة');
+}
+async function rejectFinding(findId) {
+  await updateDiagField(d => {
+    const f = (d.findings||[]).find(f => f.id === findId);
+    if (f) f.status = 'rejected';
+  }, 'تم رفض النتيجة');
+}
+async function resolveConflict(conId) {
+  await updateDiagField(d => {
+    const c = (d.conflicts||[]).find(c => c.id === conId);
+    if (c) { c.resolved = true; c.resolvedAt = Date.now(); }
+  }, 'تم تحديد التناقض كمحلول');
+}
+
+// ── Hypothesis gate: full actions ──
+function toggleHypEdit(hypId) {
+  S.editingHyp = S.editingHyp === hypId ? null : hypId;
+  renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+}
+async function saveHypEdit(hypId) {
+  const text = document.getElementById(`hyp-edit-${hypId}`)?.value?.trim();
+  if (!text) return;
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (h) { h.hypothesis = text; h.editedAt = Date.now(); }
+  }, 'تم تعديل الفرضية');
+  S.editingHyp = null;
+}
+async function addHypNote(hypId) {
+  const note = prompt('أضف ملاحظة للمستشار على هذه الفرضية:');
+  if (!note?.trim()) return;
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (h) { h.consultantNotes = [...(h.consultantNotes||[]), note.trim()]; }
+  }, 'تمت إضافة الملاحظة');
+}
+async function diagRequestEvidence(id, type) {
+  const note = prompt('ما نوع الدليل الإضافي المطلوب؟');
+  if (!note?.trim()) return;
+  await updateDiagField(d => {
+    if (type === 'hyp') {
+      const h = (d.hypotheses||[]).find(h => h.id === id);
+      if (h) { h.evidenceRequests = [...(h.evidenceRequests||[]), { note: note.trim(), requestedAt: Date.now() }]; }
+    } else {
+      const f = (d.findings||[]).find(f => f.id === id);
+      if (f) { f.evidenceRequests = [...(f.evidenceRequests||[]), { note: note.trim(), requestedAt: Date.now() }]; }
+    }
+  }, 'تم تسجيل طلب الأدلة');
+}
+async function changeHypPriority(hypId, priority) {
+  if (!priority) return;
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (h) h.priority = priority;
+  }, 'تم تحديث الأولوية');
+}
+async function convertHypToFinding(hypId) {
+  const title = prompt('عنوان النتيجة الجديدة:');
+  if (!title?.trim()) return;
+  await updateDiagField(d => {
+    const h = (d.hypotheses||[]).find(h => h.id === hypId);
+    if (!h) return;
+    h.status = 'converted';
+    const fId = `FIND-${Date.now()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
+    d.findings = [...(d.findings||[]), {
+      id: fId, title: title.trim(), description: h.hypothesis, domain: h.primaryDomain || '',
+      severity: 'major', status: 'proposed', aiProposed: false, consultantApproved: false,
+      consultantNote: null, relatedHypotheses: [hypId], createdAt: Date.now()
+    }];
+  }, 'تم تحويل الفرضية إلى نتيجة');
+}
+
+// ── Finding gate: full actions ──
+function toggleFindEdit(findId) {
+  S.editingFind = S.editingFind === findId ? null : findId;
+  renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+}
+async function saveFindingEdit(findId) {
+  const title = document.getElementById(`find-edit-title-${findId}`)?.value?.trim();
+  const desc = document.getElementById(`find-edit-desc-${findId}`)?.value?.trim();
+  if (!title) return;
+  await updateDiagField(d => {
+    const f = (d.findings||[]).find(f => f.id === findId);
+    if (f) { if (title) f.title = title; if (desc) f.description = desc; f.editedAt = Date.now(); }
+  }, 'تم تعديل النتيجة');
+  S.editingFind = null;
+}
+async function addFindingNote(findId) {
+  const note = prompt('أضف ملاحظة للمستشار على هذه النتيجة:');
+  if (!note?.trim()) return;
+  await updateDiagField(d => {
+    const f = (d.findings||[]).find(f => f.id === findId);
+    if (f) { f.consultantNotes = [...(f.consultantNotes||[]), note.trim()]; }
+  }, 'تمت إضافة الملاحظة');
+}
+async function returnFindingToHyp(findId) {
+  if (!confirm('هل تريد إعادة هذه النتيجة إلى فرضية؟')) return;
+  await updateDiagField(d => {
+    const f = (d.findings||[]).find(f => f.id === findId);
+    if (!f) return;
+    const relHypId = (f.relatedHypotheses||[])[0];
+    if (relHypId) {
+      const h = (d.hypotheses||[]).find(h => h.id === relHypId);
+      if (h && h.status === 'converted') { h.status = 'proposed'; }
+    }
+    f.status = 'returned';
+    f.returnedAt = Date.now();
+  }, 'تمت إعادة النتيجة إلى فرضية');
+}
+
+async function updateDiagField(mutateFn, successMsg) {
+  const diag = JSON.parse(JSON.stringify(S.currentDiagnostic || {}));
+  mutateFn(diag);
+  try {
+    await api('POST', '/api/client', { type: 'diagnostic', ref: S.currentClient.ref, data: diag });
+    S.currentDiagnostic = diag;
+    toast(successMsg, 'success');
+    renderDiagnosticContent(S.currentClient, S.currentDiagnostic);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── Init ──
+init();
+</script>
+</body>
+</html>

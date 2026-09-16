@@ -1,0 +1,50 @@
+# ── Secrets & credentials — NEVER commit ──
+.env
+.env.local
+.env.*
+.env*.local
+*.env
+*.pem
+*.key
+*.secret
+
+# ── Vercel ──
+.vercel/
+.vercel
+
+# ── Dependencies ──
+node_modules/
+.npm/
+
+# ── Local databases ──
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Backup folders ──
+*_BACKUP_*/
+*_backup_*/
+claucode_BACKUP*/
+
+# ── Temporary / test files ──
+test-diagnostic-*.js
+test-*.local.js
+
+# ── OS files ──
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Logs ──
+*.log
+npm-debug.log*

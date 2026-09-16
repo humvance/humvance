@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "routes": [
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/questions", "dest": "/questions.html" },
+    { "src": "/portal", "dest": "/portal.html" }
+  ]
+}

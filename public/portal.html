@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بوابة العميل — Humvance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0A0A0A;--white:#fff;--warm:#F6F5F1;--border:#E2E1DD;--text:#0A0A0A;
+  --text-2:#444;--text-3:#777;--accent:#1A5CFF;--success:#1A7A4A;--r:10px;
+  --font-ar:'IBM Plex Sans Arabic','Arial',sans-serif;--font-en:'Inter',sans-serif
+}
+@media(prefers-color-scheme:dark){:root{
+  --warm:#111110;--white:#1A1A19;--border:#2E2E2C;--text:#F0EFE9;--text-2:#BBB;--text-3:#888
+}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh}
+body{font-family:var(--font-ar);font-size:15px;color:var(--text);background:var(--warm);direction:rtl;-webkit-font-smoothing:antialiased}
+/* ── Header ── */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50}
+.hdr-logo{font-family:var(--font-en);font-size:17px;font-weight:900;color:var(--black)}
+.hdr-sub{font-size:12px;color:var(--text-3);font-weight:500}
+.hdr-ref{font-family:var(--font-en);font-size:12px;font-weight:700;background:var(--warm);border:1px solid var(--border);padding:4px 12px;border-radius:99px;color:var(--text-3)}
+/* ── Login ── */
+.login-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:44px 40px;width:min(440px,100%);text-align:center}
+.login-icon{font-size:36px;margin-bottom:16px}
+.login-title{font-size:22px;font-weight:800;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text-3);margin-bottom:32px;line-height:1.6}
+.field{text-align:right;margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.inp{width:100%;padding:12px 14px;background:var(--warm);border:1.5px solid var(--border);border-radius:var(--r);font-family:var(--font-ar);font-size:15px;color:var(--text);transition:border 150ms}
+.inp:focus{outline:none;border-color:var(--black)}
+.inp::placeholder{color:var(--text-3)}
+.inp[dir="ltr"]{text-align:left;font-family:var(--font-en)}
+.btn-login{width:100%;padding:14px;background:var(--black);color:#fff;font-family:var(--font-ar);font-size:15px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;margin-top:8px;transition:background 150ms}
+.btn-login:hover{background:#222}
+.btn-login:disabled{opacity:.4;cursor:not-allowed}
+.err{background:#FADBD8;border:1px solid #F1948A;border-radius:var(--r);padding:12px 14px;font-size:13px;color:#C0392B;margin-bottom:16px}
+/* ── Dashboard ── */
+.page{max-width:760px;margin:0 auto;padding:32px 20px 80px}
+/* ── Next Action ── */
+.action-card{border-radius:var(--r);padding:24px 26px;margin-bottom:28px;display:flex;align-items:flex-start;gap:16px}
+.action-card.wait{background:var(--white);border:1px solid var(--border)}
+.action-card.required{background:#EBF3FF;border:1.5px solid #A8C4FF}
+.action-card.done{background:#EAFAF1;border:1px solid #A9DFBF}
+.action-icon{font-size:28px;flex-shrink:0;line-height:1}
+.action-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:4px}
+.action-label.required{color:#1A5CFF}
+.action-label.done{color:var(--success)}
+.action-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.action-msg{font-size:13px;color:var(--text-2);line-height:1.7}
+.action-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:11px 24px;background:var(--accent);color:#fff;font-family:var(--font-ar);font-size:14px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;text-decoration:none;transition:background 150ms}
+.action-btn:hover{background:#1448CC}
+/* ── Progress ── */
+.progress-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px 26px;margin-bottom:24px}
+.progress-title{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px}
+.steps{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:4px}
+.step{display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px}
+.step-connector{flex:1;height:2px;background:var(--border);margin-top:14px;transition:background 300ms}
+.step-connector.done{background:var(--success)}
+.step-dot{width:28px;height:28px;border-radius:50%;background:var(--warm);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:var(--font-en);font-weight:800;color:var(--text-3);flex-shrink:0;transition:all 300ms;position:relative;z-index:1}
+.step-dot.done{background:var(--success);border-color:var(--success);color:#fff}
+.step-dot.active{background:var(--black);border-color:var(--black);color:#fff;box-shadow:0 0 0 4px rgba(10,10,10,.12)}
+.step-label{font-size:11px;color:var(--text-3);text-align:center;margin-top:8px;line-height:1.4;max-width:70px}
+.step-label.done{color:var(--success);font-weight:600}
+.step-label.active{color:var(--black);font-weight:700}
+.step-row{display:flex;align-items:center;width:100%}
+/* ── Info card ── */
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:24px}
+.info-card-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.info-row{padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-lbl{color:var(--text-3)}
+.info-val{color:var(--text);font-weight:600;text-align:left;font-family:var(--font-en);direction:ltr}
+.info-val.ar{font-family:var(--font-ar);direction:rtl;text-align:right}
+/* ── Timeline ── */
+.timeline-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px}
+.timeline-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px}
+.tl-item{display:flex;gap:14px;padding-bottom:20px;position:relative}
+.tl-item:last-child{padding-bottom:0}
+.tl-item:not(:last-child)::before{content:'';position:absolute;right:17px;top:30px;bottom:0;width:1px;background:var(--border)}
+.tl-dot{width:34px;height:34px;border-radius:50%;background:var(--warm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tl-content{flex:1;padding-top:6px}
+.tl-msg{font-size:14px;font-weight:600;margin-bottom:2px}
+.tl-date{font-size:12px;color:var(--text-3);font-family:var(--font-en)}
+/* ── Footer ── */
+.portal-footer{text-align:center;padding:32px 20px;font-size:12px;color:var(--text-3);border-top:1px solid var(--border);margin-top:16px}
+/* ── Spinner ── */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--border);border-top-color:var(--black);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.login-card{padding:32px 24px}.steps{gap:0}.step-label{font-size:10px}}
+</style>
+</head>
+<body>
+<header class="hdr" id="hdr">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="hdr-logo">Humvance</span>
+    <span class="hdr-sub" id="hdr-sub">بوابة العميل</span>
+  </div>
+  <div id="hdr-actions"></div>
+</header>
+<div id="root"></div>
+
+<script>
+const TOKEN_KEY = 'hv_portal_token';
+let S = { token: null, data: null };
+
+const root = document.getElementById('root');
+const hdrActions = document.getElementById('hdr-actions');
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' });
+}
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleDateString('ar-SA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// ── Auth ──
+async function init() {
+  const saved = sessionStorage.getItem(TOKEN_KEY);
+  if (saved) {
+    S.token = saved;
+    try {
+      await loadDashboard();
+      return;
+    } catch { S.token = null; sessionStorage.removeItem(TOKEN_KEY); }
+  }
+  renderLogin();
+}
+
+function logout() {
+  S.token = null; S.data = null;
+  sessionStorage.removeItem(TOKEN_KEY);
+  document.getElementById('hdr-sub').textContent = 'بوابة العميل';
+  hdrActions.innerHTML = '';
+  renderLogin();
+}
+
+// ── Login ──
+function renderLogin() {
+  root.innerHTML = `
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-icon">🔐</div>
+        <div class="login-title">متابعة طلبكم</div>
+        <div class="login-sub">أدخل رقم الطلب والبريد الإلكتروني المسجّل للاطلاع على حالة طلبكم</div>
+        <div id="login-err" hidden></div>
+        <div class="field">
+          <label>رقم الطلب</label>
+          <input class="inp" id="inp-ref" dir="ltr" placeholder="HUM-2026-XXXX" autocomplete="off"
+            onkeydown="if(event.key==='Enter')document.getElementById('inp-email').focus()">
+        </div>
+        <div class="field">
+          <label>البريد الإلكتروني المسجّل</label>
+          <input class="inp" id="inp-email" type="email" dir="ltr" placeholder="your@email.com"
+            onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn-login" id="login-btn" onclick="doLogin()">دخول</button>
+        <div style="margin-top:20px;font-size:12px;color:var(--text-3)">
+          لا تتذكر رقم طلبك؟ تواصل مع <a href="mailto:info@humvance.com" style="color:var(--accent)">info@humvance.com</a>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('inp-ref')?.focus(), 50);
+}
+
+async function doLogin() {
+  const ref = (document.getElementById('inp-ref')?.value || '').trim().toUpperCase();
+  const email = (document.getElementById('inp-email')?.value || '').trim();
+  const errEl = document.getElementById('login-err');
+  const btn = document.getElementById('login-btn');
+  if (!ref || !email) { showLoginErr('يرجى إدخال رقم الطلب والبريد الإلكتروني'); return; }
+  errEl.hidden = true;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جاري التحقق...';
+  try {
+    const r = await fetch('/api/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref, email })
+    });
+    const d = await r.json();
+    if (!r.ok) { showLoginErr(d.error || 'حدث خطأ'); btn.disabled=false; btn.textContent='دخول'; return; }
+    S.token = d.token;
+    sessionStorage.setItem(TOKEN_KEY, d.token);
+    await loadDashboard();
+  } catch { showLoginErr('تعذر الاتصال. يرجى المحاولة مجدداً.'); btn.disabled=false; btn.textContent='دخول'; }
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.className = 'err'; el.textContent = msg; el.hidden = false;
+}
+
+// ── Dashboard ──
+async function loadDashboard() {
+  root.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text-3)"><div class="spinner" style="width:32px;height:32px;border-width:3px"></div></div>`;
+  const r = await fetch('/api/portal', { headers: { Authorization: `Bearer ${S.token}` } });
+  if (r.status === 401) { logout(); return; }
+  if (!r.ok) throw new Error('failed');
+  S.data = await r.json();
+  renderDashboard();
+}
+
+function renderDashboard() {
+  const d = S.data;
+  document.getElementById('hdr-sub').textContent = d.companyName;
+  hdrActions.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="hdr-ref">${d.ref}</span>
+      <button onclick="logout()" style="font-size:12px;color:var(--text-3);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px" onmouseover="this.style.background='var(--warm)'" onmouseout="this.style.background='none'">خروج</button>
+    </div>`;
+
+  // Next action
+  const actionType = d.nextAction;
+  let actionHTML = '';
+  if (actionType === 'questions' && d.questionsUrl && !d.questionsAnswered) {
+    actionHTML = `
+      <div class="action-card required">
+        <div class="action-icon">❓</div>
+        <div style="flex:1">
+          <div class="action-label required">إجراء مطلوب منكم</div>
+          <div class="action-title">الإجابة على ${d.questionsCount || ''} أسئلة إضافية</div>
+          <div class="action-msg">${d.stageMessage}</div>
+          <a class="action-btn" href="${d.questionsUrl}" target="_blank">الإجابة على الأسئلة →</a>
+        </div>
+      </div>`;
+  } else if (actionType === 'questions' && d.questionsAnswered) {
+    actionHTML = `
+      <div class="action-card done">
+        <div class="action-icon">✅</div>
+        <div style="flex:1">
+          <div class="action-label done">تم استلام إجاباتكم</div>
+          <div class="action-title">لا يوجد إجراء مطلوب الآن</div>
+          <div class="action-msg">فريق Humvance يراجع إجاباتكم ويستعد للمرحلة التالية.</div>
+        </div>
+      </div>`;
+  } else if (actionType === 'proposal') {
+    actionHTML = `
+      <div class="action-card required">
+        <div class="action-icon">📄</div>
+        <div style="flex:1">
+          <div class="action-label required">عرض جاهز للمراجعة</div>
+          <div class="action-title">عرض Humvance جاهز</div>
+          <div class="action-msg">${d.stageMessage}<br>يرجى التواصل مع <a href="mailto:info@humvance.com" style="color:var(--accent)">info@humvance.com</a> لمراجعة العرض.</div>
+        </div>
+      </div>`;
+  } else {
+    actionHTML = `
+      <div class="action-card wait">
+        <div class="action-icon">⏳</div>
+        <div style="flex:1">
+          <div class="action-label">لا يوجد إجراء مطلوب الآن</div>
+          <div class="action-title">${d.stageLabel}</div>
+          <div class="action-msg">${d.stageMessage}</div>
+        </div>
+      </div>`;
+  }
+
+  // Progress steps
+  const STEPS = [
+    { n:1, label:'التقييم' },
+    { n:2, label:'المراجعة' },
+    { n:3, label:'معلومات إضافية' },
+    { n:4, label:'التحليل' },
+    { n:5, label:'الاجتماع' },
+    { n:6, label:'تصميم الحل' },
+    { n:7, label:'العرض' },
+    { n:8, label:'بدء التعاون' }
+  ];
+  const cur = d.stageStep || 1;
+  const stepsHTML = STEPS.map((st, i) => {
+    const done = st.n < cur;
+    const active = st.n === cur;
+    const dotClass = done ? 'done' : active ? 'active' : '';
+    const lblClass = done ? 'done' : active ? 'active' : '';
+    const conn = i < STEPS.length - 1
+      ? `<div class="step-connector ${done ? 'done' : ''}"></div>`
+      : '';
+    return `
+      <div class="step-row" style="flex:1;min-width:0">
+        <div class="step" style="min-width:0">
+          <div class="step-dot ${dotClass}">${done ? '✓' : st.n}</div>
+          <div class="step-label ${lblClass}">${st.label}</div>
+        </div>
+        ${conn}
+      </div>`;
+  }).join('');
+
+  // Timeline
+  const tl = d.timeline || [];
+  const tlHTML = tl.length
+    ? tl.map(ev => `
+      <div class="tl-item">
+        <div class="tl-dot">${ev.icon}</div>
+        <div class="tl-content">
+          <div class="tl-msg">${ev.msg}</div>
+          <div class="tl-date">${fmtDateTime(ev.ts)}</div>
+        </div>
+      </div>`).join('')
+    : `<div style="font-size:13px;color:var(--text-3)">لا توجد أحداث بعد</div>`;
+
+  root.innerHTML = `
+    <div class="page">
+      ${actionHTML}
+      <div class="progress-wrap">
+        <div class="progress-title">تقدم طلبكم</div>
+        <div class="steps" style="display:flex;align-items:flex-start">${stepsHTML}</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">تفاصيل الطلب</div>
+        <div class="info-row"><span class="info-lbl">رقم الطلب</span><span class="info-val">${d.ref}</span></div>
+        <div class="info-row"><span class="info-lbl">الشركة</span><span class="info-val ar">${d.companyName}</span></div>
+        <div class="info-row"><span class="info-lbl">المسؤول</span><span class="info-val ar">${d.contactName}</span></div>
+        <div class="info-row"><span class="info-lbl">القطاع</span><span class="info-val ar">${d.sector}</span></div>
+        <div class="info-row"><span class="info-lbl">المدينة</span><span class="info-val ar">${d.city}</span></div>
+        <div class="info-row"><span class="info-lbl">تاريخ التقديم</span><span class="info-val">${fmtDate(d.submittedAt)}</span></div>
+        <div class="info-row"><span class="info-lbl">آخر تحديث</span><span class="info-val">${fmtDate(d.updatedAt)}</span></div>
+        <div class="info-row"><span class="info-lbl">الحالة الحالية</span><span class="info-val ar" style="color:var(--accent);font-family:var(--font-ar);direction:rtl">${d.stageLabel}</span></div>
+      </div>
+      <div class="timeline-wrap">
+        <div class="timeline-title">سجل النشاط</div>
+        ${tlHTML}
+      </div>
+      <div class="portal-footer">
+        Humvance &nbsp;·&nbsp; <a href="mailto:info@humvance.com" style="color:var(--accent)">info@humvance.com</a>
+        &nbsp;·&nbsp; humvance.com
+      </div>
+    </div>`;
+}
+
+init();
+</script>
+</body>
+</html>
