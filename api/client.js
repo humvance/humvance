@@ -1,5 +1,5 @@
 'use strict';
-const { verifyJWT, getToken, setJSON } = require('./_utils');
+const { setJSON, requireAdmin } = require('./_utils');
 const { kv } = require('@vercel/kv');
 
 function genId(prefix) {
@@ -177,10 +177,8 @@ async function handleCRM(req, res) {
 module.exports = async function handler(req, res) {
   setJSON(res);
 
-  const payload = verifyJWT(getToken(req));
-  if (!payload) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  const auth = requireAdmin(req);
+  if (!auth.ok) return res.status(auth.code).json({ error: auth.error });
 
   const ref = req.query.ref;
 

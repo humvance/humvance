@@ -10,18 +10,9 @@
 // provenance (see _meeting-core.buildDiagnosticSnapshot).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { verifyJWT, getToken, setJSON } = require('./_utils');
+const { setJSON, requireAdmin } = require('./_utils');
 const { kv } = require('@vercel/kv');
 const M = require('./_meeting-core');
-
-// Phase 2's /api/client and /api/agent accept ANY valid JWT. Phase 3 does not:
-// a portal token (role:'client') must never reach meeting intelligence.
-function requireAdmin(req) {
-  const payload = verifyJWT(getToken(req));
-  if (!payload) return { ok: false, code: 401, error: 'Unauthorized' };
-  if (payload.role !== 'admin') return { ok: false, code: 403, error: 'غير مصرح' };
-  return { ok: true, payload };
-}
 
 async function loadMeeting(ref, id) {
   if (!M.isValidMeetingId(id)) return { code: 400, error: 'معرّف اجتماع غير صالح' };
