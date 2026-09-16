@@ -1,5 +1,5 @@
 'use strict';
-const { verifyJWT, getToken, setJSON } = require('./_utils');
+const { setJSON, requireAdmin } = require('./_utils');
 const { kv } = require('@vercel/kv');
 
 function buildEmail(client, link) {
@@ -41,8 +41,8 @@ module.exports = async function handler(req, res) {
   setJSON(res);
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const payload = verifyJWT(getToken(req));
-  if (!payload) return res.status(401).json({ error: 'Unauthorized' });
+  const auth = requireAdmin(req);
+  if (!auth.ok) return res.status(auth.code).json({ error: auth.error });
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'RESEND_API_KEY غير مضبوط في Vercel' });
