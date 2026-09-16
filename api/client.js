@@ -6,6 +6,15 @@ function genId(prefix) {
   return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
+// Stages that may only be entered once Phase 1 is genuinely complete
+// (phases.p1.completedAt). 'lost' is deliberately excluded — a client can be
+// marked lost at any point. Mirrors STAGES_REQUIRING_P1 in public/admin.html.
+const STAGES_REQUIRING_P1 = [
+  'p2_questions', 'p2_sent', 'p2_waiting', 'p3_analysis', 'p4_meeting', 'p5_post',
+  'p6_deep', 'p6_waiting', 'p7_final', 'p8_internal', 'p9_scope', 'p10_pricing',
+  'p11_approval', 'p12_ready', 'p13_sent', 'won'
+];
+
 async function handleCRM(req, res) {
   const { type, id, orgId: filterOrgId } = req.query;
   const body = req.body || {};
@@ -232,6 +241,21 @@ module.exports = async function handler(req, res) {
           updated.phases[k] = { ...(ep[k] || {}), ...v };
         }
       }
+
+      // Workflow guard (authoritative): a client cannot ENTER a stage that
+      // requires Phase 1 unless phases.p1.completedAt exists. Checked against the
+      // MERGED state, so completeP1() — which sends completedAt and the new stage
+      // in one PATCH — still passes. Only a real stage change is evaluated, so
+      // existing records are not retroactively blocked.
+      if (body.pipelineStage
+          && body.pipelineStage !== existing.pipelineStage
+          && STAGES_REQUIRING_P1.includes(body.pipelineStage)
+          && !updated.phases?.p1?.completedAt) {
+        return res.status(409).json({
+          error: 'لا يمكن نقل العميل إلى هذه المرحلة قبل إكمال المرحلة 1 (المراجعة الأولية).'
+        });
+      }
+
       await kv.set(`client:${ref}`, updated);
       return res.status(200).json(updated);
     } catch (err) {

@@ -216,6 +216,14 @@ const STAGES = {
   'won':          'تم التعاقد ✓',
   'lost':         'لم يكتمل'
 };
+// Stages that may only be entered once Phase 1 is genuinely complete
+// (phases.p1.completedAt set by completeP1). 'lost' is deliberately excluded —
+// a client can be marked lost at any point. The server enforces the same rule.
+const STAGES_REQUIRING_P1 = [
+  'p2_questions','p2_sent','p2_waiting','p3_analysis','p4_meeting','p5_post',
+  'p6_deep','p6_waiting','p7_final','p8_internal','p9_scope','p10_pricing',
+  'p11_approval','p12_ready','p13_sent','won'
+];
 const STAGE_CSS = {
   'new':'stage-new','p1_review':'stage-p1','p2_questions':'stage-p2',
   'p2_sent':'stage-waiting','p2_waiting':'stage-waiting',
@@ -460,7 +468,7 @@ function renderWorkspace() {
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-family:'Inter',sans-serif;font-size:12px;background:var(--warm);border:1px solid var(--border);padding:4px 10px;border-radius:99px">${esc(c.ref)}</span>
         <span class="badge ${STAGE_CSS[stage]||'badge-new'} badge">${esc(STAGES[stage]||stage)}</span>
-        <select class="form-input" style="width:auto;padding:6px 12px;font-size:13px" onchange="updateStage('${esc(c.ref)}',this.value)">
+        <select class="form-input" style="width:auto;padding:6px 12px;font-size:13px" onchange="updateStage('${esc(c.ref)}',this.value,this)">
           ${Object.entries(STAGES).map(([k,l])=>`<option value="${k}" ${stage===k?'selected':''}>${l}</option>`).join('')}
         </select>
       </div>
@@ -564,22 +572,59 @@ function renderP1(client, p1) {
     </div>`;
 }
 
+// Persistent inline error for the P1 agent request.
+// Renders ONLY the server's own safe message text — never keys, tokens or stack traces.
+function showP1Error(rawMsg) {
+  const safe = esc(String(rawMsg || '').slice(0, 300)) || 'تعذّر إكمال الطلب';
+  const html = `
+    <div class="section-block" id="p1-error" style="border:1px solid var(--error);border-radius:var(--r);padding:14px;margin-top:12px;text-align:right">
+      <div style="font-size:14px;font-weight:700;color:var(--error);margin-bottom:6px">⚠️ فشل تحليل Humvance</div>
+      <div style="font-size:13px;color:var(--text-3);margin-bottom:10px">لم يكتمل الطلب، ولم يُحفظ أي تحليل. رسالة الخادم:</div>
+      <div style="font-size:13px;background:var(--warm);border-radius:6px;padding:8px 10px;margin-bottom:12px;word-break:break-word">${safe}</div>
+      <button class="btn btn-primary btn-sm" onclick="retryP1Agent()">إعادة المحاولة</button>
+    </div>`;
+  const status = document.getElementById('p1-status');
+  if (status) { status.innerHTML = html; return; }
+  const main = document.getElementById('phase-main');
+  if (main) {
+    document.getElementById('p1-error')?.remove();
+    main.insertAdjacentHTML('afterbegin', html);
+  }
+}
+
+function retryP1Agent() {
+  document.getElementById('p1-error')?.remove();
+  runP1Agent();
+}
+
 async function runP1Agent() {
   const btn = document.getElementById('p1-analyze-btn');
   const status = document.getElementById('p1-status');
   if (btn) btn.disabled = true;
+  document.getElementById('p1-error')?.remove();
+  let regenRow = null;
   if (status) status.innerHTML = `<div class="loading-row" style="justify-content:center"><div class="spinner"></div> Humvance يحلل البيانات...</div>`;
   else {
     const main = document.getElementById('phase-main');
-    if (main) { const s = main.querySelector('.section-block'); if (s) { const d = document.createElement('div'); d.className='loading-row'; d.innerHTML='<div class="spinner"></div> إعادة التوليد...'; s.appendChild(d); } }
+    if (main) { const s = main.querySelector('.section-block'); if (s) { const d = document.createElement('div'); d.className='loading-row'; d.innerHTML='<div class="spinner"></div> إعادة التوليد...'; s.appendChild(d); regenRow = d; } }
   }
+  // Always tear the loading state down — leaving it up makes a failed request look live.
+  const clearP1Loading = () => {
+    if (status) status.innerHTML = '';
+    if (regenRow) { regenRow.remove(); regenRow = null; }
+  };
   try {
     const d = await api('POST', '/api/agent', { phase: 'p1', ref: S.currentClient.ref });
-    if (!d) return;
+    if (!d) { clearP1Loading(); return; }
     S.currentClient = await api('GET', `/api/client?ref=${encodeURIComponent(S.currentClient.ref)}`);
     renderP1(S.currentClient, S.currentClient.phases?.p1);
     toast('اكتمل التحليل', 'success');
-  } catch (e) { toast(e.message, 'error'); if (btn) btn.disabled = false; }
+  } catch (e) {
+    clearP1Loading();
+    showP1Error(e && e.message);
+    if (btn) btn.disabled = false;
+    toast('فشل التحليل', 'error');
+  }
 }
 
 async function saveP1Notes() {
@@ -968,14 +1013,23 @@ async function savePhaseNotes(phase, fieldId) {
 }
 
 // ── Pipeline stage update ──
-async function updateStage(ref, stage) {
+async function updateStage(ref, stage, selectEl) {
+  const c = (S.currentClient && S.currentClient.ref === ref) ? S.currentClient : null;
+  const revert = () => { if (selectEl) selectEl.value = (S.currentClient?.pipelineStage) || 'new'; };
+  // Client-side guard. The server check in /api/client is authoritative; this
+  // just avoids a pointless round-trip and explains why the move was refused.
+  if (c && STAGES_REQUIRING_P1.includes(stage) && !c.phases?.p1?.completedAt) {
+    revert();
+    toast('يجب إكمال المرحلة 1 أولاً — شغّل "تحليل مع Humvance" ثم اضغط "اكتملت المراجعة"', 'error');
+    return;
+  }
   try {
     await api('PATCH', `/api/client?ref=${encodeURIComponent(ref)}`, { pipelineStage: stage });
     if (S.currentClient && S.currentClient.ref === ref) S.currentClient.pipelineStage = stage;
     const badge = document.querySelector('.badge.badge-new, .badge.stage-new, .badge.stage-p1, .badge.stage-p2, .badge.stage-p3, .badge.stage-waiting, .badge.stage-done, .badge.stage-lost');
     if (badge) { badge.className = `badge ${STAGE_CSS[stage]||'stage-p1'} badge`; badge.textContent = STAGES[stage]||stage; }
     toast('تم تحديث المرحلة', 'success');
-  } catch (e) { toast(e.message, 'error'); }
+  } catch (e) { revert(); toast(e.message, 'error'); }
 }
 
 // ── CRM: Organizations ──
