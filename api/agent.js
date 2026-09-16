@@ -2,147 +2,33 @@
 const { verifyJWT, getToken, setJSON } = require('./_utils');
 const { kv } = require('@vercel/kv');
 
-// ── Approved 14 Domain Framework ──
-const DOMAINS = {
-  strategy_alignment:      'Strategy Alignment',
-  org_structure:           'Organization Structure',
-  roles_accountability:    'Roles & Accountability',
-  decision_rights:         'Decision Rights',
-  processes_collaboration: 'Processes & Collaboration',
-  workforce_capacity:      'Workforce & Capacity',
-  skills_capabilities:     'Skills & Capabilities',
-  leadership_management:   'Leadership & Management',
-  performance_rewards:     'Performance & Rewards',
-  culture_engagement:      'Culture & Engagement',
-  hr_operating_model:      'HR Operating Model',
-  governance_compliance:   'Governance & Compliance',
-  people_data_analytics:   'People Data & Analytics',
-  ai_future_workforce:     'AI & Future Workforce Readiness'
-};
+function buildQuickAnalyzePrompt(c) {
+  return `أنت خبير موارد بشرية وتطوير تنظيمي متخصص في الشركات السعودية.
+بناءً على بيانات الاستبيان أدناه، قدم:
+1. ملخص تنفيذي (3-4 جمل)
+2. نقاط القوة (3 نقاط)
+3. الفجوات الجوهرية (3-4 نقاط)
+4. المخاطر العاجلة (مخاطر نظامية أو تشغيلية)
+5. خطة إجراءات 90 يوم (5-6 إجراءات أساسية)
 
-// ── Playbook Hypothesis Catalogue ──
-const PLAYBOOKS = {
-  decision_dependency: {
-    name: 'Decision Dependency (CEO Bottleneck)',
-    primaryDomains: ['decision_rights', 'roles_accountability', 'leadership_management'],
-    hypotheses: [
-      { id: 'DD-H1', text: 'المؤسس/CEO هو نقطة القرار الوحيدة وهذا يعطّل سرعة العمليات' },
-      { id: 'DD-H2', text: 'غياب تفويض الصلاحيات الرسمي والموثق' },
-      { id: 'DD-H3', text: 'لا توجد سياسات وإجراءات تتيح للموظفين العمل باستقلالية' },
-      { id: 'DD-H4', text: 'القيادة الوسطى لا تمتلك صلاحيات كافية لاتخاذ قرارات' },
-      { id: 'DD-H5', text: 'عدم وضوح الأدوار والمسؤوليات يجعل كل شيء يُرفع للأعلى' },
-      { id: 'DD-H6', text: 'التوسع السريع في العمليات أفقد الشركة قدرة التنسيق' },
-      { id: 'DD-H7', text: 'غياب نظام تتبع وقياس يُضطر المؤسس لمتابعة كل التفاصيل' }
-    ]
-  },
-  poor_performance: {
-    name: 'Poor Performance & Accountability',
-    primaryDomains: ['performance_rewards', 'roles_accountability', 'skills_capabilities'],
-    hypotheses: [
-      { id: 'PP-H1', text: 'الموظفون لا يمتلكون أهدافاً واضحة وقابلة للقياس' },
-      { id: 'PP-H2', text: 'لا يوجد نظام تقييم أداء فعّال أو منتظم' },
-      { id: 'PP-H3', text: 'هناك فجوة واضحة في المهارات والكفاءات المطلوبة' },
-      { id: 'PP-H4', text: 'منظومة الحوافز والتعويضات لا تحفز على الأداء' },
-      { id: 'PP-H5', text: 'بعض الموظفين في أدوار لا تناسب كفاءاتهم الفعلية' },
-      { id: 'PP-H6', text: 'المديرون المباشرون لا يمارسون دور الإشراف والتوجيه' },
-      { id: 'PP-H7', text: 'ثقافة تتجنب المحاسبة والتغذية الراجعة' },
-      { id: 'PP-H8', text: 'غياب برامج تطوير مهني مستمر للموظفين' },
-      { id: 'PP-H9', text: 'ضغط العمل الزائد يؤثر سلباً على جودة الأداء' },
-      { id: 'PP-H10', text: 'عوامل تنظيمية وبيئية تعيق الأداء الفردي' }
-    ]
-  },
-  growth_structure: {
-    name: 'Rapid Growth & Structure Complexity',
-    primaryDomains: ['org_structure', 'workforce_capacity', 'processes_collaboration'],
-    hypotheses: [
-      { id: 'GS-H1', text: 'الهيكل التنظيمي الحالي لم يُصمم للحجم الذي وصلت إليه الشركة' },
-      { id: 'GS-H2', text: 'التوظيف السريع أوجد فجوات في الكفاءات والتوافق الوظيفي' },
-      { id: 'GS-H3', text: 'عمليات الاستقطاب والتأهيل لا تستوعب وتيرة التوسع' },
-      { id: 'GS-H4', text: 'متطلبات السعودة تتصاعد وتعقيداتها تتزايد مع التوسع' },
-      { id: 'GS-H5', text: 'الأنظمة والبنية التحتية للموارد البشرية لا تستوعب الحجم الجديد' },
-      { id: 'GS-H6', text: 'الثقافة التنظيمية تتبعثر مع النمو الجغرافي أو العددي السريع' },
-      { id: 'GS-H7', text: 'تعارض الأولويات وضعف التنسيق بين الأقسام يتصاعد' },
-      { id: 'GS-H8', text: 'نموذج تفويض القرارات الحالي لا يناسب حجم المنظمة الجديد' },
-      { id: 'GS-H9', text: 'ضغط الامتثال التنظيمي يتصاعد مع كل توسع جغرافي' },
-      { id: 'GS-H10', text: 'الشركة لا تمتلك كوادر قيادية كافية لإدارة مرحلة النمو' }
-    ]
-  }
-};
+بيانات الشركة:
+- الشركة: ${c.companyName||'—'} | القطاع: ${c.sector||'—'} | المدينة: ${c.city||'—'}
+- الموظفون: ${c.numFulltime||0} موظف | السعودة: ${c.saudiPercent||'؟'}%
+- إدارة الموارد البشرية: ${c.hasHRDept||'—'}
+- لائحة العمل: ${c.hasPoliciesManual||'—'}
+- تقييم الأداء: ${c.hasPerformanceReview||'—'}
+- سلم الرواتب: ${c.hasSalaryScale||'—'}
+- GOSI: ${c.gosiCompliant||'—'}
+- WPS: ${c.wpsCompliance||'—'}
+- نطاقات: ${c.nitaqatTier||'؟'}
+- الخدمة المطلوبة: ${c.serviceInterest||'—'}
+- درجة النضج: ${c.score||0}/100
+- المشاكل الرئيسية: ${(c.mainProblems||[]).join('، ')}
+- ملاحظات العميل: ${c.additionalNotes||'—'}
 
-// ── Deterministic Confidence Engine ──
-// The LLM NEVER sets confidence. It classifies evidence (strength, supports, contradicts).
-// This function calculates the score from evidence relationships.
-function calculateConfidence(hypId, evidence) {
-  const evFor = evidence.filter(e => (e.supports || []).includes(hypId));
-  const evAgainst = evidence.filter(e => (e.contradicts || []).includes(hypId));
-  const sourcesFor = new Set(evFor.map(e => e.sourceType));
-
-  let score = 20;
-  const factors = [{ type: 'base', delta: 20, description: 'Base score — no data yet' }];
-  const caps = [];
-
-  // Supporting evidence (+10 weak, +20 moderate, +30 strong)
-  for (const ev of evFor) {
-    const delta = ev.strength === 'strong' ? 30 : ev.strength === 'moderate' ? 20 : 10;
-    score += delta;
-    factors.push({ type: `supporting_${ev.strength}`, evidenceId: ev.id, delta, description: ev.description });
-  }
-
-  // Independent corroborating sources bonus (+10 per additional source, max 3)
-  if (sourcesFor.size >= 2) {
-    const delta = 10 * Math.min(sourcesFor.size - 1, 3);
-    score += delta;
-    factors.push({ type: 'independent_sources', count: sourcesFor.size, delta, description: `${sourcesFor.size} independent source types corroborate` });
-  }
-
-  // Contradicting evidence (-10 weak, -15 moderate, -25 strong)
-  for (const ev of evAgainst) {
-    const delta = ev.strength === 'strong' ? -25 : ev.strength === 'moderate' ? -15 : -10;
-    score += delta;
-    factors.push({ type: `contradicting_${ev.strength}`, evidenceId: ev.id, delta, description: ev.description });
-  }
-
-  // Caps — applied after summing, floor at 0 before cap check
-  score = Math.max(0, score);
-
-  if (evFor.length === 0) {
-    score = Math.min(score, 49);
-    caps.push('no_supporting_evidence_cap_at_49');
-  } else if (sourcesFor.size === 1) {
-    score = Math.min(score, 69);
-    caps.push('single_source_only_cap_at_69');
-  }
-
-  if (evAgainst.length > 0) {
-    score = Math.min(score, 69);
-    caps.push('contradiction_present_cap_at_69');
-  }
-
-  score = Math.min(score, 100);
-
-  const level = score >= 85 ? 'confirmed' : score >= 70 ? 'high' : score >= 50 ? 'medium' : 'low';
-  return { score, level, factors, caps, evForCount: evFor.length, evAgainstCount: evAgainst.length };
+اكتب بالعربية بأسلوب مهني ومختصر. لا تكن روتينياً — كن محدداً بناءً على هذه الشركة.`;
 }
 
-function recalculateAllConfidences(hypotheses, evidence) {
-  return hypotheses.map(h => {
-    const calc = calculateConfidence(h.id, evidence);
-    return {
-      ...h,
-      confidence: calc.score,
-      confidenceLevel: calc.level,
-      confidenceFactors: calc.factors,
-      evidenceFor: evidence.filter(e => (e.supports || []).includes(h.id)).map(e => e.id),
-      evidenceAgainst: evidence.filter(e => (e.contradicts || []).includes(h.id)).map(e => e.id)
-    };
-  });
-}
-
-function evId() {
-  return 'EV-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
-}
-
-// ── Client summary helper for prompts ──
 function clientSummary(c) {
   const f = v => v === 'yes' ? 'نعم' : v === 'partial' ? 'جزئي' : v === 'no' ? 'لا' : v || '—';
   return `الشركة: ${c.companyName||'—'} | القطاع: ${c.sector||'—'} | المدينة: ${c.city||'—'}
@@ -153,196 +39,91 @@ function clientSummary(c) {
 سلم رواتب: ${f(c.hasSalaryScale)} | تقييم الأداء: ${f(c.hasPerformanceReview)} | خطة تدريبية: ${f(c.hasTrainingPlan)}
 الخدمة المطلوبة: ${c.serviceInterest||'—'} | الميزانية: ${c.budgetRange||'—'}
 درجة النضج الأولية: ${c.score||0}/100
-مشاكل العميل الذاتية: ${(c.mainProblems||[]).join(' | ')||'—'}
-ملاحظات: ${c.additionalNotes||'لا يوجد'}`;
+ملاحظات العميل: ${c.additionalNotes||'لا يوجد'}`;
 }
 
-// ── P1 — Initial AI Review ──
 function buildP1Prompt(client) {
   return `أنت Humvance Agent — مستشار استشاري داخلي متخصص في الموارد البشرية والتطوير التنظيمي للشركات السعودية.
 
-وصل هذا العميل عبر نموذج التقييم. مهمتك: مراجعة أولية دقيقة وصادقة. لا توصيات نهائية — فقط ما نفهمه وما لا نعرفه.
+وصل هذا العميل عبر نموذج التقييم على الموقع. مهمتك الآن: مراجعة أولية دقيقة وصادقة. لا توصيات نهائية ولا تقارير — فقط ما نفهمه، وما لا نعرفه بعد.
 
 ${clientSummary(client)}
 
-أجب بـJSON فقط:
-{"understood":"ما فهمناه عن الشركة بشكل محدد (3-4 جمل)","apparent_needs":"الاحتياج الظاهر (2-3 جمل تحليلية)","unknown":["معلومة ناقصة 1","..."],"concerns":["إشكالية محتملة 1","..."],"next_step":"الخطوة التالية الموصى بها — جملة واحدة"}`;
+أجب بصيغة JSON فقط — لا تضف أي نص قبله أو بعده:
+{
+  "understood": "ما فهمناه عن الشركة وضعها الحالي بشكل محدد لهذا العميل (3-4 جمل)",
+  "apparent_needs": "الاحتياج الظاهر بناءً على المعلومات المتاحة (2-3 جمل تحليلية)",
+  "unknown": ["معلومة ناقصة تؤثر على فهمنا 1", "معلومة ناقصة 2", "..."],
+  "concerns": ["شيء يحتاج فهم أعمق أو قد يكون إشكالية 1", "..."],
+  "next_step": "الخطوة التالية الموصى بها بشكل محدد وعملي جملة واحدة"
+}`;
 }
 
-// ── Diagnostic Router — AI classifies evidence, server calculates confidence ──
-function buildDiagnosticRouterPrompt(client, phases) {
-  const p1 = phases.p1?.agentOutput || {};
-  const p2 = phases.p2 || {};
-  const p3 = phases.p3?.agentOutput || {};
-  const answersText = (p2.clientAnswers || []).map((a, i) => {
-    const q = (p2.questions || [])[i] || {};
-    return `س(${q.area||''}): ${q.question||''}\nج: ${a.answer||'—'}`;
-  }).join('\n\n');
+function buildP2Prompt(client, p1) {
+  return `أنت Humvance Agent.
 
-  const allHyps = Object.values(PLAYBOOKS).flatMap(p =>
-    p.hypotheses.map(h => `  ${h.id}: ${h.text}`)
-  ).join('\n');
-  const domainList = Object.entries(DOMAINS).map(([k, v]) => `  ${k}: ${v}`).join('\n');
+بناءً على المعلومات الأولية ومخرجات المراجعة الأولية، ابنِ قائمة أسئلة أولية مخصصة تماماً لهذا العميل.
 
-  return `أنت Humvance Diagnostic Router.
-مهمتك: اختيار الفرضيات المناسبة واستخراج الأدلة الموجودة من بيانات العميل.
-تحذير: لا تُعطِ أي رقم confidence — النظام يحسبه تلقائياً من الأدلة.
-
-─── بيانات العميل ───
 ${clientSummary(client)}
 
-─── P1 ───
-ما فهمناه: ${p1.understood||'لم تُنجز P1 بعد'}
-الاحتياج الظاهر: ${p1.apparent_needs||'—'}
-المخاوف: ${(p1.concerns||[]).join(' | ')||'—'}
-ما لا نعرفه: ${(p1.unknown||[]).join(' | ')||'—'}
-${answersText ? `\n─── إجابات العميل (P2) ───\n${answersText}` : ''}
-${p3.now_know ? `\n─── P3 ───\nما نعرفه: ${p3.now_know}\nالمشاكل: ${(p3.main_problems||[]).join(' | ')}` : ''}
-
-─── الفرضيات المتاحة ───
-${allHyps}
-
-─── النطاقات الـ 14 ───
-${domainList}
-
-─── JSON فقط ─── لا تضف confidence ───
-{"primaryDomains":["1-3 مفاتيح domain أساسية"],"secondaryDomains":["1-4 مفاتيح domain ثانوية"],"symptoms":["3-6 أعراض محددة من البيانات"],"activePlaybooks":["decision_dependency | poor_performance | growth_structure"],"selectedHypotheses":[{"id":"DD-H1","playbook":"decision_dependency","rationale":"لماذا هذه الفرضية ذات صلة بهذا العميل تحديداً"}],"evidence":[{"sourceType":"survey_field | p1_analysis | p2_answer | p3_analysis","source":"اسم الحقل أو المصدر","description":"وصف الدليل","strength":"weak | moderate | strong","supports":["DD-H1"],"contradicts":[]}],"questions":[{"domain":"decision_rights","question":"سؤال تشخيصي مخصص","why":"الفجوة التي يسدها","targetHypotheses":["DD-H1"]}],"summary":"ملخص تشخيصي 3-4 جمل"}
-
-قواعد: فقط الفرضيات التي تدعمها بيانات موجودة. strength: weak=إشارة، moderate=دليل معقول، strong=دليل واضح. أسئلة 4-6 فقط. لا confidence.`;
-}
-
-// ── Diagnostic Update — AI adds evidence, server recalculates all confidence ──
-function buildDiagnosticUpdatePrompt(client, existingDiag, newAnswers) {
-  const allItems = (existingDiag.questions || []).flatMap(r => r.items || []);
-  const answersText = (newAnswers || []).map(a => {
-    const q = allItems.find(q => q.id === a.id) || {};
-    return `س(${q.domain||''}): ${q.question||''}\nج: ${a.answer||'—'}`;
-  }).join('\n\n');
-  const hypText = (existingDiag.hypotheses || []).map(h =>
-    `[${h.id}] confidence:${h.confidence||'—'}% (${h.confidenceLevel||'—'}) — ${h.hypothesis}`
-  ).join('\n');
-  const recentEv = (existingDiag.evidence || []).slice(-8).map(e =>
-    `[${e.id}] ${e.sourceType}/${e.strength}: ${e.description} → supports:${(e.supports||[]).join(',')||'—'} contradicts:${(e.contradicts||[]).join(',')||'—'}`
-  ).join('\n');
-
-  return `أنت Humvance Diagnostic Engine.
-مهمتك: استخراج أدلة جديدة من الإجابات الواردة واقتراح نتائج إذا تراكمت أدلة كافية.
-تحذير: لا تُعطِ confidence — النظام يحسبه من الأدلة.
-
-─── إجابات جديدة ───
-${answersText||'لا توجد إجابات'}
-
-─── الفرضيات الحالية ───
-${hypText||'—'}
-
-─── آخر 8 أدلة مسجلة ───
-${recentEv||'—'}
-
-─── ملخص حالي ───
-${existingDiag.summary||'—'}
-
-─── JSON فقط ─── لا تضف confidence ───
-{"newEvidence":[{"sourceType":"diagnostic_answer | consultant_note | meeting_note","source":"وصف المصدر","description":"الدليل المستخرج","strength":"weak | moderate | strong","supports":["DD-H1"],"contradicts":[]}],"newConflicts":[{"description":"تناقض مكتشف","relatedHypotheses":["DD-H1"],"relatedEvidence":[]}],"proposedFindings":[{"title":"عنوان النتيجة","description":"وصف يجمع الأدلة والتحليل","severity":"critical | major | minor","domain":"domain_key","fromHypotheses":["DD-H1"],"rationale":"لماذا أصبحت نتيجة الآن"}],"newQuestions":[{"domain":"domain_key","question":"سؤال جديد","why":"الفجوة","targetHypotheses":["DD-H1"]}],"updatedSummary":"ملخص محدث"}
-
-قواعد: اقترح finding فقط إذا تراكمت أدلة قوية بدون تناقضات كبيرة. AI لا توافق — المستشار يعتمد.`;
-}
-
-// ── P2 — Diagnostic-Driven Client Questions ──
-function buildP2Prompt(client, p1, diag) {
-  const diagCtx = diag
-    ? [
-        `النطاقات الأساسية: ${(diag.primaryDomains||[]).join(', ')||'—'}`,
-        `الـ Playbooks النشطة: ${(diag.activePlaybooks||[]).join(', ')||'—'}`,
-        `الفرضيات النشطة (${(diag.hypotheses||[]).length}):`,
-        ...(diag.hypotheses||[]).slice(0, 10).map(h =>
-          `  [${h.id}] confidence:${h.confidence||'—'}% — ${h.hypothesis} [أدلة مؤيدة: ${(h.evidenceFor||[]).length}]`
-        ),
-        `أعراض مرصودة: ${(diag.symptoms||[]).slice(0, 4).join(' | ')||'—'}`
-      ].join('\n')
-    : 'لم يُهيَّأ التشخيص بعد — استخدم بيانات الاستبيان و P1 فقط';
-
-  return `أنت Humvance Agent — تبني أسئلة أولية مخصصة.
-
-مهمتك: أسئلة تسد فجوات أدلة الفرضيات النشطة. لا تكرر ما هو معروف. رتّب من الأكثر تأثيراً على التشخيص.
-
-─── بيانات العميل ───
-${clientSummary(client)}
-
-─── P1 ───
+مخرجات المراجعة الأولية:
 ما فهمناه: ${p1?.understood||'—'}
 الاحتياج الظاهر: ${p1?.apparent_needs||'—'}
 ما لا نعرفه: ${(p1?.unknown||[]).join(' | ')||'—'}
 مخاوف: ${(p1?.concerns||[]).join(' | ')||'—'}
 
-─── حالة التشخيص ───
-${diagCtx}
+قواعد صارمة:
+- كل سؤال مبني على وضع هذه الشركة تحديداً — لا أسئلة عامة
+- اسأل فقط عما نحتاجه لفهم المشكلة الحقيقية
+- 8 إلى 12 سؤالاً مرتبة من الأهم إلى الأقل أهمية
+- صغ الأسئلة بأسلوب محادثة طبيعي، ليست استبياناً رسمياً
 
-أجب بـJSON فقط:
-{"questions":[{"id":"q1","area":"المجال","question":"نص السؤال للعميل","why":"الفرضية المستهدفة والسبب — للمستشار فقط","targetHypotheses":["DD-H1"],"followup":"سؤال متابعة مقترح"}]}
-
-قواعد: 8-12 سؤالاً. كل سؤال يستهدف فرضية نشطة. أسلوب محادثة طبيعي.`;
+أجب بصيغة JSON فقط:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "area": "المجال مثال الهيكل التنظيمي أو إدارة الموارد البشرية",
+      "question": "نص السؤال للعميل",
+      "why": "لماذا نسأل هذا — للمؤسس فقط لا يظهر للعميل",
+      "followup": "سؤال متابعة مقترح"
+    }
+  ]
+}`;
 }
 
-// ── P3 — Diagnostic-Integrated Meeting Preparation ──
-function buildP3Prompt(client, phases, diag) {
+function buildP3Prompt(client, phases) {
   const p1 = phases.p1?.agentOutput || {};
   const p2 = phases.p2 || {};
-  const answers = p2.clientAnswers || [];
+  const answers = (p2.clientAnswers || []);
   const questions = p2.questions || [];
   const qaText = questions.map((q, i) => {
     const ans = answers.find(a => a.id === q.id) || answers[i] || {};
-    return `س(${q.area}): ${q.question}\nج: ${ans.answer || '—'}`;
+    return `السؤال (${q.area}): ${q.question}\nالإجابة: ${ans.answer || '—'}`;
   }).join('\n\n');
 
-  const diagCtx = diag
-    ? [
-        `الفرضيات (${(diag.hypotheses||[]).length}):`,
-        ...(diag.hypotheses||[]).map(h => {
-          const ef = (diag.evidence||[]).filter(e => (e.supports||[]).includes(h.id));
-          const ea = (diag.evidence||[]).filter(e => (e.contradicts||[]).includes(h.id));
-          return `  [${h.id}] ${h.confidence||'—'}% (${h.confidenceLevel||'—'}) — ${h.hypothesis}\n    أدلة مؤيدة: ${ef.length} | معارضة: ${ea.length}`;
-        }),
-        `تناقضات: ${(diag.conflicts||[]).map(c=>c.description).join(' | ')||'لا توجد'}`,
-        `نتائج مقترحة: ${(diag.findings||[]).filter(f=>f.status==='proposed').map(f=>f.title).join(' | ')||'لا توجد بعد'}`
-      ].join('\n')
-    : 'التشخيص غير متاح';
+  return `أنت Humvance Agent.
 
-  return `أنت Humvance Agent — تُعد المستشار لاجتماع الاستكشاف مع العميل.
+حللت إجابات العميل على الأسئلة الأولية. مهمتك: تقييم عميق لما اكتشفناه حتى الآن.
 
 ${clientSummary(client)}
 
-─── P1 ───
-ما فهمناه: ${p1.understood||'—'}
+ما فهمناه من المراجعة الأولية: ${p1.understood||'—'}
+الاحتياج الظاهر: ${p1.apparent_needs||'—'}
 
-─── إجابات العميل ───
+أسئلة وإجابات العميل:
 ${qaText||'لا توجد إجابات'}
 
-─── حالة التشخيص ───
-${diagCtx}
-
-أجب بـJSON فقط:
-{"now_know":"ما أصبحنا نعرفه (3-4 جمل)","main_problems":["مشكلة 1","..."],"root_causes":["سبب 1","..."],"hypotheses_to_challenge":[{"id":"DD-H1","challenge":"كيف نختبر هذه الفرضية في الاجتماع","question":"السؤال المحدد لطرحه على العميل"}],"evidence_to_request":["وثيقة أو بيانات نطلبها 1","..."],"contradictions_to_discuss":["تناقض يحتاج توضيحاً 1","..."],"missing":["معلومة حرجة ناقصة 1","..."],"meeting_objectives":["هدف الاجتماع 1","..."]}`;
-}
-
-// ── Quick Analyze (called from index.html public form) ──
-function buildQuickAnalyzePrompt(c) {
-  return `أنت خبير موارد بشرية وتطوير تنظيمي متخصص في الشركات السعودية.
-بناءً على بيانات الاستبيان أدناه، قدم:
-1. ملخص تنفيذي (3-4 جمل)
-2. نقاط القوة (3 نقاط)
-3. الفجوات الجوهرية (3-4 نقاط)
-4. المخاطر العاجلة
-5. خطة إجراءات 90 يوم (5-6 إجراءات)
-
-الشركة: ${c.companyName||'—'} | القطاع: ${c.sector||'—'} | المدينة: ${c.city||'—'}
-الموظفون: ${c.numFulltime||0} | السعودة: ${c.saudiPercent||'؟'}%
-إدارة موارد بشرية: ${c.hasHRDept||'—'} | لائحة عمل: ${c.hasPoliciesManual||'—'} | تقييم أداء: ${c.hasPerformanceReview||'—'}
-سلم رواتب: ${c.hasSalaryScale||'—'} | GOSI: ${c.gosiCompliant||'—'} | WPS: ${c.wpsCompliance||'—'}
-الخدمة المطلوبة: ${c.serviceInterest||'—'} | درجة النضج: ${c.score||0}/100
-المشاكل: ${(c.mainProblems||[]).join('، ')}
-ملاحظات: ${c.additionalNotes||'—'}
-
-اكتب بالعربية بأسلوب مهني ومختصر. كن محدداً لهذه الشركة.`;
+أجب بصيغة JSON فقط:
+{
+  "now_know": "ما أصبحنا نعرفه الآن (3-4 جمل)",
+  "main_problems": ["مشكلة رئيسية 1", "مشكلة رئيسية 2", "..."],
+  "root_causes": ["سبب جذري محتمل 1", "..."],
+  "missing": ["معلومة لا تزال ناقصة 1", "..."],
+  "contradictions": ["تناقض أو شيء يستحق التوضيح 1"],
+  "discussion_areas": ["موضوع يجب مناقشته في الاجتماع 1", "..."],
+  "meeting_objectives": ["هدف الاجتماع 1", "هدف 2", "..."]
+}`;
 }
 
 module.exports = async function handler(req, res) {
@@ -358,180 +139,86 @@ module.exports = async function handler(req, res) {
   const { phase, ref } = req.body || {};
   if (!phase) return res.status(400).json({ error: 'phase مطلوب' });
 
-  async function callAI(prompt, maxTokens = 4000) {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error?.message || 'Anthropic API error');
-    const raw = d.content?.[0]?.text || '{}';
-    try { return JSON.parse(raw); }
-    catch {
-      try {
-        const m = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        return m ? JSON.parse(m[1].trim()) : JSON.parse((raw.match(/\{[\s\S]*\}/) || ['{}'])[0]);
-      } catch { console.error('[agent] JSON parse failed:', raw.slice(0, 200)); return { raw }; }
-    }
-  }
-
-  // ── quick_analyze ──
+  // quick_analyze: legacy single-pass analysis — returns { analysis } text
   if (phase === 'quick_analyze') {
     const clientData = req.body.client || (ref ? await kv.get(`client:${ref}`) : null);
     if (!clientData) return res.status(400).json({ error: 'client أو ref مطلوب' });
     try {
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
+      const qaRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1200, messages: [{ role: 'user', content: buildQuickAnalyzePrompt(clientData) }] })
       });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error?.message || 'AI error');
-      return res.status(200).json({ analysis: d.content?.[0]?.text || '' });
+      const qaData = await qaRes.json();
+      if (!qaRes.ok) throw new Error(qaData.error?.message || 'AI error');
+      return res.status(200).json({ analysis: qaData.content?.[0]?.text || '' });
     } catch (err) {
-      console.error('[quick_analyze]', err.message);
+      console.error('[agent quick_analyze]', err.message);
       return res.status(500).json({ error: 'فشل التحليل: ' + err.message });
     }
   }
 
-  // ── diagnostic_router ──
-  if (phase === 'diagnostic_router') {
-    if (!ref) return res.status(400).json({ error: 'ref مطلوب' });
-    try {
-      const client = await kv.get(`client:${ref}`);
-      if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
-      const output = await callAI(buildDiagnosticRouterPrompt(client, client.phases || {}));
-      const now = Date.now();
-
-      // Stamp evidence IDs
-      const evidence = (output.evidence || []).map(e => ({ ...e, id: evId(), createdAt: now }));
-
-      // Build hypothesis objects from PLAYBOOKS catalogue
-      const hypIndex = Object.values(PLAYBOOKS).reduce((acc, p) => {
-        const pk = Object.keys(PLAYBOOKS).find(k => PLAYBOOKS[k] === p);
-        p.hypotheses.forEach(h => { acc[h.id] = { ...h, playbook: pk }; });
-        return acc;
-      }, {});
-      const hypotheses = (output.selectedHypotheses || []).map(sel => {
-        const base = hypIndex[sel.id] || { id: sel.id, text: sel.id, playbook: sel.playbook };
-        return {
-          id: base.id, playbook: sel.playbook || base.playbook,
-          hypothesis: base.text, rationale: sel.rationale || '',
-          evidenceFor: [], evidenceAgainst: [], conflicts: [],
-          status: 'proposed', priority: 2,
-          consultantNote: null, approvedAt: null
-        };
-      });
-
-      // Server calculates confidence deterministically
-      const hypothesesWithConf = recalculateAllConfidences(hypotheses, evidence);
-
-      // Build question items with IDs
-      const questions = (output.questions || []).map((q, i) => ({
-        ...q, id: `dq_${now}_${i}`, answer: null, answeredAt: null
-      }));
-
-      const diag = {
-        version: '2.0', createdAt: now, updatedAt: now, status: 'active',
-        primaryDomains: output.primaryDomains || [],
-        secondaryDomains: output.secondaryDomains || [],
-        symptoms: output.symptoms || [],
-        activePlaybooks: output.activePlaybooks || [],
-        hypotheses: hypothesesWithConf,
-        questions: [{ round: 1, generatedAt: now, items: questions }],
-        evidence, conflicts: [], findings: [],
-        summary: output.summary || ''
-      };
-      await kv.set(`client:${ref}.diagnostic`, diag);
-      return res.status(200).json({ success: true, output: diag });
-    } catch (err) {
-      console.error('[diagnostic_router]', err.message);
-      return res.status(500).json({ error: 'Diagnostic Router error: ' + err.message });
-    }
-  }
-
-  // ── diagnostic_update ──
-  if (phase === 'diagnostic_update') {
-    if (!ref) return res.status(400).json({ error: 'ref مطلوب' });
-    try {
-      const client = await kv.get(`client:${ref}`);
-      if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
-      const existingDiag = (await kv.get(`client:${ref}.diagnostic`)) || {};
-      const output = await callAI(buildDiagnosticUpdatePrompt(client, existingDiag, req.body.answers || []));
-      const now = Date.now();
-
-      // Stamp new evidence IDs
-      const newEvidence = (output.newEvidence || []).map(e => ({ ...e, id: evId(), createdAt: now }));
-      const allEvidence = [...(existingDiag.evidence || []), ...newEvidence];
-
-      // Recalculate ALL confidences deterministically from full evidence set
-      const hypotheses = recalculateAllConfidences(existingDiag.hypotheses || [], allEvidence);
-
-      // Append questions round
-      const questions = [...(existingDiag.questions || [])];
-      if (output.newQuestions?.length) {
-        const items = output.newQuestions.map((q, i) => ({ ...q, id: `dq_${now}_${i}`, answer: null, answeredAt: null }));
-        questions.push({ round: questions.length + 1, generatedAt: now, items });
-      }
-
-      // Stamp and append conflicts
-      const conflicts = [
-        ...(existingDiag.conflicts || []),
-        ...(output.newConflicts || []).map(c => ({ ...c, id: `CON-${now}-${Math.random().toString(36).slice(2,5).toUpperCase()}`, resolved: false, createdAt: now }))
-      ];
-
-      // AI proposes findings; consultant must approve (aiProposed=true, consultantApproved=false)
-      const findings = [
-        ...(existingDiag.findings || []),
-        ...(output.proposedFindings || []).map(f => ({
-          ...f,
-          id: `FIND-${now}-${Math.random().toString(36).slice(2,5).toUpperCase()}`,
-          status: 'proposed', aiProposed: true, consultantApproved: false,
-          consultantNote: null, createdAt: now
-        }))
-      ];
-
-      const updatedDiag = {
-        ...existingDiag, updatedAt: now, hypotheses, questions,
-        evidence: allEvidence, conflicts, findings,
-        summary: output.updatedSummary || existingDiag.summary
-      };
-      await kv.set(`client:${ref}.diagnostic`, updatedDiag);
-      return res.status(200).json({ success: true, output: updatedDiag });
-    } catch (err) {
-      console.error('[diagnostic_update]', err.message);
-      return res.status(500).json({ error: 'Diagnostic Update error: ' + err.message });
-    }
-  }
-
-  // ── P1 / P2 / P3 ──
   if (!ref) return res.status(400).json({ error: 'ref مطلوب' });
 
   try {
     const client = await kv.get(`client:${ref}`);
     if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
+
     const existingPhases = client.phases || {};
     let prompt;
 
-    if (phase === 'p1') {
-      prompt = buildP1Prompt(client);
-    } else if (phase === 'p2') {
-      const diag = await kv.get(`client:${ref}.diagnostic`);
-      prompt = buildP2Prompt(client, existingPhases.p1?.agentOutput, diag);
-    } else if (phase === 'p3') {
-      const diag = await kv.get(`client:${ref}.diagnostic`);
-      prompt = buildP3Prompt(client, existingPhases, diag);
-    } else {
-      return res.status(400).json({ error: 'مرحلة غير معروفة: ' + phase });
+    if (phase === 'p1') prompt = buildP1Prompt(client);
+    else if (phase === 'p2') prompt = buildP2Prompt(client, existingPhases.p1?.agentOutput);
+    else if (phase === 'p3') prompt = buildP3Prompt(client, existingPhases);
+    else return res.status(400).json({ error: 'مرحلة غير معروفة: ' + phase });
+
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const aiData = await aiRes.json();
+    if (!aiRes.ok) throw new Error(aiData.error?.message || 'Anthropic API error');
+
+    const raw = aiData.content?.[0]?.text || '{}';
+    let output;
+    try {
+      output = JSON.parse(raw);
+    } catch {
+      try {
+        const mdMatch = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (mdMatch) {
+          output = JSON.parse(mdMatch[1].trim());
+        } else {
+          const braceMatch = raw.match(/\{[\s\S]*\}/);
+          output = JSON.parse(braceMatch ? braceMatch[0] : raw);
+        }
+      } catch {
+        console.error('[agent] JSON parse failed, raw:', raw.slice(0, 300));
+        output = { raw };
+      }
     }
 
-    const output = await callAI(prompt);
     const updatedPhases = {
       ...existingPhases,
-      [phase]: { ...(existingPhases[phase] || {}), agentOutput: output, generatedAt: Date.now() }
+      [phase]: {
+        ...(existingPhases[phase] || {}),
+        agentOutput: output,
+        generatedAt: Date.now()
+      }
     };
+
     await kv.set(`client:${ref}`, { ...client, phases: updatedPhases, updatedAt: Date.now() });
+
     return res.status(200).json({ success: true, output });
   } catch (err) {
     console.error('[agent]', err.message);

@@ -147,21 +147,6 @@ async function handleCRM(req, res) {
     return res.status(200).json({ success: true });
   }
 
-  // ── Diagnostic ──
-  if (type === 'diagnostic' && req.method === 'GET') {
-    const diagRef = req.query.ref || id;
-    if (!diagRef) return res.status(400).json({ error: 'ref مطلوب' });
-    const diag = await kv.get(`client:${diagRef}.diagnostic`);
-    return res.status(200).json(diag || null);
-  }
-
-  if (req.method === 'POST' && body.type === 'diagnostic') {
-    const { ref: diagRef, data } = body;
-    if (!diagRef || !data) return res.status(400).json({ error: 'ref و data مطلوبان' });
-    await kv.set(`client:${diagRef}.diagnostic`, { ...data, updatedAt: Date.now() });
-    return res.status(200).json({ success: true });
-  }
-
   return res.status(400).json({ error: 'طلب غير صحيح' });
 }
 
@@ -180,7 +165,7 @@ module.exports = async function handler(req, res) {
   // POST with body.type in ['org','contact','link'] → create or link
   // PATCH with ?type=  → update org or contact
   const isCRMGet   = req.method === 'GET'   && !!req.query.type;
-  const isCRMPost  = req.method === 'POST'  && ['org', 'contact', 'link', 'diagnostic'].includes(req.body?.type);
+  const isCRMPost  = req.method === 'POST'  && ['org', 'contact', 'link'].includes(req.body?.type);
   const isCRMPatch = req.method === 'PATCH' && !!req.query.type;
   if (isCRMGet || isCRMPost || isCRMPatch) {
     try { return await handleCRM(req, res); }
