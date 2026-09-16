@@ -1666,13 +1666,14 @@ async function rejectHypothesis(hypId) {
 async function approveFinding(findId) {
   await updateDiagField(d => {
     const f = (d.findings||[]).find(f => f.id === findId);
-    if (f) { f.status = 'approved'; f.approvedAt = Date.now(); }
+    // consultantApproved is set ONLY here — a human clicking Approve in the UI.
+    if (f) { f.status = 'approved'; f.approvedAt = Date.now(); f.consultantApproved = true; }
   }, 'تم اعتماد النتيجة');
 }
 async function rejectFinding(findId) {
   await updateDiagField(d => {
     const f = (d.findings||[]).find(f => f.id === findId);
-    if (f) f.status = 'rejected';
+    if (f) { f.status = 'rejected'; f.consultantApproved = false; }
   }, 'تم رفض النتيجة');
 }
 async function resolveConflict(conId) {
@@ -1775,6 +1776,7 @@ async function returnFindingToHyp(findId) {
     }
     f.status = 'returned';
     f.returnedAt = Date.now();
+    f.consultantApproved = false;
   }, 'تمت إعادة النتيجة إلى فرضية');
 }
 
