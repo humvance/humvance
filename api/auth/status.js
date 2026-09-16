@@ -13,10 +13,12 @@ module.exports = async function handler(req, res) {
     const hash = await kv.get('admin:password_hash');
     const setupDone = Boolean(hash);
 
-    // Check if a valid token is provided (for Bearer-auth callers)
+    // Is the caller authenticated FOR THE ADMIN APPLICATION?
+    // A portal token (role:'client') is a validly signed JWT but must never
+    // make the Admin SPA believe it is logged in.
     const token = getToken(req);
     const payload = token ? verifyJWT(token) : null;
-    const authenticated = Boolean(payload);
+    const authenticated = Boolean(payload) && payload.role === 'admin';
 
     return res.status(200).json({ setupDone, authenticated });
   } catch (err) {
