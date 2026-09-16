@@ -4,6 +4,7 @@
   "routes": [
     { "src": "/admin", "dest": "/admin.html" },
     { "src": "/questions", "dest": "/questions.html" },
-    { "src": "/portal", "dest": "/portal.html" }
+    { "src": "/portal", "dest": "/portal.html" },
+    { "src": "/v2-workspace", "dest": "/v2-workspace.html" }
   ]
 }

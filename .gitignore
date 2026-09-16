@@ -48,3 +48,6 @@ $RECYCLE.BIN/
 # ── Logs ──
 *.log
 npm-debug.log*
+
+# ── Claude session reports (not part of the app) ──
+Claude outputs/

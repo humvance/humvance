@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Humvance V2 — Case Workspace</title>
+<style>
+  :root{
+    --bg:#fbfaf9; --panel:#ffffff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e6e3e0;
+    --accent:#1f5f4f; --warn:#8a5a00; --bad:#8c2f2f; --good:#1f5f4f;
+    --chip:#f1efec;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141414; --panel:#1c1c1c; --ink:#ececec; --muted:#9a9a9a; --line:#2e2e2e;
+      --accent:#5fbfa3; --warn:#d6a24a; --bad:#e08585; --good:#5fbfa3; --chip:#242424;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif}
+  header{border-bottom:1px solid var(--line);padding:18px 20px;display:flex;
+    gap:12px;align-items:baseline;flex-wrap:wrap}
+  h1{font-size:17px;margin:0;font-weight:650;letter-spacing:-.01em}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 80px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:16px 18px;margin:0 0 14px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    margin:0 0 12px;font-weight:600}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
+  .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;
+    padding:2px 10px;font-size:12px;color:var(--muted)}
+  .chip.good{color:var(--good);border-color:var(--good)}
+  .chip.warn{color:var(--warn);border-color:var(--warn)}
+  .chip.bad{color:var(--bad);border-color:var(--bad)}
+  .item{border-top:1px solid var(--line);padding:10px 0}
+  .item:first-of-type{border-top:0}
+  .label{font-size:12px;color:var(--muted);margin-bottom:2px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted)}
+  blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid var(--line);
+    background:var(--chip);border-radius:0 6px 6px 0;white-space:pre-wrap}
+  ul{margin:6px 0;padding-inline-start:20px}
+  button{font:inherit;padding:8px 14px;border-radius:7px;border:1px solid var(--line);
+    background:var(--panel);color:var(--ink);cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  textarea,input{font:inherit;width:100%;padding:8px 10px;border-radius:7px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .notice{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13.5px}
+  .err{border-color:var(--bad);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:5px 8px 5px 0;vertical-align:top;border-top:1px solid var(--line)}
+  @media (max-width:640px){ .wrap{padding:14px 16px 60px} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Humvance V2 — Case Workspace</h1>
+  <span class="chip" id="storeChip">store: —</span>
+  <span class="chip" id="isoChip">isolation: —</span>
+  <span class="mono" id="caseRef"></span>
+</header>
+
+<div class="wrap">
+  <div id="banner"></div>
+
+  <section id="loader">
+    <h2>Open a case</h2>
+    <div class="row">
+      <input id="orgInput" placeholder="organization_id (org_…)" style="flex:1;min-width:220px">
+      <input id="caseInput" placeholder="case_id (case_…)" style="flex:1;min-width:220px">
+      <button class="primary" id="loadBtn">Load</button>
+    </div>
+    <p class="mono" style="margin-top:10px">
+      This workspace reads <code>/api/v2/case</code> with the admin token in sessionStorage
+      (<code>hv_token</code>). V2 requires the token to carry an <code>org</code> or <code>orgs</code>
+      claim; a V1 admin token without one is refused with <code>unscoped_token</code>, by design.
+    </p>
+  </section>
+
+  <div id="view" hidden>
+    <section>
+      <h2>Case</h2>
+      <div class="row" style="margin-bottom:8px">
+        <strong id="cTitle"></strong>
+        <span class="chip" id="cState"></span>
+        <span class="chip" id="cClient"></span>
+        <span class="chip mono" id="cVersion"></span>
+      </div>
+      <div class="label">Primary claim — the sponsor's account, under investigation</div>
+      <blockquote id="cClaim"></blockquote>
+      <div class="row"><span class="chip" id="cClaimStatus"></span></div>
+    </section>
+
+    <section>
+      <h2>Competing hypotheses</h2>
+      <div id="hyps"></div>
+    </section>
+
+    <section>
+      <h2>Evidence</h2>
+      <div id="evid"></div>
+    </section>
+
+    <section>
+      <h2>Contradictions</h2>
+      <div id="contra"></div>
+    </section>
+
+    <section>
+      <h2>Missing evidence — outstanding requests</h2>
+      <div id="reqs"></div>
+    </section>
+
+    <section>
+      <h2>Proposed finding</h2>
+      <div id="finding"></div>
+    </section>
+
+    <section>
+      <h2>Challenge review</h2>
+      <div id="challenge"></div>
+    </section>
+
+    <section>
+      <h2>Decision</h2>
+      <div id="approvalState"></div>
+      <div style="margin-top:10px">
+        <div class="label">Reviewer comment (required to approve over a blocked challenge)</div>
+        <textarea id="comment" rows="3" placeholder="What you read, what you accept, and why."></textarea>
+      </div>
+      <div class="controls">
+        <button class="primary" data-decision="APPROVED">Approve</button>
+        <button data-decision="MODIFIED">Modify</button>
+        <button data-decision="MORE_EVIDENCE_REQUIRED">Request more evidence</button>
+        <button data-decision="REJECTED">Reject</button>
+      </div>
+      <p class="mono" style="margin-top:8px">
+        A decision binds to the finding's exact version. Approving version N says nothing about version N+1.
+      </p>
+    </section>
+
+    <section>
+      <h2>Audit history</h2>
+      <table id="audit"></table>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var S = { org:null, caseId:null, bundle:null };
+
+  function token(){ try { return sessionStorage.getItem('hv_token'); } catch(e){ return null; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function el(id){ return document.getElementById(id); }
+  function banner(msg, bad){
+    el('banner').innerHTML = msg ? '<div class="notice'+(bad?' err':'')+'">'+esc(msg)+'</div>' : '';
+  }
+  function fmt(ts){ try { return new Date(ts).toISOString().replace('T',' ').slice(0,19); } catch(e){ return ''; } }
+
+  async function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+    var t = token();
+    if (t) opts.headers['Authorization'] = 'Bearer ' + t;
+    var res = await fetch(path, opts);
+    el('storeChip').textContent = 'store: ' + (res.headers.get('X-Humvance-V2-Store') || '—');
+    var iso = res.headers.get('X-Humvance-V2-Isolation') || '—';
+    var chip = el('isoChip');
+    chip.textContent = 'isolation: ' + iso;
+    chip.className = 'chip ' + (iso === 'SHARED-WITH-PRODUCTION' ? 'bad' : 'good');
+    var body = await res.json().catch(function(){ return {}; });
+    if (!res.ok) { var e = new Error(body.error || res.statusText); e.code = body.code; throw e; }
+    return body;
+  }
+
+  function renderList(target, items, fn){
+    var node = el(target);
+    if (!items.length) { node.innerHTML = '<p class="mono">none</p>'; return; }
+    node.innerHTML = items.map(fn).join('');
+  }
+
+  function render(b){
+    S.bundle = b;
+    var c = b.case;
+    el('view').hidden = false;
+    el('loader').hidden = true;
+    el('caseRef').textContent = c.case_id;
+    el('cTitle').textContent = c.title;
+    el('cState').textContent = c.status;
+    el('cClient').textContent = 'client sees: ' + c.client_visible_status;
+    el('cVersion').textContent = 'case v' + c.version;
+
+    var claim = b.claims.filter(function(x){ return x.is_primary; })[0] || b.claims[0];
+    el('cClaim').textContent = claim ? claim.statement : '—';
+    el('cClaimStatus').textContent = claim ? claim.verification_status : '—';
+
+    renderList('hyps', b.hypotheses, function(h){
+      var cls = h.state === 'NOT_SUPPORTED' ? '' : (h.state === 'STRENGTHENED' ? 'warn' : '');
+      return '<div class="item"><div class="row"><strong>'+esc(h.label||'—')+'</strong>'+
+        '<span class="chip '+cls+'">'+esc(h.state)+'</span></div><div>'+esc(h.statement)+'</div></div>';
+    });
+
+    renderList('evid', b.evidence, function(e){
+      var flags = (e.untrusted_scan && e.untrusted_scan.flags) || [];
+      return '<div class="item"><div class="row">'+
+        '<span class="chip">'+esc(e.source_type)+'</span>'+
+        '<strong>'+esc(e.source_name)+'</strong>'+
+        '<span class="chip">'+esc(e.verification_status)+'</span>'+
+        (flags.length ? '<span class="chip bad">untrusted content flagged: '+esc(flags.join(', '))+'</span>' : '')+
+        '</div>'+
+        '<div class="label">Source (verbatim)</div><blockquote>'+esc(e.original_content)+'</blockquote>'+
+        (e.ai_interpretation ? '<div class="label">AI interpretation — not evidence</div><blockquote>'+esc(e.ai_interpretation)+'</blockquote>' : '')+
+        ((e.limitations&&e.limitations.length) ? '<div class="label">Limitations</div><ul>'+e.limitations.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>' : '')+
+        '</div>';
+    });
+
+    renderList('contra', b.contradictions, function(x){
+      return '<div class="item"><div class="row"><span class="chip '+(x.state==='OPEN'?'bad':'')+'">'+esc(x.kind)+' · '+esc(x.state)+'</span></div>'+
+        '<div>'+esc(x.summary)+'</div></div>';
+    });
+
+    renderList('reqs', b.evidenceRequests.filter(function(r){ return r.status!=='REJECTED'; }), function(r){
+      return '<div class="item"><div class="row"><span class="chip">'+esc(r.status)+'</span>'+
+        '<strong>'+esc(r.requested_item)+'</strong></div>'+
+        '<div class="label">Why</div><div>'+esc(r.reason)+'</div></div>';
+    });
+
+    var findings = b.findings.slice().sort(function(a,b2){ return b2.updated_at - a.updated_at; });
+    var f = findings[0];
+    if (!f) { el('finding').innerHTML = '<p class="mono">no finding drafted</p>'; }
+    else {
+      el('finding').innerHTML =
+        '<div class="row"><span class="chip">v'+f.version+'</span><span class="chip">'+esc(f.state)+'</span>'+
+        '<span class="chip '+(f.evidence_strength==='STRONG'?'good':(f.evidence_strength==='LIMITED'?'bad':'warn'))+'">evidence: '+esc(f.evidence_strength)+'</span></div>'+
+        '<blockquote>'+esc(f.statement)+'</blockquote>'+
+        '<div class="label">Scope</div><div>'+esc(f.scope)+'</div>'+
+        '<div class="label" style="margin-top:8px">Why it is rated '+esc(f.evidence_strength)+'</div>'+
+        '<ul>'+(f.strength_reasons||[]).map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+
+        (f.strength_caps||[]).map(function(r){return '<li><strong>cap:</strong> '+esc(r)+'</li>';}).join('')+'</ul>'+
+        '<div class="label">Counter-evidence</div><div>'+ (f.counter_evidence||[]).length +' item(s)</div>'+
+        '<div class="label" style="margin-top:8px">Alternative explanations</div>'+
+        '<ul>'+(f.alternative_explanations||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>'+
+        '<div class="label">Limitations</div>'+
+        '<ul>'+(f.limitations||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>';
+      S.finding = f;
+    }
+
+    var challenges = b.challenges.filter(function(x){ return !f || x.finding_id === f.finding_id; })
+      .sort(function(a,b2){ return b2.created_at - a.created_at; });
+    var ch = challenges[0];
+    if (!ch) { el('challenge').innerHTML = '<p class="mono">not yet run for this finding</p>'; }
+    else {
+      el('challenge').innerHTML =
+        '<div class="row"><span class="chip '+(ch.verdict==='BLOCKED'?'bad':(ch.verdict==='PASSED'?'good':'warn'))+'">'+esc(ch.verdict)+'</span>'+
+        '<span class="chip mono">against finding v'+ch.finding_version+'</span></div>'+
+        '<p>'+esc(ch.summary)+'</p>'+
+        '<table>'+ch.checks.map(function(k){
+          return '<tr><td style="width:24px">'+(k.passed?'·':'!')+'</td><td style="width:180px" class="mono">'+esc(k.id)+'</td>'+
+                 '<td>'+esc(k.conclusion)+'</td></tr>';
+        }).join('')+'</table>';
+    }
+
+    var approvals = b.approvals.slice().sort(function(a,b2){ return b2.created_at - a.created_at; });
+    var covering = f && approvals.filter(function(a){
+      return a.artifact_type==='finding' && a.artifact_id===f.finding_id &&
+             a.artifact_version===f.version && a.decision==='APPROVED'; })[0];
+    el('approvalState').innerHTML = covering
+      ? '<div class="row"><span class="chip good">APPROVED</span><span class="mono">'+esc(covering.reviewer_id)+' · '+fmt(covering.created_at)+' · finding v'+covering.artifact_version+'</span></div>'+
+        '<blockquote>'+esc(covering.comment||'')+'</blockquote>'
+      : '<div class="row"><span class="chip warn">no approval covers the current finding version</span></div>' +
+        (approvals.length ? '<p class="mono">'+approvals.length+' earlier decision(s) on record, none covering v'+(f?f.version:'—')+'</p>' : '');
+
+    el('audit').innerHTML = b.audit.slice().reverse().map(function(a){
+      return '<tr><td class="mono" style="width:150px">'+fmt(a.at)+'</td>'+
+             '<td class="mono" style="width:190px">'+esc(a.event)+'</td>'+
+             '<td class="mono" style="width:60px">'+esc(a.actor_type)+'</td>'+
+             '<td>'+esc(a.summary)+'</td></tr>';
+    }).join('');
+  }
+
+  async function load(org, caseId){
+    banner('');
+    try {
+      var b = await api('/api/v2/case?organization_id='+encodeURIComponent(org)+'&case_id='+encodeURIComponent(caseId)+'&view=reviewer');
+      S.org = org; S.caseId = caseId;
+      render(b);
+    } catch (e) {
+      if (e.code === 'unscoped_token') {
+        banner('Your admin token is not scoped to an organization. V2 requires an "org" or "orgs" claim and refuses unscoped tokens by design — the admin login needs to issue org-scoped tokens before this workspace can be used.', true);
+      } else if (e.code === 'store_misconfigured') {
+        banner('V2 storage is not configured on this deployment. It fails closed rather than falling back to the production database. ' + e.message, true);
+      } else {
+        banner((e.code ? e.code + ': ' : '') + e.message, true);
+      }
+    }
+  }
+
+  el('loadBtn').addEventListener('click', function(){
+    load(el('orgInput').value.trim(), el('caseInput').value.trim());
+  });
+
+  document.querySelectorAll('[data-decision]').forEach(function(btn){
+    btn.addEventListener('click', async function(){
+      if (!S.finding) return banner('There is no finding to decide on.', true);
+      var decision = btn.getAttribute('data-decision');
+      banner('');
+      try {
+        await api('/api/v2/case', { method:'POST', body: JSON.stringify({
+          op: 'record_approval',
+          organization_id: S.org,
+          case_id: S.caseId,
+          artifact_type: 'finding',
+          artifact_id: S.finding.finding_id,
+          artifact_version: S.finding.version,
+          decision: decision,
+          comment: el('comment').value
+        })});
+        el('comment').value = '';
+        await load(S.org, S.caseId);
+      } catch (e) {
+        banner((e.code ? e.code + ': ' : '') + e.message, true);
+      }
+    });
+  });
+
+  var q = new URLSearchParams(location.search);
+  if (q.get('org') && q.get('case')) {
+    el('orgInput').value = q.get('org');
+    el('caseInput').value = q.get('case');
+    load(q.get('org'), q.get('case'));
+  }
+})();
+</script>
+</body>
+</html>

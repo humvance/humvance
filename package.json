@@ -7,5 +7,9 @@
   },
   "dependencies": {
     "@vercel/kv": "^2.0.0"
+  },
+  "scripts": {
+    "test": "node tests/v2/run.js",
+    "case001": "node scripts/v2-case-001.js"
   }
 }
