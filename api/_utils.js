@@ -54,4 +54,19 @@ function setJSON(res) {
   res.setHeader('Cache-Control', 'no-store');
 }
 
-module.exports = { hashPassword, signJWT, verifyJWT, getToken, setJSON };
+// Authorization for internal/admin endpoints.
+//
+// A valid signature is NOT authorization. Portal tokens (role:'client') are
+// signed with the same secret as admin tokens, so every admin endpoint must
+// check the role as well - otherwise a client can read another client's data
+// simply by changing ?ref=.
+//
+// Returns { ok:true, payload } or { ok:false, code, error }.
+function requireAdmin(req) {
+  const payload = verifyJWT(getToken(req));
+  if (!payload) return { ok: false, code: 401, error: 'Unauthorized' };
+  if (payload.role !== 'admin') return { ok: false, code: 403, error: 'غير مصرح' };
+  return { ok: true, payload };
+}
+
+module.exports = { hashPassword, signJWT, verifyJWT, getToken, setJSON, requireAdmin };
