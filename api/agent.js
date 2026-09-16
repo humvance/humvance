@@ -138,6 +138,52 @@ function recalculateAllConfidences(hypotheses, evidence) {
   });
 }
 
+// ── JSON extraction: returns a parsed object, or null when the response is unusable ──
+function parseAIJSON(raw) {
+  if (!raw || !raw.trim()) return null;
+  const attempts = [
+    () => JSON.parse(raw),
+    () => { const m = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/); return m ? JSON.parse(m[1].trim()) : null; },
+    () => { const m = raw.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; }
+  ];
+  for (const attempt of attempts) {
+    try { const v = attempt(); if (v && typeof v === 'object' && !Array.isArray(v)) return v; } catch { /* next */ }
+  }
+  return null;
+}
+
+// ── Diagnostic Router output contract ──
+// Checked BEFORE anything is written to KV. Evidence is intentionally NOT required:
+// a client's data may genuinely contain no extractable evidence yet.
+function validateRouterOutput(output) {
+  const problems = [];
+  const arr = v => (Array.isArray(v) ? v : []);
+
+  if (!arr(output.primaryDomains).length)      problems.push('primaryDomains فارغ');
+  if (!arr(output.activePlaybooks).length)     problems.push('activePlaybooks فارغ');
+  if (!arr(output.symptoms).length)            problems.push('symptoms فارغ');
+  if (!arr(output.selectedHypotheses).length)  problems.push('selectedHypotheses فارغ');
+  if (!arr(output.questions).length)           problems.push('questions فارغ');
+  if (!String(output.summary || '').trim())    problems.push('summary فارغ');
+
+  // Cross-check against the approved catalogue (unchanged 14 domains / 3 playbooks)
+  const domainKeys = Object.keys(DOMAINS);
+  const playbookKeys = Object.keys(PLAYBOOKS);
+  const knownHypIds = new Set(Object.values(PLAYBOOKS).flatMap(p => p.hypotheses.map(h => h.id)));
+
+  const badDomains = [...arr(output.primaryDomains), ...arr(output.secondaryDomains)]
+    .filter(d => !domainKeys.includes(d));
+  if (badDomains.length) problems.push('نطاقات خارج الإطار المعتمد: ' + badDomains.join(', '));
+
+  const badPlaybooks = arr(output.activePlaybooks).filter(p => !playbookKeys.includes(p));
+  if (badPlaybooks.length) problems.push('playbooks خارج الإطار المعتمد: ' + badPlaybooks.join(', '));
+
+  const badHyps = arr(output.selectedHypotheses).map(h => h && h.id).filter(id => id && !knownHypIds.has(id));
+  if (badHyps.length) problems.push('فرضيات خارج الكتالوج المعتمد: ' + badHyps.join(', '));
+
+  return problems;
+}
+
 function evId() {
   return 'EV-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
 }
@@ -358,7 +404,7 @@ module.exports = async function handler(req, res) {
   const { phase, ref } = req.body || {};
   if (!phase) return res.status(400).json({ error: 'phase مطلوب' });
 
-  async function callAI(prompt, maxTokens = 4000) {
+  async function callAI(prompt, maxTokens = 4000, label = 'agent') {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
@@ -366,14 +412,25 @@ module.exports = async function handler(req, res) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error?.message || 'Anthropic API error');
-    const raw = d.content?.[0]?.text || '{}';
-    try { return JSON.parse(raw); }
-    catch {
-      try {
-        const m = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        return m ? JSON.parse(m[1].trim()) : JSON.parse((raw.match(/\{[\s\S]*\}/) || ['{}'])[0]);
-      } catch { console.error('[agent] JSON parse failed:', raw.slice(0, 200)); return { raw }; }
-    }
+
+    const raw = d.content?.[0]?.text || '';
+    // Safe response metadata only — never any key, credential or client content.
+    const meta = {
+      stop_reason: d.stop_reason || 'unknown',
+      output_tokens: d.usage?.output_tokens ?? null,
+      max_tokens: maxTokens,
+      text_length: raw.length
+    };
+
+    const parsed = parseAIJSON(raw);
+    if (parsed) return parsed;
+
+    // NEVER return { raw } as a success fallback — an unparseable response is a failure.
+    console.error(`[${label}] JSON parse failed`, meta);
+    const reason = meta.stop_reason === 'max_tokens'
+      ? 'انقطع رد الذكاء الاصطناعي بسبب تجاوز الحد الأقصى للطول قبل اكتمال JSON'
+      : 'تعذّر تحليل رد الذكاء الاصطناعي كـJSON صالح';
+    throw new Error(`${reason} (stop_reason=${meta.stop_reason}, output_tokens=${meta.output_tokens}, max_tokens=${meta.max_tokens}, length=${meta.text_length})`);
   }
 
   // ── quick_analyze ──
@@ -401,7 +458,18 @@ module.exports = async function handler(req, res) {
     try {
       const client = await kv.get(`client:${ref}`);
       if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
-      const output = await callAI(buildDiagnosticRouterPrompt(client, client.phases || {}));
+      const output = await callAI(buildDiagnosticRouterPrompt(client, client.phases || {}), 4000, 'diagnostic_router');
+
+      // Validate BEFORE persisting — a failed router must never overwrite existing
+      // diagnostic state, and must never write an empty diagnostic.
+      const problems = validateRouterOutput(output);
+      if (problems.length) {
+        console.error('[diagnostic_router] output failed validation:', problems);
+        return res.status(422).json({
+          error: 'مخرجات Diagnostic Router غير صالحة — لم يُحفظ أي تشخيص. أعد المحاولة. التفاصيل: ' + problems.join(' | ')
+        });
+      }
+
       const now = Date.now();
 
       // Stamp evidence IDs
@@ -458,7 +526,7 @@ module.exports = async function handler(req, res) {
       const client = await kv.get(`client:${ref}`);
       if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
       const existingDiag = (await kv.get(`client:${ref}.diagnostic`)) || {};
-      const output = await callAI(buildDiagnosticUpdatePrompt(client, existingDiag, req.body.answers || []));
+      const output = await callAI(buildDiagnosticUpdatePrompt(client, existingDiag, req.body.answers || []), 4000, 'diagnostic_update');
       const now = Date.now();
 
       // Stamp new evidence IDs
@@ -526,7 +594,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'مرحلة غير معروفة: ' + phase });
     }
 
-    const output = await callAI(prompt);
+    const output = await callAI(prompt, 4000, phase);
     const updatedPhases = {
       ...existingPhases,
       [phase]: { ...(existingPhases[phase] || {}), agentOutput: output, generatedAt: Date.now() }
