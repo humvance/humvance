@@ -254,7 +254,17 @@ ${domainList}
 ─── JSON فقط ─── لا تضف confidence ───
 {"primaryDomains":["1-3 مفاتيح domain أساسية"],"secondaryDomains":["1-4 مفاتيح domain ثانوية"],"symptoms":["3-6 أعراض محددة من البيانات"],"activePlaybooks":["decision_dependency | poor_performance | growth_structure"],"selectedHypotheses":[{"id":"DD-H1","playbook":"decision_dependency","rationale":"لماذا هذه الفرضية ذات صلة بهذا العميل تحديداً"}],"evidence":[{"sourceType":"survey_field | p1_analysis | p2_answer | p3_analysis","source":"اسم الحقل أو المصدر","description":"وصف الدليل","strength":"weak | moderate | strong","supports":["DD-H1"],"contradicts":[]}],"questions":[{"domain":"decision_rights","question":"سؤال تشخيصي مخصص","why":"الفجوة التي يسدها","targetHypotheses":["DD-H1"]}],"summary":"ملخص تشخيصي 3-4 جمل"}
 
-قواعد: فقط الفرضيات التي تدعمها بيانات موجودة. strength: weak=إشارة، moderate=دليل معقول، strong=دليل واضح. أسئلة 4-6 فقط. لا confidence.`;
+قواعد المخرجات — التزم بها حرفياً:
+1. أعد JSON فقط. بدون Markdown، بدون code fences، بدون أي نص قبل JSON أو بعده.
+2. اختصر كل قيمة نصية إلى جملة واحدة قصيرة. لا شرح مطوّل.
+3. لا تُعِد سرد بيانات العميل أو محتوى P1 — اذكر الاستنتاج الجديد فقط.
+4. لا تكرر نفس الفكرة في symptoms و rationale و summary. كل حقل يضيف معلومة مختلفة.
+5. primaryDomains: 1-3 | secondaryDomains: 1-4 | symptoms: 3-6 | questions: 4-6.
+6. selectedHypotheses: فقط الفرضيات التي تدعمها بيانات موجودة فعلاً، و rationale سطر واحد.
+7. evidence: description سطر واحد. لا تخترع أدلة لملء الحقل — اترك المصفوفة فارغة إن لم توجد أدلة حقيقية.
+8. summary: 3-4 جمل كحد أقصى.
+9. strength: weak=إشارة، moderate=دليل معقول، strong=دليل واضح.
+10. لا confidence إطلاقاً — النظام يحسبه من الأدلة.`;
 }
 
 // ── Diagnostic Update — AI adds evidence, server recalculates all confidence ──
@@ -458,7 +468,11 @@ module.exports = async function handler(req, res) {
     try {
       const client = await kv.get(`client:${ref}`);
       if (!client) return res.status(404).json({ error: 'العميل غير موجود' });
-      const output = await callAI(buildDiagnosticRouterPrompt(client, client.phases || {}), 4000, 'diagnostic_router');
+      // Router-specific ceiling. Its JSON (domains, hypotheses, evidence, 4-6 questions,
+      // summary — all Arabic) sits right at the 4000 default and intermittently truncated
+      // (confirmed: stop_reason=max_tokens, output_tokens=4000). Headroom only — the prompt
+      // rules below keep the output compact. Other phases keep the 4000 default.
+      const output = await callAI(buildDiagnosticRouterPrompt(client, client.phases || {}), 6000, 'diagnostic_router');
 
       // Validate BEFORE persisting — a failed router must never overwrite existing
       // diagnostic state, and must never write an empty diagnostic.
