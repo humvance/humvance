@@ -22,6 +22,7 @@ node_modules/
 *.sqlite3
 
 # ── Backup folders ──
+BACKUP/
 *_BACKUP_*/
 *_backup_*/
 claucode_BACKUP*/
@@ -47,4 +48,6 @@ $RECYCLE.BIN/
 
 # ── Logs ──
 *.log
+.log
+npm-debug.log
 npm-debug.log*
