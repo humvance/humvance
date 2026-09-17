@@ -1,7 +1,7 @@
 # Humvance — Engineering State
 
-**Last updated:** 2026-09-17
-**Maintained on:** `v2-case-spine`
+**Last updated:** 2026-09-18
+**Maintained on:** `v2-case-spine`; §11 was added on `sprint1-diagnostic-intake-v2`, which is not merged
 **Contains no secrets.** Environment variables are referred to by NAME only. No value, token, URL, connection string or credential appears in this file. Resource identifiers (store ids, deployment ids) are not credentials and are recorded deliberately as evidence.
 
 ---
@@ -238,9 +238,14 @@ Branch `v2-case-spine`, cut from `production`. `git merge-base --is-ancestor pro
 | `api/v2/_authz.js` | authentication, roles, tenant scope, AI boundary, secret posture |
 | `api/v2/_service.js` | application service — the only place rules compose |
 | `api/v2/case.js` | HTTP surface; parses, authorises, dispatches, maps errors |
+| `api/v2/_intake.js` | Diagnostic Intake V2 — allow-list schema, record builders, holding-area storage |
+| `api/v2/intake.js` | the only unauthenticated endpoint in `api/v2`; create-only |
+| `api/v2/intake-review.js` | authenticated reviewer surface for the holding area |
 | `public/v2-workspace.html` | minimal reviewer workspace |
+| `public/intake.html` | client-facing Diagnostic Intake V2, 12 steps, AR/EN |
+| `public/v2-intake-review.html` | reviewer surface for pending submissions |
 
-Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRequest, Contradiction, Finding, ChallengeReview, Approval, AuditEvent. Architected for but not built: Engagement, Intervention, Action, Metric, Verification, Monitoring Signal, Organizational Memory.
+Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRequest, Contradiction, Finding, ChallengeReview, Approval, AuditEvent, plus the two pre-tenant intake objects IntakeSeed and IntakeReview (§11). Architected for but not built: Engagement, Intervention, Action, Metric, Verification, Monitoring Signal, Organizational Memory.
 
 **Case lifecycle:** INTAKE → STRUCTURING → INVESTIGATION_PLANNING → HUMAN_REVIEW → AWAITING_EVIDENCE → ANALYZING_EVIDENCE → {FINDING_DRAFT | CLARIFICATION_REQUIRED} → CHALLENGE_REVIEW → HUMAN_APPROVAL → APPROVED. Declarative and total; a transition absent from the table does not exist. Five transitions are human-only and refused for `ai` and `system`. Entering APPROVED additionally requires a stored human approval covering the current finding's exact version.
 
@@ -257,9 +262,12 @@ Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRe
 ## 6. Tests
 
 ```
-node tests/v2/run.js         →  162 checks, 162 passed, 0 failed   (baseline was 119)
-node scripts/v2-case-001.js  →   62 checks,  62 passed, 0 failed   (baseline was 56)
+node tests/v2/run.js          →  227 checks, 227 passed, 0 failed   (baseline was 162)
+node scripts/v2-case-001.js   →   62 checks,  62 passed, 0 failed   (unchanged)
+node scripts/v2-intake-001.js →   75 checks,  75 passed, 0 failed   (new, §11)
 ```
+
+The 162 baseline checks are unchanged by Sprint 1; the 65 added checks are all in `tests/v2/intake.test.js`.
 
 Both run on the in-process memory driver. **No database of any kind is contacted.** No external dependency; `node` alone.
 
@@ -315,8 +323,14 @@ The challenge engine returns **BLOCKED** (two live competing explanations, one o
 | 9 | Repository is public | history scanned across all refs — no real secret was ever committed |
 | 10 | V1 admin tokens carry no subject | see §4 |
 | 11 | Integration prefix is `V2_KV`, producing doubled names | cosmetic; the code contract covers it. Tidy by reconnecting with prefix `V2` if desired |
+| 12 | `api/questions.js` interpolates an unvalidated `ref` into `client:${ref}` | the last unvalidated V1 key interpolation. Bounded — the record must already exist and `phases.p2.clientToken` must match — but it is the same coupling Hotfix 01 closed in `submit.js`, and it is inconsistent with `submit.js` and `portal.js`. **Deliberately not fixed in Sprint 1** (V1 files were out of scope); needs its own hotfix |
+| 13 | `case_intent` rides in `case.metadata`, not as a first-class Case field | tightening `createCase()` would change the authenticated Case API, which Sprint 1 did not do. The value is validated against `CASE_INTENTS` before it is written and is never rewritten |
+| 14 | `add_claim` is not exposed on `api/v2/case.js` | promotion creates the client-belief claim through an internal service helper. A reviewer still cannot add a claim to a live case over HTTP; needed for reviewer case work, not for intake |
+| 15 | Intake rate limiting is per serverless instance | the V2 store driver exposes no TTL primitive, so a durable counter would accumulate keys forever and hashed-IP counters would be personal data at rest. Fix is a platform-level rule (Vercel Firewall) or a TTL primitive on the store |
+| 16 | Promotion writes the review record twice | the decision is claimed first (version-checked), then the resulting ids are filled in. A failure between the two leaves a visible "ACCEPTED, no case" rather than an invisible orphan tenant — chosen deliberately, but it is not atomic |
+| 17 | `public/v2-workspace.html` still explains `unscoped_token` | that code no longer exists; `_authz.js` returns `no_org_membership` / `not_found` since scope moved to server-side membership. Cosmetic, left alone to keep Sprint 1 scoped |
 
-None of these were introduced into V2.
+None of these were introduced into V2 except 13–17, which are Sprint 1's own recorded debt.
 
 ---
 
@@ -330,10 +344,95 @@ Required before any real client employee data is processed: lawful basis and rec
 
 ---
 
-## 11. Next recommended build slice
+## 11. Diagnostic Intake V2 — the holding area (Sprint 1)
 
-Once blockers 1–4 clear and the isolated-store run is green: **Evidence intake for the client** — the portal side of `EvidenceRequest`, so a sponsor can answer the five investigation questions directly instead of a consultant transcribing them.
+**Branch:** `sprint1-diagnostic-intake-v2`, cut from `v2-case-spine` @ `88a866c` (checkpoint tag `checkpoint/sprint1-start-2026-09-18`). **Not merged. Not deployed. The live landing CTA is unchanged.**
 
-It is the narrowest path from "Humvance can reason about a case" to "a real client can be in one", it introduces no new domain concepts, and it exercises the parts of the spine that matter most under real use: provenance on arrival, the burden gate doing its job, and the client view staying simple while the inside stays sophisticated.
+### The architecture in one line
 
-Blocker 7 (reviewer identity) should land before a second person joins the reviewing side, not before this slice.
+```
+anonymous visitor → immutable Pending Intake Seed → human review → accept / reject
+                                                          ↓ accept only
+                                        Organization + Case(INTAKE) + claims + evidence
+```
+
+**A stranger cannot create a tenant.** An anonymous submission creates exactly two records and nothing else: no Organization, no Case, no Claim, no Evidence, no Hypothesis, no Finding, no Approval, no membership, no conclusion. Asserted against the raw contents of the store, not against a return value.
+
+### Two objects, because the seed must be immutable
+
+| Type | Written | Contains |
+|---|---|---|
+| `intakeseed` | once, with `putIfAbsent`; **never updated** | the client's own words, the untrusted scan, and the epistemic labels |
+| `intakereview` | version-checked updates | Humvance's handling: status, reviewer, timestamp, reason, resulting org/case |
+
+The brief asked the seed to carry a `status`. It carries it on the review record instead: a status is a fact about *our* handling, and mixing the two is how an "immutable" record stops being one. Both types are **pre-tenant** — they have no `organization_id`, so `_repo.readScoped()` must never be used on them, and `_store.js` says so at the type list.
+
+### Why `api/v2/intake.js` is a separate file
+
+`api/v2/case.js` is **unchanged by this sprint**, asserted by test. Its whole value is that every request goes through authenticate → reviewer → membership → operation with no exceptions; an anonymous branch inside it would be a hole in the one file designed not to have one. The new endpoint does not import it, shares no dispatcher with it, and references none of its operations (also asserted by test).
+
+`api/v2/intake.js`: POST only — a GET is `405`, so **there is no anonymous read**; create-only; strict allow-list that rejects unknown keys rather than dropping them; per-field and body-size limits; every free-text field scanned by `_untrusted.js`; every id, status, timestamp and provenance marker minted server-side. The response carries `success`, an opaque `HVS-` reference and `status: RECEIVED` — nothing else, so it cannot be used as an oracle.
+
+### What acceptance maps, and what it refuses to do
+
+| Intake step | Becomes | State |
+|---|---|---|
+| 3 — what is happening | the **primary Claim** (`createCase({sponsor_claim})`) | `UNVERIFIED` |
+| 9 — client belief | a **secondary Claim** | `UNVERIFIED`, `is_primary:false`, `metadata.role: client_belief` |
+| 6 — recent examples (0–3) | **Evidence**, `source_type: sponsor_statement` | `UNVERIFIED`, explicit limitations, one shared `source_name` so three stories from one person count as **one** independent source |
+| 1 — organisation context | **Organization** (created, or an existing one the reviewer already belongs to) | — |
+| 2 — intent | `case.metadata.case_intent`, validated against `CASE_INTENTS` | — |
+| 4,5,7,8,10,11 | `case.metadata.intake_*`, plus the immutable seed reference | — |
+
+The Case is left in **INTAKE**. Acceptance proposes no hypothesis, drafts no finding, runs no challenge, records no approval and computes no strength. It means "this is worth investigating", not "we know what is wrong".
+
+**§23 is enforced mechanically:** an `OPPORTUNITY` submission whose title contains pathology language (English or Arabic) is refused with `pathology_language_in_opportunity_title`, and the generated default title is `"<company> — preparation for growth or organizational change"`.
+
+### Ordering, and the defect that produced it
+
+The first implementation created the Organization and the Case **before** the version check, so a stale "Accept" was refused *after* it had already built a tenant nobody could see. `scripts/v2-intake-001.js` caught it. The decision is now claimed (version-checked) before anything is created, and a refused decision leaves nothing behind — asserted by two regression tests.
+
+### Epistemic labels in the data
+
+Every seed carries `epistemic_status`, so a later consumer cannot mistake one kind of statement for another:
+
+```
+reported_situation    → CLIENT_REPORTED_OBSERVATION
+recent_examples       → CLIENT_REPORTED_SELF_REPORT
+observed_impact       → CLIENT_STATED_NOT_MEASURED
+change_context        → TEMPORAL_ASSOCIATION_ONLY_NOT_CAUSAL
+client_belief         → CLIENT_CLAIM_UNVERIFIED
+evidence_availability → AVAILABILITY_ONLY_NOT_EVIDENCE
+desired_outcome       → CLIENT_STATED_GOAL_NOT_AN_INTERVENTION
+```
+
+Evidence **availability** is never stored as Evidence. Nothing has been received, there is no provenance and there is no content; counting it would let `assessEvidenceStrength()` weigh material that does not exist.
+
+### Client-facing page
+
+`/intake` → `public/intake.html`. Twelve steps, Arabic (RTL) and English (LTR), responsive at 360/390/768/1280 with no horizontal overflow at any width. It computes nothing. The post-submit screen carries the reference and:
+
+> **Your submission has been received.** Humvance will review the information you provided and determine the appropriate next step. Nothing has been assessed yet, and no conclusion about your organization has been drawn from what you sent.
+
+It deliberately does **not** say "your case has been created", because no Case exists before human acceptance. A test asserts the page contains no score, no `/100`, no maturity rating, no diagnosis, no root cause, no recommendation and no proposal promise, in either language.
+
+### Privacy
+
+Data minimisation by construction: an employee-count *band* rather than a headcount, one respondent rather than a roster, no uploads, no communications metadata, no individual ratings, no health data. Three separate consent acknowledgements are required — data use, AI transparency, and a confirmation that the submitter avoided unnecessary personal or sensitive employee information — and the UI says so in both languages. The client IP is used only for in-memory rate limiting, hashed with a per-process salt, and is never written to the store, the seed, the audit trail or a log. **No claim of PDPL compliance is made** (§10 still applies).
+
+---
+
+## 12. Next recommended build slice
+
+Sprint 1 built the front half of the path: a real client can now describe what they are seeing, and a reviewer can turn that into a Case without anything being concluded on the way. What it did not build is the reply.
+
+**The next slice is the client-facing side of `EvidenceRequest`** — the thing §11 of the old numbering already pointed at, now with a reason it did not have before: an accepted intake arrives with an *availability map* (what the client says exists) and zero evidence. The obvious next move is to let a reviewer turn one line of that map into an approved request, and let the sponsor answer it directly instead of a consultant transcribing them.
+
+It introduces no new domain concepts, it exercises provenance-on-arrival and the burden gate under real use, and it closes the loop that Sprint 1 deliberately left open.
+
+Two things should land before or alongside it:
+
+1. **Blocker 7 — reviewer identity.** Every reviewer is still `admin:shared`, so every intake decision recorded in §11 is attributed to the same principal. That is tolerable with one reviewer and wrong with two.
+2. **Debt 12 — `api/questions.js` ref validation**, as its own small hotfix on the V1 line.
+
+Not next, and deliberately so: the 14-domain taxonomy, any automatic hypothesis generation from an intake, and any AI step inside the intake path. Sprint 1's value is that the input is clean and the epistemic state is preserved; adding reasoning before that has been used in anger would be building on an untested foundation.
