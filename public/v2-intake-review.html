@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humvance — Intake Review</title>
+<style>
+:root{--black:#0A0A0A;--warm:#F6F5F1;--surface:#FFFFFF;--border:#E2E1DD;--border-strong:#C8C7C3;--text:#0A0A0A;--text-2:#444;--text-3:#777;--error:#C0392B;--success:#1A7A4A;--warn:#8A6100;--r:8px;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media(prefers-color-scheme:dark){:root{--warm:#111110;--surface:#1A1A19;--border:#2E2E2C;--border-strong:#444442;--text:#F0EFE9;--text-2:#BBB;--text-3:#888;--black:#F0EFE9}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--warm);color:var(--text);padding:0 0 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+h1{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.wrap{max-width:1080px;margin:0 auto;padding:22px}
+.mono{font-family:var(--mono);font-size:12px;color:var(--text-3)}
+button{font:inherit;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:var(--r);padding:8px 14px}
+button.primary{background:var(--black);color:var(--warm);border-color:var(--black)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,textarea{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text)}
+.banner{padding:11px 14px;border-radius:var(--r);margin-bottom:16px;font-size:13.5px}
+.banner.bad{background:#fdecea;color:#7a1c12;border:1px solid #f0b8b0}
+.banner.info{background:var(--surface);border:1px solid var(--border);color:var(--text-2)}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+th,td{text-align:start;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);font-weight:700}
+tr:last-child td{border-bottom:none}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--warm)}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--border-strong);color:var(--text-2);white-space:nowrap}
+.chip.bad{border-color:var(--error);color:var(--error)}
+.chip.good{border-color:var(--success);color:var(--success)}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+.panel{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);margin-bottom:18px;overflow:hidden}
+.panel > h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;padding:11px 16px;border-bottom:1px solid var(--border)}
+.panel.client > h2{background:#eef3f8;color:#1c3d5a}
+.panel.humvance > h2{background:var(--black);color:var(--warm)}
+@media(prefers-color-scheme:dark){.panel.client > h2{background:#16242f;color:#9cc4e4}}
+.panel .body{padding:16px}
+.kv{display:grid;grid-template-columns:200px 1fr;gap:8px 18px;font-size:13.5px}
+.kv dt{color:var(--text-3)}
+.kv dd{white-space:pre-wrap;word-break:break-word}
+blockquote{border-inline-start:3px solid var(--border-strong);padding:8px 0 8px 14px;margin:8px 0;white-space:pre-wrap;color:var(--text)}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin:14px 0 4px;font-weight:700}
+.epistemic{font-size:12px;color:var(--text-3);border-inline-start:3px solid var(--border-strong);padding-inline-start:10px;margin-top:6px}
+ul{margin-inline-start:18px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+@media(max-width:700px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dt{margin-top:8px}.wrap{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Humvance — Intake Review</h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="mono" id="isolation"></span>
+    <button onclick="loadList()">Refresh</button>
+  </div>
+</header>
+<div class="wrap">
+  <div id="banner"></div>
+  <div id="view"></div>
+</div>
+<script>
+'use strict';
+// The reviewer side of the holding area.
+//
+// Its whole job is to keep two things apart on the screen, because they are two
+// different kinds of statement: what the CLIENT REPORTED, and what HUMVANCE has
+// decided. Nothing on this page interprets, scores or concludes anything, and no
+// AI runs here — a submission moves only when a person presses a button.
+
+var S = { list: [], current: null };
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function el(id){ return document.getElementById(id); }
+function token(){ try { return sessionStorage.getItem('hv_token'); } catch(e){ return null; } }
+function fmt(ts){ try { return new Date(ts).toISOString().replace('T',' ').slice(0,16); } catch(e){ return ''; } }
+function banner(msg, kind){ el('banner').innerHTML = msg ? '<div class="banner '+(kind||'info')+'">'+esc(msg)+'</div>' : ''; }
+
+async function api(path, opts){
+  var o = opts || {};
+  o.headers = Object.assign({ 'Content-Type':'application/json' }, o.headers||{});
+  var t = token();
+  if (t) o.headers['Authorization'] = 'Bearer ' + t;
+  var r = await fetch(path, o);
+  var iso = r.headers.get('X-Humvance-V2-Isolation');
+  if (iso) el('isolation').textContent = 'store: ' + (r.headers.get('X-Humvance-V2-Store')||'?') + ' · ' + iso;
+  var body = null;
+  try { body = await r.json(); } catch(e) {}
+  if (!r.ok) { var err = new Error((body && body.error) || ('HTTP '+r.status)); err.code = body && body.code; throw err; }
+  return body;
+}
+
+async function loadList(){
+  banner('');
+  try {
+    var out = await api('/api/v2/intake-review?status=all&limit=100');
+    S.list = out.submissions || [];
+    renderList();
+  } catch (e) { renderError(e); }
+}
+
+function renderError(e){
+  if (e.code === 'unauthenticated' || e.code === 'forbidden_role') {
+    banner('Sign in to /admin first — this page reads the admin session token from this origin.', 'bad');
+  } else if (e.code === 'store_misconfigured') {
+    banner('V2 storage is not configured on this deployment. It fails closed rather than falling back to the production database. ' + e.message, 'bad');
+  } else {
+    banner((e.code ? e.code + ': ' : '') + e.message, 'bad');
+  }
+}
+
+function statusChip(s){
+  var cls = s === 'ACCEPTED' ? 'good' : (s === 'REJECTED' ? 'warn' : '');
+  return '<span class="chip '+cls+'">'+esc(s)+'</span>';
+}
+
+function renderList(){
+  S.current = null;
+  if (!S.list.length) { el('view').innerHTML = '<p class="mono">No submissions yet.</p>'; return; }
+  el('view').innerHTML =
+    '<table><thead><tr><th>Received</th><th>Company</th><th>Why they came</th><th>Scope</th><th>Status</th><th>Flags</th></tr></thead><tbody>' +
+    S.list.map(function(r){
+      return '<tr class="row" onclick="openOne(\''+esc(r.intakeseed_id)+'\')">' +
+        '<td class="mono">'+fmt(r.submitted_at)+'</td>' +
+        '<td>'+esc(r.company_name)+'<div class="mono">'+esc(r.submission_reference)+'</div></td>' +
+        '<td><span class="chip">'+esc(r.case_intent)+'</span></td>' +
+        '<td class="mono">'+esc(r.scope_kind)+'</td>' +
+        '<td>'+statusChip(r.status)+(r.resulting_case_id?'<div class="mono">'+esc(r.resulting_case_id)+'</div>':'')+'</td>' +
+        '<td>'+(r.untrusted_flagged?'<span class="chip bad">untrusted content</span>':'')+'</td>' +
+      '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+async function openOne(id){
+  banner('');
+  try { S.current = await api('/api/v2/intake-review?intakeseed_id='+encodeURIComponent(id)); renderOne(); }
+  catch (e) { renderError(e); }
+}
+
+function list(items, fn){ return items && items.length ? '<ul>'+items.map(fn).join('')+'</ul>' : '<p class="mono">none</p>'; }
+
+function renderOne(){
+  var seed = S.current.seed, review = S.current.review, audit = S.current.audit || [];
+  var pending = review && review.status === 'PENDING_REVIEW';
+
+  var impact = list(seed.observed_impact, function(i){
+    return '<li><strong>'+esc(i.kind)+'</strong>'+(i.description?' — '+esc(i.description):'') +
+      (i.quantification ? ' <span class="chip warn">client-stated: '+esc(i.quantification.value)+' '+esc(i.quantification.unit)+'</span>' +
+        (i.quantification.basis? '<div class="mono">basis: '+esc(i.quantification.basis)+'</div>':'') : '') + '</li>';
+  });
+
+  el('view').innerHTML =
+    '<p><button onclick="renderList()">&larr; All submissions</button></p>' +
+
+    (seed.untrusted_scan && !seed.untrusted_scan.clean
+      ? '<div class="banner bad"><strong>This submission contains instruction-shaped text.</strong> It is stored verbatim as client content and confers no instruction or authority. Flagged: ' +
+        esc(seed.untrusted_scan.flagged_fields.join(', ')) + '</div>' : '') +
+
+    '<div class="panel client"><h2>Client-reported — nothing here has been verified</h2><div class="body">' +
+      '<dl class="kv">' +
+        '<dt>Reference</dt><dd class="mono">'+esc(seed.submission_reference)+'</dd>' +
+        '<dt>Received</dt><dd>'+fmt(seed.submitted_at)+'</dd>' +
+        '<dt>Company</dt><dd>'+esc(seed.organization_context.company_name)+
+          (seed.organization_context.sector?' · '+esc(seed.organization_context.sector):'')+
+          (seed.organization_context.employee_count_band?' · '+esc(seed.organization_context.employee_count_band)+' employees':'')+'</dd>' +
+        '<dt>Respondent</dt><dd>'+esc(seed.respondent_context.name)+' — '+esc(seed.respondent_context.role_title)+'<div class="mono">'+esc(seed.respondent_context.email)+'</div></dd>' +
+        '<dt>Why they came</dt><dd><span class="chip">'+esc(seed.case_intent)+'</span></dd>' +
+        '<dt>Scope</dt><dd>'+esc(seed.scope.kind)+(seed.scope.labels.length?' — '+esc(seed.scope.labels.join(', ')):'')+'</dd>' +
+        '<dt>Timeline</dt><dd>'+esc(seed.timeline.first_noticed_approx||'not given')+' · '+esc(seed.timeline.pattern)+'</dd>' +
+      '</dl>' +
+
+      '<div class="label">What they say is happening</div>' +
+      '<blockquote>'+esc(seed.reported_situation)+'</blockquote>' +
+      '<div class="epistemic">'+esc(seed.epistemic_status.reported_situation)+' — the sponsor\'s account, to be tested, not a finding.</div>' +
+
+      '<div class="label">Recent examples ('+seed.recent_examples.length+')</div>' +
+      list(seed.recent_examples, function(x){
+        return '<li><strong>'+esc(x.what_happened)+'</strong>' +
+          (x.observable_consequence?'<div>Result: '+esc(x.observable_consequence)+'</div>':'') +
+          '<div class="mono">'+esc(x.approx_when||'no timing')+(x.area?' · '+esc(x.area):'')+'</div></li>';
+      }) +
+      '<div class="epistemic">'+esc(seed.epistemic_status.recent_examples)+' — one person\'s account of all of them.</div>' +
+
+      '<div class="label">Observed impact</div>' + impact +
+      '<div class="epistemic">'+esc(seed.epistemic_status.observed_impact)+' — any number is the client\'s own estimate.</div>' +
+
+      '<div class="label">What changed around the same time</div>' +
+      list(seed.change_context, function(c){ return '<li>'+esc(c.kind)+(c.note?' — '+esc(c.note):'')+'</li>'; }) +
+      '<div class="epistemic">'+esc(seed.epistemic_status.change_context)+' — sequence is not mechanism.</div>' +
+
+      '<div class="label">What the client believes is causing it</div>' +
+      (seed.client_belief ? '<blockquote>'+esc(seed.client_belief)+'</blockquote>' : '<p class="mono">they did not say — uncertainty was an acceptable answer</p>') +
+      '<div class="epistemic">'+esc(seed.epistemic_status.client_belief)+' — a claim to be tested. It is not a cause and it is not a finding.</div>' +
+
+      '<div class="label">Information they say already exists</div>' +
+      list(seed.evidence_availability, function(a){ return '<li>'+esc(a.kind)+(a.note?' — '+esc(a.note):'')+'</li>'; }) +
+      '<div class="epistemic">'+esc(seed.epistemic_status.evidence_availability)+' — nothing has been received; none of this is evidence.</div>' +
+
+      '<div class="label">What they want to understand or decide</div>' +
+      '<blockquote>'+esc(seed.desired_outcome)+'</blockquote>' +
+      '<div class="epistemic">'+esc(seed.epistemic_status.desired_outcome)+'</div>' +
+    '</div></div>' +
+
+    '<div class="panel humvance"><h2>Humvance review — the only place a decision is made</h2><div class="body">' +
+      '<dl class="kv">' +
+        '<dt>Status</dt><dd>'+statusChip(review.status)+'</dd>' +
+        '<dt>Review record</dt><dd class="mono">'+esc(review.intakereview_id)+' · v'+review.version+'</dd>' +
+        (review.decided_by ? '<dt>Decided by</dt><dd>'+esc(review.decided_by)+' · '+fmt(review.decided_at)+'</dd>' : '') +
+        (review.decision_reason ? '<dt>Reason</dt><dd>'+esc(review.decision_reason)+'</dd>' : '') +
+        (review.resulting_organization_id ? '<dt>Organization</dt><dd class="mono">'+esc(review.resulting_organization_id)+'</dd>' : '') +
+        (review.resulting_case_id ? '<dt>Case</dt><dd class="mono"><a href="/v2-workspace">'+esc(review.resulting_case_id)+'</a></dd>' : '') +
+      '</dl>' +
+
+      (pending
+        ? '<div class="label">Decision</div>' +
+          '<p style="font-size:13px;color:var(--text-3)">Accepting opens an Organization and a Case in INTAKE, records what they told us as an unverified sponsor claim, their belief as a second unverified claim, and each example as self-report evidence. It proposes no hypothesis and draws no conclusion. Rejecting creates nothing at all.</p>' +
+          '<div style="margin-top:12px"><input id="title" placeholder="Case title (optional — a neutral one is generated if you leave this blank)"></div>' +
+          '<div style="margin-top:8px"><textarea id="reason" rows="2" placeholder="Reason (recorded with your decision)"></textarea></div>' +
+          '<div class="actions">' +
+            '<button class="primary" onclick="decide(\'ACCEPTED\')">Accept and open a case</button>' +
+            '<button onclick="decide(\'REJECTED\')">Reject</button>' +
+            '<span class="mono">binds to review v'+review.version+'</span>' +
+          '</div>'
+        : '<p class="mono">This submission has been decided. A decided submission is not re-decided; further work happens on the case.</p>') +
+    '</div></div>' +
+
+    '<div class="panel"><h2>Audit</h2><div class="body"><table><tbody>' +
+      audit.map(function(a){
+        return '<tr><td class="mono" style="width:140px">'+fmt(a.at)+'</td><td class="mono" style="width:150px">'+esc(a.event)+'</td>' +
+               '<td class="mono" style="width:60px">'+esc(a.actor_type)+'</td><td>'+esc(a.summary)+'</td></tr>';
+      }).join('') +
+    '</tbody></table></div></div>';
+}
+
+async function decide(decision){
+  var seed = S.current.seed, review = S.current.review;
+  var title = (el('title') && el('title').value.trim()) || null;
+  var reason = (el('reason') && el('reason').value.trim()) || '';
+  if (decision === 'ACCEPTED' && !confirm('Open an Organization and a Case for "' + seed.organization_context.company_name + '"?')) return;
+  if (decision === 'REJECTED' && !confirm('Reject this submission? Nothing will be created.')) return;
+  banner('');
+  try {
+    await api('/api/v2/intake-review', { method:'POST', body: JSON.stringify({
+      op: 'decide_intake',
+      intakeseed_id: seed.intakeseed_id,
+      decision: decision,
+      expected_version: review.version,
+      title: title,
+      reason: reason
+    })});
+    await openOne(seed.intakeseed_id);
+    banner(decision === 'ACCEPTED' ? 'Accepted. A case was opened in INTAKE.' : 'Rejected. Nothing was created.', 'info');
+  } catch (e) { renderError(e); }
+}
+
+loadList();
+</script>
+</body>
+</html>

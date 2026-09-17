@@ -371,6 +371,134 @@ const EVIDENCE_REQUEST_STATES = Object.freeze([
   'PROPOSED', 'APPROVED', 'REJECTED', 'SENT', 'RECEIVED', 'CANCELLED'
 ]);
 
+// ── Diagnostic Intake V2 — pre-tenant submission vocabulary ──────────────────
+//
+// SUBMISSION ≠ CASE.
+//
+// Everything in this section describes an ANONYMOUS SUBMISSION that no human has
+// looked at yet. A submission is not a Case, is not Evidence, and is not a
+// finding about anything. Nothing in this vocabulary creates an Organization, a
+// Case, a Claim, a Hypothesis, an Evidence item, a Contradiction, a Finding or an
+// Approval — those come into existence only when a human reviewer accepts a
+// submission, through api/v2/_service.decideIntake().
+//
+// The vocabulary is deliberately DOMAIN-NEUTRAL. There is no HR taxonomy here,
+// no 14-domain framework, no playbook and no score. The client is asked what they
+// are seeing, not what is wrong with their organisation.
+
+const CASE_INTENTS = Object.freeze(['DYSFUNCTION', 'RISK', 'OPPORTUNITY']);
+
+// An intent says WHY the client approached Humvance. It is not a diagnosis, and
+// it is not a severity. These labels exist so that anything which has to NAME a
+// submission (a case title, a reviewer list row) can do so without inventing a
+// judgement — and so that an OPPORTUNITY is never dressed up as a disorder (§23).
+const INTENT_NEUTRAL_LABEL = Object.freeze({
+  DYSFUNCTION: 'reported operational problem',
+  RISK:        'reported risk or dependency concern',
+  OPPORTUNITY: 'preparation for growth or organizational change'
+});
+
+// Words that would turn an OPPORTUNITY case into a pathology by the back door.
+// Used as a lint on generated titles, in both languages, never as a censor on
+// what the client themselves wrote.
+const PATHOLOGY_WORDS = Object.freeze([
+  'dysfunction', 'dysfunctional', 'failure', 'failing', 'broken', 'deficien',
+  'weakness', 'defect', 'flaw', 'problem', 'issue',
+  'خلل', 'قصور', 'ضعف', 'فشل', 'مشكلة', 'عطل'
+]);
+
+function intentNeutralLabel(intent) { return INTENT_NEUTRAL_LABEL[intent] || null; }
+
+function containsPathologyLanguage(text) {
+  const t = String(text || '').toLowerCase();
+  return PATHOLOGY_WORDS.filter(w => t.includes(w));
+}
+
+const INTAKE_SCOPE_KINDS = Object.freeze([
+  'company_wide', 'function', 'team', 'process', 'multiple_areas', 'unsure'
+]);
+
+// How the client says the situation behaves over time. Note what is absent: any
+// value that asserts a cause. Temporal shape is not mechanism.
+const INTAKE_TEMPORAL_PATTERNS = Object.freeze([
+  'persistent', 'intermittent', 'increasing', 'decreasing', 'unclear'
+]);
+
+const INTAKE_IMPACT_KINDS = Object.freeze([
+  'delays', 'additional_cost', 'lost_revenue', 'workload', 'customer_impact',
+  'turnover', 'quality_rework', 'management_time', 'growth_constraint',
+  'compliance_risk', 'other'
+]);
+
+// Contextual signals only. A change that happened before a situation appeared is
+// a coincidence until something tests it (§9, §21).
+const INTAKE_CHANGE_CONTEXT_KINDS = Object.freeze([
+  'rapid_growth', 'leadership_change', 'new_system', 'restructuring', 'acquisition',
+  'new_product', 'headcount_change', 'policy_process_change', 'customer_volume_change',
+  'no_known_change', 'other'
+]);
+
+// What the client BELIEVES exists. Not evidence: nothing has been received, there
+// is no provenance, and there is no content. It must never be counted by
+// assessEvidenceStrength(), which is why it is a separate vocabulary entirely.
+const INTAKE_EVIDENCE_AVAILABILITY_KINDS = Object.freeze([
+  'org_chart', 'policies_procedures', 'delegation_matrix', 'workflow_system_data',
+  'kpi_reports', 'operational_reports', 'financial_reports', 'survey_results',
+  'workforce_data', 'meeting_decision_records', 'other', 'unsure'
+]);
+
+// Bands, not headcounts: the intake needs the order of magnitude, nothing more.
+const INTAKE_EMPLOYEE_BANDS = Object.freeze([
+  '1-10', '11-50', '51-200', '201-500', '501-1000', '1000+', 'unsure'
+]);
+const INTAKE_GROWTH_STAGES = Object.freeze([
+  'early', 'growing', 'scaling', 'stable', 'restructuring', 'unsure'
+]);
+const INTAKE_CONTACT_PREFERENCES = Object.freeze(['email', 'phone', 'whatsapp']);
+
+const INTAKE_REVIEW_STATES = Object.freeze(['PENDING_REVIEW', 'ACCEPTED', 'REJECTED']);
+const INTAKE_REVIEW_DECISIONS = Object.freeze(['ACCEPTED', 'REJECTED']);
+
+// A submission carries at most three examples. The cap is a burden decision, not
+// a storage one: three concrete events are enough to start an investigation, and
+// asking for more before anyone has read the first three spends goodwill (§11).
+const MAX_RECENT_EXAMPLES = 3;
+
+/**
+ * The epistemic status of each part of a submission, carried IN the record.
+ *
+ * This is the sprint's semantic rules written into the data rather than into a
+ * document nobody re-reads: a later consumer cannot mistake a client's belief for
+ * a finding, an availability list for evidence, or a coincidence for a cause,
+ * because the record says which it is.
+ */
+const INTAKE_EPISTEMIC_STATUS = Object.freeze({
+  reported_situation:    'CLIENT_REPORTED_OBSERVATION',
+  recent_examples:       'CLIENT_REPORTED_SELF_REPORT',
+  observed_impact:       'CLIENT_STATED_NOT_MEASURED',
+  change_context:        'TEMPORAL_ASSOCIATION_ONLY_NOT_CAUSAL',
+  client_belief:         'CLIENT_CLAIM_UNVERIFIED',
+  evidence_availability: 'AVAILABILITY_ONLY_NOT_EVIDENCE',
+  desired_outcome:       'CLIENT_STATED_GOAL_NOT_AN_INTERVENTION'
+});
+
+function isCaseIntent(v) { return CASE_INTENTS.includes(v); }
+function isIntakeReviewState(v) { return INTAKE_REVIEW_STATES.includes(v); }
+
+// A review record moves once, from PENDING_REVIEW to a decision, and then stops.
+// There is no path back to PENDING_REVIEW: a decided submission stays decided,
+// and a changed mind is a new decision on the Case, not a rewrite of this one.
+const INTAKE_REVIEW_TRANSITIONS = Object.freeze({
+  PENDING_REVIEW: ['ACCEPTED', 'REJECTED'],
+  ACCEPTED:       [],
+  REJECTED:       []
+});
+
+function canIntakeReviewTransition(from, to) {
+  if (!isIntakeReviewState(from) || !isIntakeReviewState(to)) return false;
+  return (INTAKE_REVIEW_TRANSITIONS[from] || []).includes(to);
+}
+
 // ── Audit (§25) ──────────────────────────────────────────────────────────────
 //
 // Business-level provenance only. No prompts, no model reasoning, no
@@ -378,6 +506,7 @@ const EVIDENCE_REQUEST_STATES = Object.freeze([
 
 const AUDIT_EVENTS = Object.freeze([
   'organization.created', 'access.granted',
+  'intake.received', 'intake.accepted', 'intake.rejected',
   'case.created', 'case.state_changed', 'case.updated',
   'claim.created', 'claim.updated',
   'hypothesis.created', 'hypothesis.state_changed',
@@ -405,5 +534,13 @@ module.exports = {
   UPDATABLE_FIELDS, validateUpdate,
   buildEvidenceSnapshot, isSnapshotStale,
   BURDEN_QUESTIONS, evaluateBurdenGate, EVIDENCE_REQUEST_STATES,
+  CASE_INTENTS, isCaseIntent, INTENT_NEUTRAL_LABEL, intentNeutralLabel,
+  PATHOLOGY_WORDS, containsPathologyLanguage,
+  INTAKE_SCOPE_KINDS, INTAKE_TEMPORAL_PATTERNS, INTAKE_IMPACT_KINDS,
+  INTAKE_CHANGE_CONTEXT_KINDS, INTAKE_EVIDENCE_AVAILABILITY_KINDS,
+  INTAKE_EMPLOYEE_BANDS, INTAKE_GROWTH_STAGES, INTAKE_CONTACT_PREFERENCES,
+  INTAKE_REVIEW_STATES, INTAKE_REVIEW_DECISIONS, INTAKE_REVIEW_TRANSITIONS,
+  isIntakeReviewState, canIntakeReviewTransition,
+  INTAKE_EPISTEMIC_STATUS, MAX_RECENT_EXAMPLES,
   AUDIT_EVENTS
 };

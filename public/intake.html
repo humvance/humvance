@@ -1,0 +1,643 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Humvance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0A0A0A;--white:#FFFFFF;--warm:#F6F5F1;--grey:#777777;--border:#E2E1DD;--border-strong:#C8C7C3;--surface:#FFFFFF;--text:#0A0A0A;--text-2:#444444;--text-3:#777777;--error:#C0392B;--success:#1A7A4A;--font-en:'Inter',system-ui,sans-serif;--font-ar:'IBM Plex Sans Arabic','Arial',sans-serif;--r:8px;--r-lg:14px}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--warm:#111110;--surface:#1A1A19;--border:#2E2E2C;--border-strong:#444442;--text:#F0EFE9;--text-2:#BBBBBB;--text-3:#888785;--black:#F0EFE9}}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-ar);font-size:16px;color:var(--text);background:var(--warm);direction:rtl;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+body.en{direction:ltr;font-family:var(--font-en)}
+h1,h2,h3{line-height:1.25;color:var(--text)}
+p{color:var(--text-2);line-height:1.75}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:16px}
+.hidden{display:none!important}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;font-size:15px;font-weight:600;border-radius:var(--r);transition:all 150ms;font-family:inherit}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn-primary{background:var(--black);color:var(--warm)}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border-strong)}
+.btn-ghost{color:var(--text-3);padding:10px 14px;font-size:14px}
+.site-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{display:flex;flex-direction:column;line-height:1.1}
+.brand b{font-family:var(--font-en);font-size:17px;font-weight:800;letter-spacing:-.3px}
+.brand span{font-family:var(--font-en);font-size:10px;color:var(--text-3);letter-spacing:.4px}
+.lang-toggle{font-family:var(--font-en);font-size:12px;font-weight:600;border:1px solid var(--border-strong);border-radius:99px;padding:6px 14px;color:var(--text-2)}
+.layout{display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 61px)}
+main.pane{padding:36px 28px 64px;max-width:760px;width:100%;margin-inline:auto}
+aside.rail{background:var(--black);color:var(--warm);padding:32px 24px;display:flex;flex-direction:column;gap:22px}
+body.en aside.rail,aside.rail{order:2}
+.rail-title{font-size:17px;font-weight:700;color:var(--warm);line-height:1.4}
+.rail-sub{font-size:13px;color:rgba(240,239,233,.55);line-height:1.7}
+.rail-steps{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.rail-step{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:rgba(240,239,233,.45)}
+.rail-step.active{color:var(--warm);font-weight:600}
+.rail-step.done{color:rgba(240,239,233,.8)}
+.dot{width:7px;height:7px;border-radius:99px;background:rgba(240,239,233,.25);margin-top:7px;flex-shrink:0}
+.rail-step.active .dot{background:var(--warm)}
+.rail-step.done .dot{background:rgba(240,239,233,.7)}
+.rail-note{font-size:11.5px;color:rgba(240,239,233,.4);line-height:1.7;border-top:1px solid rgba(240,239,233,.15);padding-top:16px;margin-top:auto}
+.progress{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:26px}
+.progress i{display:block;height:100%;background:var(--black);transition:width 250ms}
+.eyebrow{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;font-family:var(--font-en)}
+h2.step-title{font-size:26px;font-weight:800;margin-bottom:8px}
+p.step-sub{font-size:14.5px;margin-bottom:26px}
+.field{margin-bottom:22px}
+label.lbl{display:block;font-size:14px;font-weight:600;margin-bottom:7px}
+.hint{font-size:12.5px;color:var(--text-3);margin-bottom:8px;line-height:1.65}
+.inp{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text)}
+.inp:focus{outline:none;border-color:var(--black)}
+textarea.inp{resize:vertical;min-height:96px;line-height:1.7}
+.choices{display:flex;flex-direction:column;gap:9px}
+.choices.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.choice{display:flex;align-items:flex-start;gap:11px;border:1.5px solid var(--border);border-radius:var(--r);padding:13px 15px;background:var(--surface);cursor:pointer;transition:border-color 120ms}
+.choice:hover{border-color:var(--border-strong)}
+.choice.sel{border-color:var(--black);box-shadow:inset 0 0 0 1px var(--black)}
+.choice input{margin-top:4px;accent-color:var(--black);flex-shrink:0}
+.choice-body strong{display:block;font-size:14.5px;font-weight:600;margin-bottom:2px}
+.choice-body em{font-style:normal;font-size:12.5px;color:var(--text-3);line-height:1.6}
+.card{border:1.5px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:18px;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-head b{font-size:13px;font-weight:700}
+.err{color:var(--error);font-size:12.5px;margin-top:6px;font-weight:600}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:34px;padding-top:22px;border-top:1px solid var(--border)}
+.notice{background:var(--surface);border:1.5px solid var(--border);border-inline-start:4px solid var(--black);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--text-2);line-height:1.75;margin-bottom:22px}
+.review-row{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.review-row:last-child{border-bottom:none}
+.review-row span{flex:0 0 42%;color:var(--text-3)}
+.review-row div{flex:1;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.done-wrap{max-width:620px;margin:64px auto;padding:0 24px}
+.done-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:40px 32px;text-align:center}
+.tick{width:52px;height:52px;border-radius:99px;background:var(--black);color:var(--warm);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.ref{font-family:var(--font-en);font-size:22px;font-weight:800;letter-spacing:1px;background:var(--warm);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:14px 0;direction:ltr}
+.toast{position:fixed;bottom:22px;inset-inline-start:22px;background:var(--black);color:var(--warm);padding:12px 18px;border-radius:var(--r);font-size:13.5px;z-index:99;max-width:min(92vw,420px)}
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr}
+  aside.rail{order:-1;padding:18px 20px;gap:12px}
+  .rail-steps,.rail-note{display:none}
+  main.pane{padding:24px 18px 56px}
+  h2.step-title{font-size:21px}
+  .choices.two{grid-template-columns:1fr}
+  .review-row{flex-direction:column;gap:3px}
+  .review-row span{flex:none}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast-host"></div>
+<script>
+/* Humvance — Diagnostic Intake V2 (client).
+   This form collects a CASE SEED. It computes nothing, scores nothing, and
+   concludes nothing. It posts once, to /api/v2/intake, which stores an immutable
+   record and holds it for a human to read. */
+'use strict';
+
+var lang = 'ar';
+try { lang = localStorage.getItem('hv_intake_lang') || 'ar'; } catch (e) {}
+
+function L(ar, en) { return lang === 'ar' ? ar : en; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+  return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function $(s) { return document.querySelector(s); }
+
+var S = {
+  view: 'form',
+  step: 0,
+  sending: false,
+  result: null,
+  errors: {},
+  d: {
+    company_name: '', sector: '', employee_count_band: '', growth_stage: '',
+    name: '', role_title: '', email: '', phone: '', preferred_contact: '',
+    case_intent: '',
+    reported_situation: '',
+    scope_kind: '', scope_labels: '',
+    first_noticed_approx: '', pattern: '', associated_change_note: '',
+    examples: [{ what_happened: '', approx_when: '', area: '', observable_consequence: '' }],
+    impact: {},           /* kind -> {on, description, value, unit, basis} */
+    changes: {},          /* kind -> {on, note} */
+    client_belief: '',
+    availability: {},     /* kind -> {on, note} */
+    desired_outcome: '',
+    consent_data_use: false, consent_ai: false, consent_sensitive: false
+  }
+};
+
+try {
+  var saved = JSON.parse(localStorage.getItem('hv_intake_draft') || 'null');
+  if (saved && saved.d) { S.d = Object.assign(S.d, saved.d); S.step = saved.step || 0; }
+} catch (e) {}
+function save() { try { localStorage.setItem('hv_intake_draft', JSON.stringify({ step: S.step, d: S.d })); } catch (e) {} }
+
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem('hv_intake_lang', l); } catch (e) {}
+  document.documentElement.lang = l;
+  document.documentElement.dir = (lang==='ar'?'rtl':'ltr');
+  document.body.classList.toggle('en', l === 'en');
+  render();
+}
+
+function toast(msg) {
+  var host = $('#toast-host');
+  host.innerHTML = '<div class="toast">' + esc(msg) + '</div>';
+  setTimeout(function () { host.innerHTML = ''; }, 4200);
+}
+
+/* ── Vocabulary. Mirrors api/v2/_domain.js exactly; the server re-checks all of it. ── */
+
+var BANDS = [['1-10', '1–10'], ['11-50', '11–50'], ['51-200', '51–200'], ['201-500', '201–500'],
+             ['501-1000', '501–1000'], ['1000+', '1000+'], ['unsure', L('غير متأكد', 'Not sure')]];
+var STAGES = [['early', L('في البداية', 'Early')], ['growing', L('في نمو', 'Growing')],
+              ['scaling', L('توسع سريع', 'Scaling')], ['stable', L('مستقر', 'Stable')],
+              ['restructuring', L('إعادة هيكلة', 'Restructuring')], ['unsure', L('غير متأكد', 'Not sure')]];
+var CONTACTS = [['email', L('البريد الإلكتروني', 'Email')], ['phone', L('مكالمة هاتفية', 'Phone call')],
+                ['whatsapp', L('واتساب', 'WhatsApp')]];
+var INTENTS = [
+  ['DYSFUNCTION', L('هناك شيء لا يعمل كما هو متوقع.', 'Something is not working as expected.'),
+                  L('تلاحظون أمراً يحدث في المنظمة ولا تعرفون سببه بعد.', 'You are seeing something happen and do not yet know why.')],
+  ['RISK', L('لدينا قلق من مخاطرة أو اعتمادية تنظيمية.', 'We are concerned about a potential organizational risk or dependency.'),
+           L('الأمور تسير الآن، لكن هناك ما يقلقكم بشأن استمرارها.', 'Things work today, but something about how they work concerns you.')],
+  ['OPPORTUNITY', L('نستعد للنمو أو لتغيير تنظيمي كبير.', 'We are preparing for growth or a significant organizational change.'),
+                  L('تستعدون لمرحلة قادمة وتريدون الدخول إليها بوضوح.', 'You are preparing for what is next and want to enter it clearly.')]
+];
+var SCOPES = [
+  ['company_wide', L('على مستوى الشركة كاملة', 'Company-wide')],
+  ['function', L('في إدارة أو وظيفة محددة', 'In a specific function')],
+  ['team', L('في فريق محدد', 'In a specific team')],
+  ['process', L('في عملية أو إجراء محدد', 'In a specific process')],
+  ['multiple_areas', L('في أكثر من مجال', 'In multiple areas')],
+  ['unsure', L('لست متأكداً', 'Not sure')]
+];
+var PATTERNS = [
+  ['persistent', L('مستمر بنفس الوتيرة', 'Persistent — about the same')],
+  ['intermittent', L('متقطع، يظهر ويختفي', 'Intermittent — comes and goes')],
+  ['increasing', L('يزداد', 'Increasing')],
+  ['decreasing', L('يقل', 'Decreasing')],
+  ['unclear', L('غير واضح', 'Unclear')]
+];
+var IMPACTS = [
+  ['delays', L('تأخير', 'Delays')], ['additional_cost', L('تكلفة إضافية', 'Additional cost')],
+  ['lost_revenue', L('إيرادات أو فرص ضائعة', 'Lost revenue or opportunities')],
+  ['workload', L('ضغط عمل وطاقة استيعابية', 'Workload and capacity')],
+  ['customer_impact', L('أثر على العملاء', 'Customer impact')],
+  ['turnover', L('استقالات ودوران وظيفي', 'Turnover')],
+  ['quality_rework', L('جودة وإعادة عمل', 'Quality and rework')],
+  ['management_time', L('وقت الإدارة', 'Management time')],
+  ['growth_constraint', L('قيد على النمو', 'Constraint on growth')],
+  ['compliance_risk', L('التزام نظامي ومخاطر', 'Compliance and risk')],
+  ['other', L('أخرى', 'Other')]
+];
+var CHANGES = [
+  ['rapid_growth', L('نمو سريع', 'Rapid growth')], ['leadership_change', L('تغيّر في القيادة أو المديرين', 'Leadership or manager change')],
+  ['new_system', L('نظام أو تقنية جديدة', 'New system or technology')], ['restructuring', L('إعادة هيكلة', 'Restructuring')],
+  ['acquisition', L('استحواذ أو اندماج', 'Acquisition or merger')], ['new_product', L('منتج أو خدمة جديدة', 'New product or service')],
+  ['headcount_change', L('تغيّر في عدد الموظفين', 'Headcount change')], ['policy_process_change', L('تغيّر في سياسة أو إجراء', 'Policy or process change')],
+  ['customer_volume_change', L('تغيّر في حجم العملاء', 'Change in customer volume')],
+  ['no_known_change', L('لا يوجد تغيير معروف', 'No known change')], ['other', L('أخرى', 'Other')]
+];
+var AVAIL = [
+  ['org_chart', L('الهيكل التنظيمي', 'Organization chart')],
+  ['policies_procedures', L('السياسات والإجراءات', 'Policies and procedures')],
+  ['delegation_matrix', L('مصفوفة الصلاحيات والتفويض', 'Delegation / authority matrix')],
+  ['workflow_system_data', L('بيانات أنظمة سير العمل', 'Workflow or system data')],
+  ['kpi_reports', L('تقارير مؤشرات الأداء', 'KPI reports')],
+  ['operational_reports', L('تقارير تشغيلية', 'Operational reports')],
+  ['financial_reports', L('تقارير مالية', 'Financial reports')],
+  ['survey_results', L('نتائج استبيانات', 'Survey results')],
+  ['workforce_data', L('بيانات القوى العاملة ذات الصلة', 'Relevant workforce data')],
+  ['meeting_decision_records', L('محاضر اجتماعات وقرارات', 'Meeting or decision records')],
+  ['other', L('أخرى', 'Other')], ['unsure', L('لست متأكداً', 'Not sure')]
+];
+
+var STEPS = function () { return [
+  { t: L('عن المنظمة', 'About the organization') },
+  { t: L('ما الذي دعاكم للتواصل', 'What brings you here') },
+  { t: L('ما الذي يحدث', 'What is happening') },
+  { t: L('أين يحدث', 'Where it is happening') },
+  { t: L('متى لاحظتموه', 'When you noticed it') },
+  { t: L('أمثلة حديثة', 'Recent examples') },
+  { t: L('الأثر الملاحظ', 'Observed impact') },
+  { t: L('ما الذي تغيّر', 'What changed') },
+  { t: L('ما تعتقدونه', 'What you think') },
+  { t: L('المعلومات المتوفرة', 'Information you already have') },
+  { t: L('ما الذي تريدون الوصول إليه', 'What you want to reach') },
+  { t: L('المراجعة والإرسال', 'Review and send') }
+]; };
+
+/* ── small field builders ── */
+
+function radioList(name, options, current, onpick, two) {
+  return '<div class="choices' + (two ? ' two' : '') + '">' + options.map(function (o) {
+    var v = o[0], label = o[1], sub = o[2];
+    return '<label class="choice ' + (current === v ? 'sel' : '') + '">' +
+      '<input type="radio" name="' + name + '" value="' + esc(v) + '" ' + (current === v ? 'checked' : '') +
+      ' onchange="' + onpick + '(this.value)">' +
+      '<span class="choice-body"><strong>' + esc(label) + '</strong>' +
+      (sub ? '<em>' + esc(sub) + '</em>' : '') + '</span></label>';
+  }).join('') + '</div>';
+}
+
+function checkList(bag, options, toggler, noteFn) {
+  return '<div class="choices">' + options.map(function (o) {
+    var v = o[0], on = !!(bag[v] && bag[v].on);
+    return '<label class="choice ' + (on ? 'sel' : '') + '">' +
+      '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="' + toggler + '(\'' + v + '\',this.checked)">' +
+      '<span class="choice-body"><strong>' + esc(o[1]) + '</strong>' +
+      (on && noteFn ? noteFn(v) : '') + '</span></label>';
+  }).join('') + '</div>';
+}
+
+function errFor(key) { return S.errors[key] ? '<div class="err">' + esc(S.errors[key]) + '</div>' : ''; }
+
+/* ── state setters used from markup ── */
+function setD(k, v) { S.d[k] = v; save(); }
+function pick(k) { return function (v) { S.d[k] = v; save(); render(); }; }
+var pickIntent = pick('case_intent'), pickScope = pick('scope_kind'), pickPattern = pick('pattern');
+var pickBand = pick('employee_count_band'), pickStage = pick('growth_stage'), pickContact = pick('preferred_contact');
+
+function toggleImpact(kind, on) { S.d.impact[kind] = Object.assign(S.d.impact[kind] || {}, { on: on }); save(); render(); }
+function setImpact(kind, field, v) { S.d.impact[kind] = Object.assign(S.d.impact[kind] || { on: true }, {}); S.d.impact[kind][field] = v; save(); }
+function toggleChange(kind, on) { S.d.changes[kind] = Object.assign(S.d.changes[kind] || {}, { on: on }); save(); render(); }
+function setChange(kind, v) { S.d.changes[kind] = Object.assign(S.d.changes[kind] || { on: true }, { note: v }); save(); }
+function toggleAvail(kind, on) { S.d.availability[kind] = Object.assign(S.d.availability[kind] || {}, { on: on }); save(); render(); }
+function setAvail(kind, v) { S.d.availability[kind] = Object.assign(S.d.availability[kind] || { on: true }, { note: v }); save(); }
+function setEx(i, field, v) { S.d.examples[i][field] = v; save(); }
+function addExample() { if (S.d.examples.length < 3) { S.d.examples.push({ what_happened: '', approx_when: '', area: '', observable_consequence: '' }); save(); render(); } }
+function removeExample(i) { S.d.examples.splice(i, 1); if (!S.d.examples.length) addExample(); save(); render(); }
+
+/* ── steps ── */
+
+function stepBody(i) {
+  var d = S.d;
+  if (i === 0) return '' +
+    '<div class="field"><label class="lbl" for="f-co">' + L('اسم الشركة', 'Company name') + ' *</label>' +
+    '<input id="f-co" class="inp" value="' + esc(d.company_name) + '" oninput="setD(\'company_name\',this.value)">' + errFor('company_name') + '</div>' +
+    '<div class="field"><label class="lbl" for="f-sec">' + L('القطاع', 'Industry / sector') + '</label>' +
+    '<input id="f-sec" class="inp" value="' + esc(d.sector) + '" oninput="setD(\'sector\',this.value)"></div>' +
+    '<div class="field"><label class="lbl">' + L('عدد الموظفين تقريباً', 'Approximate number of employees') + '</label>' +
+    radioList('band', BANDS, d.employee_count_band, 'pickBand', true) + '</div>' +
+    '<div class="field"><label class="lbl">' + L('أين أنتم الآن', 'Where the company is right now') + '</label>' +
+    radioList('stage', STAGES, d.growth_stage, 'pickStage', true) + '</div>' +
+    '<div class="field"><label class="lbl" for="f-nm">' + L('اسمكم', 'Your name') + ' *</label>' +
+    '<input id="f-nm" class="inp" value="' + esc(d.name) + '" oninput="setD(\'name\',this.value)">' + errFor('name') + '</div>' +
+    '<div class="field"><label class="lbl" for="f-rl">' + L('دوركم في المنظمة', 'Your role') + ' *</label>' +
+    '<input id="f-rl" class="inp" value="' + esc(d.role_title) + '" oninput="setD(\'role_title\',this.value)">' + errFor('role_title') + '</div>' +
+    '<div class="field"><label class="lbl" for="f-em">' + L('البريد الإلكتروني', 'Email') + ' *</label>' +
+    '<input id="f-em" class="inp" type="email" dir="ltr" value="' + esc(d.email) + '" oninput="setD(\'email\',this.value)">' + errFor('email') + '</div>' +
+    '<div class="field"><label class="lbl" for="f-ph">' + L('رقم الجوال (اختياري)', 'Phone (optional)') + '</label>' +
+    '<input id="f-ph" class="inp" dir="ltr" value="' + esc(d.phone) + '" oninput="setD(\'phone\',this.value)"></div>' +
+    '<div class="field"><label class="lbl">' + L('كيف تفضلون أن نتواصل معكم؟', 'How would you prefer we reply?') + '</label>' +
+    radioList('ct', CONTACTS, d.preferred_contact, 'pickContact', true) + '</div>';
+
+  if (i === 1) return '' +
+    '<div class="field">' + radioList('intent', INTENTS, d.case_intent, 'pickIntent') + errFor('case_intent') + '</div>' +
+    '<div class="notice">' + L(
+      'اختياركم هنا يخبرنا لماذا تواصلتم، لا أكثر. ليس تصنيفاً لحالة المنظمة، ولن يُستخدم كنتيجة.',
+      'Your answer tells us why you came to us, and nothing more. It is not a verdict on your organization and it is not used as one.') + '</div>';
+
+  if (i === 2) return '' +
+    '<div class="field"><label class="lbl" for="f-sit">' + L('صِفوا ما ترونه في المنظمة', 'Describe what you are seeing in the organization') + ' *</label>' +
+    '<div class="hint">' + L(
+      'ركّزوا على ما يحدث بدلاً من سبب حدوثه في رأيكم — سنسألكم عن رأيكم لاحقاً.',
+      'Focus on what is happening rather than why you think it is happening. We will ask what you think later.') + '</div>' +
+    '<textarea id="f-sit" class="inp" rows="8" oninput="setD(\'reported_situation\',this.value)">' + esc(d.reported_situation) + '</textarea>' +
+    errFor('reported_situation') + '</div>' +
+    '<div class="notice">' + L(
+      'أمثلة على أسلوب الوصف: «الطلبات التي كانت تُنجز في يوم صارت تستغرق أربعة»، «اجتماعات أسبوعية تنتهي دون قرار»، «موظفون يغادرون بعد أقل من سنة».',
+      'Examples of the level of detail that helps: “orders that used to go out in a day now take four”, “the weekly meeting ends without a decision”, “people are leaving within a year of joining”.') + '</div>';
+
+  if (i === 3) return '' +
+    '<div class="field"><label class="lbl">' + L('أين تلاحظونه؟', 'Where do you notice it?') + ' *</label>' +
+    radioList('scope', SCOPES, d.scope_kind, 'pickScope') + errFor('scope_kind') + '</div>' +
+    (d.scope_kind && d.scope_kind !== 'unsure' && d.scope_kind !== 'company_wide'
+      ? '<div class="field"><label class="lbl" for="f-lb">' + L('إن كنتم تعرفون الإدارة أو الفريق أو العملية، اذكروها', 'If you know the function, team or process, name it') + '</label>' +
+        '<div class="hint">' + L('افصلوا بينها بفاصلة. اتركوها فارغة إن لم تكن واضحة.', 'Separate with commas. Leave blank if it is not clear.') + '</div>' +
+        '<input id="f-lb" class="inp" value="' + esc(d.scope_labels) + '" oninput="setD(\'scope_labels\',this.value)"></div>'
+      : '');
+
+  if (i === 4) return '' +
+    '<div class="field"><label class="lbl" for="f-fn">' + L('متى لاحظتموه لأول مرة تقريباً؟', 'When did you first notice it, approximately?') + '</label>' +
+    '<div class="hint">' + L('تقدير تقريبي يكفي — «حوالي مارس»، «بعد رمضان»، «منذ سنة».', 'A rough answer is fine — “around March”, “after the summer”, “about a year ago”.') + '</div>' +
+    '<input id="f-fn" class="inp" value="' + esc(d.first_noticed_approx) + '" oninput="setD(\'first_noticed_approx\',this.value)"></div>' +
+    '<div class="field"><label class="lbl">' + L('كيف يتصرف منذ ذلك الحين؟', 'How has it behaved since then?') + ' *</label>' +
+    radioList('pat', PATTERNS, d.pattern, 'pickPattern') + errFor('pattern') + '</div>' +
+    '<div class="field"><label class="lbl" for="f-ac">' + L('هل تربطونه بحدث أو تغيير معيّن؟ (اختياري)', 'Do you associate it with a particular event or change? (optional)') + '</label>' +
+    '<textarea id="f-ac" class="inp" rows="3" oninput="setD(\'associated_change_note\',this.value)">' + esc(d.associated_change_note) + '</textarea></div>' +
+    '<div class="notice">' + L(
+      'نسجّل هذا الارتباط كارتباط زمني فقط. تزامن أمرين لا يعني أن أحدهما سبب الآخر، وسنختبر ذلك بدل افتراضه.',
+      'We record this as a timing association only. Two things happening around the same time does not make one the cause of the other, and we will test that rather than assume it.') + '</div>';
+
+  if (i === 5) return '' +
+    '<div class="notice">' + L(
+      'مثال واحد ملموس أنفع من وصف عام. لا نسألكم لماذا حدث — فقط ما الذي حدث.',
+      'One concrete example is worth more than a general description. We are not asking why it happened — only what happened.') + '</div>' +
+    d.examples.map(function (ex, n) {
+      return '<div class="card"><div class="card-head"><b>' + L('مثال ', 'Example ') + (n + 1) + '</b>' +
+        (d.examples.length > 1 ? '<button class="btn btn-ghost" onclick="removeExample(' + n + ')">' + L('حذف', 'Remove') + '</button>' : '') + '</div>' +
+        '<div class="field"><label class="lbl">' + L('ما الذي حدث؟', 'What happened?') + (n === 0 ? ' *' : '') + '</label>' +
+        '<textarea class="inp" rows="3" oninput="setEx(' + n + ',\'what_happened\',this.value)">' + esc(ex.what_happened) + '</textarea>' +
+        (n === 0 ? errFor('example0') : '') + '</div>' +
+        '<div class="field"><label class="lbl">' + L('متى تقريباً؟', 'Approximately when?') + '</label>' +
+        '<input class="inp" value="' + esc(ex.approx_when) + '" oninput="setEx(' + n + ',\'approx_when\',this.value)"></div>' +
+        '<div class="field"><label class="lbl">' + L('في أي إدارة أو عملية؟ (إن كان معروفاً)', 'Which function or process? (if known)') + '</label>' +
+        '<input class="inp" value="' + esc(ex.area) + '" oninput="setEx(' + n + ',\'area\',this.value)"></div>' +
+        '<div class="field" style="margin-bottom:0"><label class="lbl">' + L('ما النتيجة التي ظهرت؟', 'What was the observable result?') + '</label>' +
+        '<textarea class="inp" rows="2" oninput="setEx(' + n + ',\'observable_consequence\',this.value)">' + esc(ex.observable_consequence) + '</textarea></div></div>';
+    }).join('') +
+    (d.examples.length < 3 ? '<button class="btn btn-outline" onclick="addExample()">' + L('إضافة مثال آخر', 'Add another example') + '</button>' : '');
+
+  if (i === 6) return '' +
+    '<div class="field">' + checkList(d.impact, IMPACTS, 'toggleImpact', function (kind) {
+      var v = d.impact[kind] || {};
+      return '<span style="display:block;margin-top:10px" onclick="event.preventDefault();event.stopPropagation()">' +
+        '<input class="inp" style="margin-bottom:8px" placeholder="' + L('صفوه باختصار (اختياري)', 'Describe it briefly (optional)') + '" value="' + esc(v.description || '') + '" oninput="setImpact(\'' + kind + '\',\'description\',this.value)">' +
+        '<span style="display:flex;gap:8px;flex-wrap:wrap">' +
+        '<input class="inp" style="flex:1;min-width:110px" type="number" placeholder="' + L('رقم (اختياري)', 'Number (optional)') + '" value="' + esc(v.value || '') + '" oninput="setImpact(\'' + kind + '\',\'value\',this.value)">' +
+        '<input class="inp" style="flex:1;min-width:110px" placeholder="' + L('الوحدة، مثل: ريال / يوم', 'Unit, e.g. SAR / days') + '" value="' + esc(v.unit || '') + '" oninput="setImpact(\'' + kind + '\',\'unit\',this.value)">' +
+        '</span>' +
+        '<input class="inp" style="margin-top:8px" placeholder="' + L('على أي أساس قدّرتموه؟', 'What is that based on?') + '" value="' + esc(v.basis || '') + '" oninput="setImpact(\'' + kind + '\',\'basis\',this.value)">' +
+        '</span>';
+    }) + '</div>' +
+    '<div class="notice">' + L(
+      'الأرقام اختيارية تماماً. أي رقم تذكرونه يُحفظ بوصفه تقديركم أنتم، ولا نحسب منه أي أثر مالي أو عائد.',
+      'Numbers are entirely optional. Anything you enter is stored as your own estimate; we do not calculate any financial impact or return from it.') + '</div>';
+
+  if (i === 7) return '' +
+    '<div class="field"><label class="lbl">' + L('ما الذي تغيّر في المنظمة قبل أو حول الوقت الذي بدأ فيه هذا؟', 'What changed in the organization before or around the time this started?') + '</label>' +
+    checkList(d.changes, CHANGES, 'toggleChange', function (kind) {
+      return '<span style="display:block;margin-top:10px" onclick="event.preventDefault();event.stopPropagation()">' +
+        '<input class="inp" placeholder="' + L('تفاصيل (اختياري)', 'Detail (optional)') + '" value="' + esc((d.changes[kind] || {}).note || '') + '" oninput="setChange(\'' + kind + '\',this.value)"></span>';
+    }) + '</div>' +
+    '<div class="notice">' + L(
+      'هذه إشارات سياقية. ترتيب الأحداث في الزمن لا يثبت السببية.',
+      'These are contextual signals. The order things happened in does not establish cause.') + '</div>';
+
+  if (i === 8) return '' +
+    '<div class="field"><label class="lbl" for="f-bel">' + L('ما الذي تعتقدون حالياً أنه قد يكون السبب؟', 'What do you currently think may be causing it?') + '</label>' +
+    '<div class="hint">' + L(
+      'لا بأس إن لم تكونوا متأكدين — يمكنكم ترك الحقل فارغاً. سنختبر التفسيرات الممكنة بدل افتراض أن هذا هو السبب.',
+      'It is okay if you are unsure — you can leave this blank. Humvance will test possible explanations rather than assume this is the cause.') + '</div>' +
+    '<textarea id="f-bel" class="inp" rows="5" oninput="setD(\'client_belief\',this.value)">' + esc(d.client_belief) + '</textarea></div>' +
+    '<div class="notice">' + L(
+      'ما تكتبونه هنا يُحفظ باعتباره رأيكم، لا باعتباره حقيقة مثبتة.',
+      'What you write here is stored as your view, not as an established fact.') + '</div>';
+
+  if (i === 9) return '' +
+    '<div class="field"><label class="lbl">' + L('أي من هذه المعلومات موجود لديكم بالفعل؟', 'Which of these already exist in your organization?') + '</label>' +
+    '<div class="hint">' + L(
+      'نسأل عمّا هو موجود فقط. لا ترفعوا أي ملف الآن، وسنطلب لاحقاً أقل قدر ممكن ممّا يفيد فعلاً.',
+      'We are only asking what exists. Do not upload anything now — later we will ask for the least that genuinely helps.') + '</div>' +
+    checkList(d.availability, AVAIL, 'toggleAvail', function (kind) {
+      return '<span style="display:block;margin-top:10px" onclick="event.preventDefault();event.stopPropagation()">' +
+        '<input class="inp" placeholder="' + L('ملاحظة (اختياري)', 'Note (optional)') + '" value="' + esc((d.availability[kind] || {}).note || '') + '" oninput="setAvail(\'' + kind + '\',this.value)"></span>';
+    }) + '</div>';
+
+  if (i === 10) return '' +
+    '<div class="field"><label class="lbl" for="f-out">' + L('ما الذي تودّون فهمه أو تقريره أو تحسينه أو الاستعداد له؟', 'What would you like to understand, decide, improve, or prepare for?') + ' *</label>' +
+    '<textarea id="f-out" class="inp" rows="6" oninput="setD(\'desired_outcome\',this.value)">' + esc(d.desired_outcome) + '</textarea>' + errFor('desired_outcome') + '</div>' +
+    '<div class="notice">' + L(
+      'لا نطلب منكم اختيار الحل. اختيار ما يجب عمله يأتي لاحقاً، بعد أن يُفهم ما يحدث ويُراجَع من إنسان مخوّل.',
+      'We are not asking you to choose the solution. What to do comes later, after what is happening is understood and reviewed by an authorized person.') + '</div>';
+
+  if (i === 11) {
+    var rows = reviewRows().map(function (r) {
+      return '<div class="review-row"><span>' + esc(r[0]) + '</span><div>' + esc(r[1] || L('—', '—')) + '</div></div>';
+    }).join('');
+    return '<div class="card">' + rows + '</div>' +
+      '<div class="notice"><strong>' + L('الخصوصية', 'Privacy') + '</strong><br>' + L(
+        'يرجى تجنّب إدراج أي معلومات شخصية أو حساسة عن الموظفين لا حاجة لها — أسماء أفراد، تقييمات فردية، معلومات صحية، أو رسائل خاصة.',
+        'Please avoid including unnecessary personal or sensitive employee information — individual names, individual performance ratings, health information, or private messages.') + '</div>' +
+      '<div class="field">' +
+      '<label class="choice ' + (S.d.consent_data_use ? 'sel' : '') + '"><input type="checkbox" ' + (S.d.consent_data_use ? 'checked' : '') + ' onchange="setD(\'consent_data_use\',this.checked);render()">' +
+      '<span class="choice-body"><strong>' + L('أوافق على استخدام هذه المعلومات لمراجعة طلبنا داخل Humvance.', 'I agree that Humvance may use this information to review our submission.') + '</strong></span></label>' +
+      '<label class="choice ' + (S.d.consent_ai ? 'sel' : '') + '" style="margin-top:9px"><input type="checkbox" ' + (S.d.consent_ai ? 'checked' : '') + ' onchange="setD(\'consent_ai\',this.checked);render()">' +
+      '<span class="choice-body"><strong>' + L('أفهم أن المعلومات قد تُعالَج بمساعدة الذكاء الاصطناعي.', 'I understand this information may be processed with AI assistance.') + '</strong>' +
+      '<em>' + L('القرارات التنظيمية الجوهرية تبقى خاضعة لمراجعة بشرية مخوّلة، ولا يتخذها النظام تلقائياً.',
+                 'Material organizational decisions remain subject to authorized human review and are never taken automatically by the system.') + '</em></span></label>' +
+      '<label class="choice ' + (S.d.consent_sensitive ? 'sel' : '') + '" style="margin-top:9px"><input type="checkbox" ' + (S.d.consent_sensitive ? 'checked' : '') + ' onchange="setD(\'consent_sensitive\',this.checked);render()">' +
+      '<span class="choice-body"><strong>' + L('راجعتُ ما كتبته وتجنّبت المعلومات الشخصية أو الحساسة غير الضرورية.',
+                                               'I have reviewed what I wrote and avoided unnecessary personal or sensitive information.') + '</strong></span></label>' +
+      errFor('consent') + '</div>';
+  }
+  return '';
+}
+
+function reviewRows() {
+  var d = S.d, L2 = L;
+  function picked(bag, opts) {
+    return opts.filter(function (o) { return bag[o[0]] && bag[o[0]].on; }).map(function (o) { return o[1]; }).join('، ');
+  }
+  function labelOf(opts, v) { for (var i = 0; i < opts.length; i++) if (opts[i][0] === v) return opts[i][1]; return ''; }
+  return [
+    [L2('الشركة', 'Company'), d.company_name],
+    [L2('القطاع', 'Sector'), d.sector],
+    [L2('عدد الموظفين', 'Employees'), labelOf(BANDS, d.employee_count_band)],
+    [L2('مقدّم الطلب', 'Submitted by'), d.name + (d.role_title ? ' — ' + d.role_title : '')],
+    [L2('البريد الإلكتروني', 'Email'), d.email],
+    [L2('سبب التواصل', 'Why you came'), labelOf(INTENTS, d.case_intent)],
+    [L2('ما يحدث', 'What is happening'), d.reported_situation],
+    [L2('أين', 'Where'), labelOf(SCOPES, d.scope_kind) + (d.scope_labels ? ' — ' + d.scope_labels : '')],
+    [L2('منذ متى', 'Since when'), (d.first_noticed_approx || '—') + ' · ' + labelOf(PATTERNS, d.pattern)],
+    [L2('أمثلة', 'Examples'), d.examples.filter(function (e) { return e.what_happened.trim(); }).length],
+    [L2('الأثر', 'Impact'), picked(d.impact, IMPACTS)],
+    [L2('ما تغيّر', 'What changed'), picked(d.changes, CHANGES)],
+    [L2('ما تعتقدونه', 'What you think'), d.client_belief],
+    [L2('معلومات متوفرة', 'Information available'), picked(d.availability, AVAIL)],
+    [L2('ما تريدون الوصول إليه', 'What you want to reach'), d.desired_outcome]
+  ];
+}
+
+/* ── validation (the server re-checks every one of these) ── */
+
+function validate(i) {
+  var d = S.d, e = {};
+  if (i === 0) {
+    if (!d.company_name.trim()) e.company_name = L('مطلوب', 'Required');
+    if (!d.name.trim()) e.name = L('مطلوب', 'Required');
+    if (!d.role_title.trim()) e.role_title = L('مطلوب', 'Required');
+    if (!/^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/.test(d.email.trim())) e.email = L('بريد إلكتروني غير صالح', 'Enter a valid email address');
+  }
+  if (i === 1 && !d.case_intent) e.case_intent = L('اختاروا واحداً', 'Choose one');
+  if (i === 2 && !d.reported_situation.trim()) e.reported_situation = L('مطلوب', 'Required');
+  if (i === 3 && !d.scope_kind) e.scope_kind = L('اختاروا واحداً', 'Choose one');
+  if (i === 4 && !d.pattern) e.pattern = L('اختاروا واحداً', 'Choose one');
+  if (i === 5 && !d.examples[0].what_happened.trim()) e.example0 = L('مثال واحد على الأقل', 'At least one example');
+  if (i === 10 && !d.desired_outcome.trim()) e.desired_outcome = L('مطلوب', 'Required');
+  if (i === 11 && !(d.consent_data_use && d.consent_ai && d.consent_sensitive)) e.consent = L('يرجى تأكيد الثلاثة', 'Please confirm all three');
+  S.errors = e;
+  return Object.keys(e).length === 0;
+}
+
+function next() {
+  if (!validate(S.step)) { render(); toast(L('يرجى إكمال الحقول المطلوبة', 'Please complete the required fields')); return; }
+  if (S.step < 11) { S.step++; save(); render(); window.scrollTo(0, 0); }
+}
+function prev() { if (S.step > 0) { S.step--; S.errors = {}; save(); render(); window.scrollTo(0, 0); } }
+
+/* ── payload: built to the server's allow-list, nothing extra ── */
+
+function payload() {
+  var d = S.d;
+  function collect(bag, extra) {
+    return Object.keys(bag).filter(function (k) { return bag[k] && bag[k].on; }).map(function (k) { return extra(k, bag[k]); });
+  }
+  var body = {
+    organization_context: {
+      company_name: d.company_name.trim(),
+      sector: d.sector.trim() || undefined,
+      employee_count_band: d.employee_count_band || undefined,
+      growth_stage: d.growth_stage || undefined
+    },
+    respondent_context: {
+      name: d.name.trim(), role_title: d.role_title.trim(), email: d.email.trim(),
+      phone: d.phone.trim() || undefined, preferred_contact: d.preferred_contact || undefined
+    },
+    case_intent: d.case_intent,
+    reported_situation: d.reported_situation.trim(),
+    scope: {
+      kind: d.scope_kind,
+      labels: d.scope_labels.split(',').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 10)
+    },
+    timeline: {
+      first_noticed_approx: d.first_noticed_approx.trim() || undefined,
+      pattern: d.pattern,
+      associated_change_note: d.associated_change_note.trim() || undefined
+    },
+    recent_examples: d.examples.filter(function (x) { return x.what_happened.trim(); }).slice(0, 3).map(function (x) {
+      return {
+        what_happened: x.what_happened.trim(),
+        approx_when: x.approx_when.trim() || undefined,
+        area: x.area.trim() || undefined,
+        observable_consequence: x.observable_consequence.trim() || undefined
+      };
+    }),
+    observed_impact: collect(d.impact, function (kind, v) {
+      var row = { kind: kind, description: (v.description || '').trim() || undefined };
+      var num = parseFloat(v.value);
+      if (isFinite(num) && (v.unit || '').trim()) {
+        row.quantification = { value: num, unit: v.unit.trim(), basis: (v.basis || '').trim() || undefined };
+      }
+      return row;
+    }),
+    change_context: collect(d.changes, function (kind, v) { return { kind: kind, note: (v.note || '').trim() || undefined }; }),
+    client_belief: d.client_belief.trim() || undefined,
+    evidence_availability: collect(d.availability, function (kind, v) { return { kind: kind, note: (v.note || '').trim() || undefined }; }),
+    desired_outcome: d.desired_outcome.trim(),
+    consent: { data_use: true, ai_transparency_ack: true, sensitive_data_ack: true },
+    locale: lang
+  };
+  /* Drop undefined so the body carries only what was actually filled in. */
+  return JSON.parse(JSON.stringify(body));
+}
+
+async function submit() {
+  if (!validate(11)) { render(); toast(L('يرجى تأكيد الإقرارات', 'Please confirm the acknowledgements')); return; }
+  S.sending = true; render();
+  try {
+    var r = await fetch('/api/v2/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload())
+    });
+    var out = await r.json();
+    if (!r.ok) throw new Error(out.error || 'error');
+    try { localStorage.removeItem('hv_intake_draft'); } catch (e) {}
+    S.result = out; S.view = 'done'; S.sending = false; render(); window.scrollTo(0, 0);
+  } catch (err) {
+    S.sending = false; render();
+    toast(L('تعذّر الإرسال. ', 'Could not send. ') + (err.message || ''));
+  }
+}
+
+/* ── render ── */
+
+function header() {
+  return '<header class="site-header">' +
+    '<div class="brand"><b>Humvance</b><span>humvance.com</span></div>' +
+    '<button class="lang-toggle" onclick="setLang(\'' + (lang === 'ar' ? 'en' : 'ar') + '\')">' + (lang === 'ar' ? 'EN' : 'عربي') + '</button>' +
+    '</header>';
+}
+
+function render() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = (lang==='ar'?'rtl':'ltr');
+  document.body.classList.toggle('en', lang === 'en');
+
+  if (S.view === 'done') {
+    $('#root').innerHTML = header() +
+      '<div class="done-wrap"><div class="done-card">' +
+      '<div class="tick"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+      '<h2 style="font-size:24px;font-weight:800;margin-bottom:10px">' +
+      L('تم استلام ما أرسلتموه.', 'Your submission has been received.') + '</h2>' +
+      '<p style="font-size:14.5px">' + L(
+        'سيراجع فريق Humvance المعلومات التي قدمتموها ويحدد الخطوة المناسبة التالية. لم يُقيَّم شيء بعد، ولم يُستخلص أي استنتاج عن منظمتكم مما أرسلتموه.',
+        'Humvance will review the information you provided and determine the appropriate next step. Nothing has been assessed yet, and no conclusion about your organization has been drawn from what you sent.') + '</p>' +
+      '<div class="ref">' + esc(S.result && S.result.submission_reference) + '</div>' +
+      '<p style="font-size:13px">' + L('احتفظوا بهذا الرقم للرجوع إليه عند التواصل معنا.', 'Keep this reference for when you contact us.') + '</p>' +
+      '<div style="margin-top:26px"><a class="btn btn-outline" href="mailto:info@humvance.com">info@humvance.com</a></div>' +
+      '</div></div>';
+    return;
+  }
+
+  var steps = STEPS();
+  var pct = Math.round((S.step / steps.length) * 100);
+  var last = S.step === 11;
+
+  $('#root').innerHTML = header() +
+    '<div class="layout">' +
+    '<main class="pane">' +
+      '<div class="eyebrow"><span>' + esc(steps[S.step].t) + '</span><span>' + (S.step + 1) + ' / ' + steps.length + '</span></div>' +
+      '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
+      '<h2 class="step-title">' + esc(steps[S.step].t) + '</h2>' +
+      '<p class="step-sub">' + esc(subtitle(S.step)) + '</p>' +
+      stepBody(S.step) +
+      '<div class="nav">' +
+        '<button class="btn btn-outline" onclick="prev()" ' + (S.step === 0 ? 'disabled' : '') + '>' + L('السابق', 'Back') + '</button>' +
+        (last
+          ? '<button class="btn btn-primary" onclick="submit()" ' + (S.sending ? 'disabled' : '') + '>' + (S.sending ? L('جارٍ الإرسال…', 'Sending…') : L('إرسال', 'Send')) + '</button>'
+          : '<button class="btn btn-primary" onclick="next()">' + L('التالي', 'Continue') + '</button>') +
+      '</div>' +
+    '</main>' +
+    '<aside class="rail">' +
+      '<div><div class="rail-title">' + L('نبدأ بفهم ما يحدث، لا بافتراض سببه.', 'We start by understanding what is happening, not by assuming why.') + '</div>' +
+      '<div class="rail-sub">' + L(
+        'هذا النموذج يجمع ما ترونه أنتم. لن يعطيكم نتيجة أو تقييماً في نهايته، لأن ذلك يحتاج أدلة ومراجعة بشرية.',
+        'This form collects what you are seeing. It will not hand you a verdict at the end, because that needs evidence and a human review.') + '</div></div>' +
+      '<div class="rail-steps">' + steps.map(function (s, n) {
+        return '<div class="rail-step ' + (n === S.step ? 'active' : (n < S.step ? 'done' : '')) + '"><span class="dot"></span>' + esc(s.t) + '</div>';
+      }).join('') + '</div>' +
+      '<div class="rail-note">' + L(
+        'ما تكتبونه يُحفظ كما هو. لا نرفع أي ملفات في هذه المرحلة، ونرجو تجنّب أي معلومات شخصية أو حساسة عن الموظفين لا حاجة لها.',
+        'What you write is stored as you wrote it. Nothing is uploaded at this stage, and please avoid unnecessary personal or sensitive employee information.') + '</div>' +
+    '</aside>' +
+    '</div>';
+}
+
+function subtitle(i) {
+  return [
+    L('معلومات قليلة تساعدنا على وضع ما ستقولونه في سياقه.', 'A little context so that what you tell us has somewhere to sit.'),
+    L('اختاروا الأقرب إلى وضعكم. لا توجد إجابة خاطئة هنا.', 'Pick the closest fit. There is no wrong answer here.'),
+    L('هذه أهم خطوة في النموذج. خذوا وقتكم.', 'This is the most important step in the form. Take your time.'),
+    L('كلما كان النطاق أوضح، كان ما نطلبه لاحقاً أقل.', 'The clearer the scope, the less we will need to ask for later.'),
+    L('التوقيت يساعدنا على معرفة ما الذي يستحق النظر فيه.', 'Timing helps us know what is worth looking at.'),
+    L('حادثة واحدة حقيقية تساوي صفحة من الوصف العام.', 'One real incident is worth a page of general description.'),
+    L('ما الذي ترتّب على ذلك فعلياً؟', 'What has it actually cost you?'),
+    L('السياق الذي أحاط ببداية الأمر.', 'The context around when this began.'),
+    L('رأيكم مهم، وسنتعامل معه بوصفه رأياً يُختبر.', 'Your view matters, and we will treat it as a view to be tested.'),
+    L('نسأل عمّا هو موجود، لا نطلبه الآن.', 'We are asking what exists, not asking for it now.'),
+    L('ما الذي تريدون أن تعرفوه أو تقرروه؟', 'What do you want to know or decide?'),
+    L('راجعوا ما كتبتموه قبل الإرسال.', 'Read back what you wrote before you send it.')
+  ][i];
+}
+
+render();
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node tests/v2/run.js",
     "case001": "node scripts/v2-case-001.js",
-    "case001:http": "node scripts/v2-case-001-http.js"
+    "case001:http": "node scripts/v2-case-001-http.js",
+    "intake001": "node scripts/v2-intake-001.js"
   }
 }

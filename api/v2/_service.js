@@ -10,11 +10,22 @@ const { runChallenge } = require('./_challenge');
 const { scanUntrusted, splitSourceAndInterpretation } = require('./_untrusted');
 const { createRepo, RepoError, idx } = require('./_repo');
 const { loadMembership, grantOrg, hasOrg } = require('./_membership');
+const Intake = require('./_intake');
 
 function fail(code, message, status = 400) { throw new RepoError(code, message, status); }
 
 function createService(store) {
   const repo = createRepo(store);
+  const intakeRepo = Intake.createIntakeRepo(store);
+
+  // The actor an anonymous submission is attributed to. It is not a person and it
+  // is not a reviewer: it can write one immutable record into the holding area and
+  // nothing else. Every decision that follows is taken by a named human.
+  const SYSTEM_INTAKE_ACTOR = Object.freeze({
+    actor_id: 'system:intake',
+    actor_type: 'system',
+    role: null
+  });
 
   const actorOf = (principal) => ({
     actor_id: principal.actor_id,
@@ -678,6 +689,362 @@ function createService(store) {
     return a;
   }
 
+  // ── Diagnostic Intake V2 — the holding area ────────────────────────────────
+  //
+  // An anonymous submission lands here and STOPS. Everything below the
+  // receiveIntake() boundary requires an authenticated human, and the transition
+  // from "somebody told us something" to "Humvance has a Case" happens in exactly
+  // one place: decideIntake(), under a human decision.
+
+  /**
+   * Anonymous. Creates one immutable seed and one review record in PENDING_REVIEW.
+   * Creates no Organization, no Case, no Claim, no Evidence, no membership.
+   *
+   * Returns only what the submitter needs to quote back to us.
+   */
+  async function receiveIntake(body) {
+    const payload = Intake.validateIntakeSubmission(body);   // throws IntakeError (400)
+    const seed = Intake.buildIntakeSeed(payload);
+    const review = Intake.buildIntakeReview(seed);
+
+    // Artifact before index, same discipline as _repo: a failure between the two
+    // leaves an orphan nobody sees, not a list entry pointing at nothing.
+    await intakeRepo.putSeed(seed);
+    await intakeRepo.putReview(review);
+    await intakeRepo.indexSubmission({
+      intakeseed_id: seed.intakeseed_id,
+      intakereview_id: review.intakereview_id,
+      submitted_at: seed.submitted_at
+    });
+
+    await intakeRepo.auditIntake('intake.received', {
+      actor: SYSTEM_INTAKE_ACTOR,
+      subject_type: 'intakeseed',
+      subject_id: seed.intakeseed_id,
+      summary: `Anonymous intake received (${seed.case_intent}); held for human review`,
+      details: {
+        submission_reference: seed.submission_reference,
+        case_intent: seed.case_intent,
+        scope_kind: seed.scope.kind,
+        examples: seed.recent_examples.length,
+        untrusted_flagged: !seed.untrusted_scan.clean,
+        untrusted_fields: seed.untrusted_scan.flagged_fields
+      }
+    });
+
+    return {
+      success: true,
+      submission_reference: seed.submission_reference,
+      status: 'RECEIVED',
+      received_at: seed.submitted_at
+    };
+  }
+
+  /** Reviewer surface. The HTTP layer has already established who is asking. */
+  async function listIntakeSubmissions(principal, { status = 'PENDING_REVIEW', limit = 100 } = {}) {
+    if (status !== null && !D.INTAKE_REVIEW_STATES.includes(status)) {
+      fail('invalid_status', `status must be one of ${D.INTAKE_REVIEW_STATES.join(', ')}`);
+    }
+    const bounded = Math.min(Math.max(Number(limit) || 100, 1), 200);
+    return { submissions: await intakeRepo.listSubmissions({ status, limit: bounded }) };
+  }
+
+  async function getIntakeSubmission(principal, intakeseed_id) {
+    const seed = await intakeRepo.getSeed(intakeseed_id);
+    if (!seed) return null;
+    const summaries = await intakeRepo.listSubmissions({ status: null, limit: 1000 });
+    const row = summaries.find(s => s.intakeseed_id === intakeseed_id);
+    const review = row ? await intakeRepo.getReview(row.intakereview_id) : null;
+    const audit = await intakeRepo.readIntakeAudit(intakeseed_id);
+    return { seed, review, audit };
+  }
+
+  /**
+   * Compose a Case title without inventing a judgement.
+   *
+   * §23 in one function: an OPPORTUNITY submission describes a company preparing
+   * for growth, and naming it as a disorder would relabel it as dysfunction before
+   * anyone has looked at anything.
+   */
+  function neutralCaseTitle(seed) {
+    return `${seed.organization_context.company_name} — ${D.intentNeutralLabel(seed.case_intent)}`;
+  }
+
+  /**
+   * A second Claim on an existing Case, using the same primitives createCase()
+   * uses for the first one. Internal to promotion by design: it is NOT exposed as
+   * an operation on api/v2/case.js, because widening the authenticated Case API
+   * was not needed for this sprint and an unused operation is an unused attack
+   * surface. See docs/ENGINEERING-STATE.md for the deferred `add_claim`.
+   */
+  async function createSecondaryClaim(actor, organization_id, case_id, { statement, origin = 'sponsor', metadata = {} }) {
+    const claim = await repo.createObject('claim', 'claim', organization_id, actor, {
+      case_id,
+      statement: String(statement).trim().slice(0, 2000),
+      origin,
+      verification_status: 'UNVERIFIED',
+      is_primary: false,
+      supporting_evidence: [],
+      contradicting_evidence: [],
+      metadata
+    });
+    await repo.attachToIndex(idx.caseClaims(case_id), claim.claim_id);
+    await repo.audit('claim.created', {
+      organization_id, case_id, actor, subject_type: 'claim', subject_id: claim.claim_id,
+      summary: 'Client belief recorded as a secondary claim, UNVERIFIED',
+      details: { origin, is_primary: false, source: 'diagnostic_intake_v2' }
+    });
+    return claim;
+  }
+
+  /** The client's own words for one example, transcribed, nothing added. */
+  function exampleAsSourceText(ex) {
+    const parts = [`[What happened]\n${ex.what_happened}`];
+    if (ex.observable_consequence) parts.push(`[Observable consequence]\n${ex.observable_consequence}`);
+    if (ex.area) parts.push(`[Where]\n${ex.area}`);
+    if (ex.approx_when) parts.push(`[Approximately when]\n${ex.approx_when}`);
+    return parts.join('\n\n');
+  }
+
+  /**
+   * THE HUMAN GATE.
+   *
+   * Accept turns a submission into an Organization, a Case in INTAKE, the
+   * sponsor's account as an UNVERIFIED primary Claim, the client's belief as an
+   * UNVERIFIED secondary Claim, and their examples as self-report Evidence.
+   *
+   * What it deliberately does NOT do: propose a hypothesis, draft a finding,
+   * assess evidence strength, or move the Case out of INTAKE. Accepting a
+   * submission means "this is worth investigating", not "we know what is wrong".
+   *
+   * Reject creates nothing at all.
+   */
+  async function decideIntake(principal, { intakeseed_id, decision, expected_version, reason = '', title = null, organization_id = null }) {
+    const actor = actorOf(principal);
+
+    if (!D.INTAKE_REVIEW_DECISIONS.includes(decision)) {
+      fail('invalid_decision', `decision must be one of ${D.INTAKE_REVIEW_DECISIONS.join(', ')}`);
+    }
+    // Belt and braces: the HTTP layer already required approval authority, but
+    // promoting a stranger's submission into a tenant is the second place in this
+    // system where a human commits Humvance to something.
+    if (actor.actor_type !== 'human') {
+      fail('human_required', 'accepting or rejecting an intake submission requires a human reviewer', 403);
+    }
+
+    const seed = await intakeRepo.getSeed(intakeseed_id);
+    if (!seed) fail('not_found', 'intake submission not found', 404);
+
+    const summaries = await intakeRepo.listSubmissions({ status: null, limit: 1000 });
+    const row = summaries.find(s => s.intakeseed_id === intakeseed_id);
+    if (!row) fail('not_found', 'intake submission not found', 404);
+    const review = await intakeRepo.getReview(row.intakereview_id);
+    if (!review) fail('not_found', 'intake review not found', 404);
+
+    if (!D.canIntakeReviewTransition(review.status, decision)) {
+      fail('invalid_state', `submission is already ${review.status}; a decided submission is not re-decided`, 409);
+    }
+
+    // ── everything that can refuse happens BEFORE anything is created ────────
+    //
+    // This ordering is the whole design of this function, and it was not the
+    // first one: creating the Organization before the version check meant a
+    // stale "Accept" left an orphaned tenant and Case behind, created by a
+    // decision that was then refused. Nothing is created until the decision has
+    // been claimed, and the decision cannot be claimed twice.
+
+    let resolvedOrg = null;
+    let decision_title = null;
+    if (decision === 'ACCEPTED') {
+      if (title !== null && typeof title !== 'string') fail('invalid_title', 'title must be a string');
+      const proposed = (title && title.trim()) ? title.trim().slice(0, 200) : neutralCaseTitle(seed);
+      if (seed.case_intent === 'OPPORTUNITY') {
+        const hits = D.containsPathologyLanguage(proposed);
+        if (hits.length) {
+          fail('pathology_language_in_opportunity_title',
+            `an OPPORTUNITY submission must not be titled as a disorder (found: ${hits.join(', ')})`, 409);
+        }
+      }
+      // Reuse an organisation only if the reviewer is already a member of it.
+      // Accepting a submission never grants anybody access they did not have.
+      if (organization_id) {
+        const mine = await loadMembership(store, actor.actor_id);
+        if (!hasOrg(mine, organization_id)) fail('not_found', 'not found', 404);
+        resolvedOrg = await repo.readScoped('org', organization_id, organization_id);
+        if (!resolvedOrg) fail('not_found', 'organization not found', 404);
+      }
+      decision_title = proposed;
+    }
+
+    // The claim. Version-checked, and the only transition out of PENDING_REVIEW,
+    // so two reviewers pressing the button at once produce one decision and one
+    // version_conflict rather than two organisations.
+    const claimed = await intakeRepo.updateReview(review.intakereview_id, expected_version, async draft => {
+      draft.status = decision;
+      draft.decided_at = Date.now();
+      draft.decided_by = actor.actor_id;
+      draft.decided_by_type = actor.actor_type;
+      draft.decision_reason = String(reason).slice(0, 1000);
+      return draft;
+    });
+
+    if (decision === 'REJECTED') {
+      const next = claimed;
+      await intakeRepo.auditIntake('intake.rejected', {
+        actor,
+        subject_type: 'intakeseed',
+        subject_id: seed.intakeseed_id,
+        summary: 'Intake submission rejected by a human reviewer; no organization or case created',
+        details: { submission_reference: seed.submission_reference, reason: String(reason).slice(0, 300) }
+      });
+      return { decision: 'REJECTED', review: next, organization: null, case: null };
+    }
+
+    // ── ACCEPT — past this line the decision is already committed ────────────
+
+    const chosenTitle = decision_title;
+    let org = resolvedOrg;
+    if (!org) {
+      org = await createOrganization(principal, {
+        name: seed.organization_context.company_name,
+        size_band: seed.organization_context.employee_count_band,
+        metadata: {
+          sector: seed.organization_context.sector,
+          growth_stage: seed.organization_context.growth_stage,
+          source: 'diagnostic_intake_v2',
+          intakeseed_id: seed.intakeseed_id,
+          submission_reference: seed.submission_reference
+        }
+      });
+    }
+
+    const created = await createCase(principal, org.org_id, {
+      title: chosenTitle,
+      case_type: 'organizational_diagnosis',
+      // The sponsor's account of what they are seeing. UNVERIFIED, which is what
+      // createCase() records it as, and the thing the investigation is about.
+      sponsor_claim: seed.reported_situation,
+      claim_origin: 'sponsor',
+      metadata: {
+        // The intent travels as Case metadata rather than as a new first-class
+        // column: constraining `case_type` would change the authenticated Case API,
+        // which this sprint does not do. Recorded as debt.
+        case_intent: seed.case_intent,
+        intake_source: 'diagnostic_intake_v2',
+        intakeseed_id: seed.intakeseed_id,
+        intakereview_id: review.intakereview_id,
+        submission_reference: seed.submission_reference,
+        intake_scope: seed.scope,
+        intake_timeline: seed.timeline,
+        intake_observed_impact: seed.observed_impact,
+        intake_change_context: seed.change_context,
+        intake_evidence_availability: seed.evidence_availability,
+        intake_desired_outcome: seed.desired_outcome,
+        epistemic_status: D.INTAKE_EPISTEMIC_STATUS
+      }
+    });
+
+    // The client's belief, preserved as a belief.
+    let beliefClaim = null;
+    if (seed.client_belief) {
+      beliefClaim = await createSecondaryClaim(actor, org.org_id, created.case.case_id, {
+        statement: seed.client_belief,
+        origin: 'sponsor',
+        metadata: {
+          role: 'client_belief',
+          epistemic_status: D.INTAKE_EPISTEMIC_STATUS.client_belief,
+          note: 'What the client thinks may be causing the situation. Recorded to be tested, not assumed.',
+          intakeseed_id: seed.intakeseed_id
+        }
+      });
+    }
+
+    // Recent examples as self-report evidence. One source name for all of them, on
+    // purpose: three stories from one person is one independent source, and
+    // assessEvidenceStrength() counts `source_type:source_name` pairs.
+    const sourceName = `Sponsor (${seed.respondent_context.role_title})`.slice(0, 200);
+    const evidence = [];
+    for (let i = 0; i < seed.recent_examples.length; i++) {
+      const ex = seed.recent_examples[i];
+      const e = await addEvidence(principal, org.org_id, created.case.case_id, {
+        source_type: 'sponsor_statement',
+        source_name: sourceName,
+        // Deliberately null: `approx_when` is free text ("a few months ago") and
+        // feeding it to Date.parse would put NaN into the staleness check.
+        source_date: null,
+        submitted_by: sourceName,
+        original_source_reference: `intake:${seed.submission_reference}#example-${i + 1}`,
+        original_content: exampleAsSourceText(ex),
+        limitations: [
+          'Self-reported by the sponsor, who is an interested party',
+          'Single source; nothing independent corroborates it',
+          'Recalled from memory; timing is approximate and unverified',
+          ex.approx_when ? `Client-stated timing: ${ex.approx_when}` : 'No timing supplied'
+        ],
+        metadata: {
+          intake_example_index: i + 1,
+          intakeseed_id: seed.intakeseed_id,
+          approx_when: ex.approx_when,
+          area: ex.area,
+          observable_consequence: ex.observable_consequence,
+          epistemic_status: D.INTAKE_EPISTEMIC_STATUS.recent_examples
+        }
+      });
+      evidence.push(e);
+    }
+
+    // Fill in what the decision produced. The decision itself was recorded above;
+    // this second write only says where it landed, so a failure here leaves a
+    // visible "accepted, no case yet" rather than an invisible orphan tenant.
+    const next = await intakeRepo.updateReview(review.intakereview_id, claimed.version, async draft => {
+      draft.resulting_organization_id = org.org_id;
+      draft.resulting_case_id = created.case.case_id;
+      return draft;
+    });
+
+    await intakeRepo.auditIntake('intake.accepted', {
+      actor,
+      subject_type: 'intakeseed',
+      subject_id: seed.intakeseed_id,
+      summary: `Intake submission accepted by a human reviewer and promoted to case ${created.case.case_id}`,
+      details: {
+        submission_reference: seed.submission_reference,
+        organization_id: org.org_id,
+        case_id: created.case.case_id,
+        case_intent: seed.case_intent,
+        claims_created: beliefClaim ? 2 : 1,
+        evidence_created: evidence.length
+      }
+    });
+    // The same fact, inside the new tenant's own audit trail, so the Case can
+    // explain where it came from without anyone reading the holding area.
+    await repo.audit('intake.accepted', {
+      organization_id: org.org_id,
+      case_id: created.case.case_id,
+      actor,
+      subject_type: 'case',
+      subject_id: created.case.case_id,
+      summary: `Case opened from diagnostic intake submission ${seed.submission_reference}`,
+      details: {
+        intakeseed_id: seed.intakeseed_id,
+        intakereview_id: review.intakereview_id,
+        case_intent: seed.case_intent,
+        evidence_created: evidence.length,
+        belief_claim_id: beliefClaim ? beliefClaim.claim_id : null
+      }
+    });
+
+    return {
+      decision: 'ACCEPTED',
+      review: next,
+      organization: org,
+      case: created.case,
+      primary_claim: created.primary_claim,
+      belief_claim: beliefClaim,
+      evidence
+    };
+  }
+
   // ── Views ──────────────────────────────────────────────────────────────────
 
   async function getReviewerView(principal, organization_id, case_id) {
@@ -746,7 +1113,10 @@ function createService(store) {
     proposeEvidenceRequest, decideEvidenceRequest,
     draftFinding, reviseFinding,
     runChallengeReview, recordApproval,
-    getReviewerView, getClientView
+    getReviewerView, getClientView,
+    // Diagnostic Intake V2 — the holding area and its human gate.
+    receiveIntake, listIntakeSubmissions, getIntakeSubmission, decideIntake,
+    neutralCaseTitle
   };
 }
 

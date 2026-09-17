@@ -7,6 +7,7 @@ require('./domain.test');
 require('./store.test');
 require('./authz.test');
 require('./service.test');
+require('./intake.test');
 
 run().then(ok => process.exit(ok ? 0 : 1)).catch(err => {
   console.error(err);

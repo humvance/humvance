@@ -34,7 +34,13 @@ const PREFIXES = Object.freeze({
   challenge:    'chg',
   approval:     'apr',
   audit:        'aud',
-  actor:        'act'
+  actor:        'act',
+  // Diagnostic Intake V2. An intake seed is minted for an ANONYMOUS caller, so it
+  // is the one identifier a stranger ever holds. It is opaque for the same reason
+  // every other id here is: nothing about it can be guessed, parsed or enumerated,
+  // and it carries no meaning that would tempt anything to interpret it.
+  intakeSeed:   'seed',
+  intakeReview: 'irv'
 });
 
 const VALID_PREFIXES = new Set(Object.values(PREFIXES));

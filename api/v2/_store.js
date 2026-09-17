@@ -50,7 +50,11 @@ const LEGACY_PREFIXES = ['client:', 'clients:', 'admin:', 'questions:', 'session
 // Object types V2 may persist. Anything else is a programming error, not input.
 const TYPES = new Set([
   'org', 'case', 'claim', 'hypothesis', 'evidence', 'evidencereq',
-  'contradiction', 'finding', 'challenge', 'approval', 'audit', 'index', 'membership'
+  'contradiction', 'finding', 'challenge', 'approval', 'audit', 'index', 'membership',
+  // Diagnostic Intake V2. These two are PRE-TENANT: they exist before any
+  // Organization does, so they carry no organization_id and _repo.readScoped()
+  // must never be used on them. They are reachable only from api/v2/_intake.js.
+  'intakeseed', 'intakereview'
 ]);
 
 // Two types are addressed by something other than a minted V2 id: an index, whose
