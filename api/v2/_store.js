@@ -145,11 +145,14 @@ function readConfig(env) {
 
   if (driver === 'memory') return { driver, namespace, isolation: 'process-memory' };
 
-  const restUrl = env.V2_KV_REST_API_URL;
-  const restToken = env.V2_KV_REST_API_TOKEN;
+  const url = pickV2Credential(env, REST_URL_VARS);
+  const token = pickV2Credential(env, REST_TOKEN_VARS);
+  const restUrl = url.value;
+  const restToken = token.value;
   if (!restUrl || !restToken) {
     throw new StoreConfigError(
-      'V2_STORE_DRIVER=redis requires V2_KV_REST_API_URL and V2_KV_REST_API_TOKEN. ' +
+      `V2_STORE_DRIVER=redis requires a V2-namespaced REST url (${REST_URL_VARS.join(' or ')}) ` +
+      `and token (${REST_TOKEN_VARS.join(' or ')}). ` +
       'V2 deliberately does NOT read KV_REST_API_URL / KV_REST_API_TOKEN / KV_URL / REDIS_URL — ' +
       'those belong to the V1 production database.'
     );
@@ -162,9 +165,42 @@ function readConfig(env) {
     namespace,
     restUrl,
     restToken,
+    // Names only. These are reported for diagnostics so an operator can see WHICH
+    // variable was used without anyone ever handling its value.
+    credentialVars: { url: url.name, token: token.name },
     isolation: sameHost ? 'SHARED-WITH-PRODUCTION' : 'separate-database',
     sharesProductionHost: !!sameHost
   };
+}
+
+// ── V2 credential contract ───────────────────────────────────────────────────
+//
+// The contract is a PREFIX, not a single spelling: V2 reads credentials only from
+// variables beginning `V2_`, which is a namespace the operator controls. Within
+// that namespace it accepts the spellings a Vercel storage integration can
+// actually produce, because the exact name depends on the "custom prefix" chosen
+// when the database was connected — connecting with prefix `V2` yields
+// V2_KV_REST_API_URL, and connecting with prefix `V2_KV` yields
+// V2_KV_KV_REST_API_URL. Pinning one spelling would make a correct, isolated
+// database look like a misconfiguration.
+//
+// The security property is unchanged and is enforced mechanically below: no
+// candidate may fall outside the `V2_` prefix, and the V1 production names
+// (KV_URL, KV_REST_API_URL, KV_REST_API_TOKEN, KV_REST_API_READ_ONLY_TOKEN,
+// REDIS_URL) appear in no candidate list anywhere in this file.
+const V2_PREFIX = 'V2_';
+const REST_URL_VARS   = Object.freeze(['V2_KV_REST_API_URL',   'V2_KV_KV_REST_API_URL']);
+const REST_TOKEN_VARS = Object.freeze(['V2_KV_REST_API_TOKEN', 'V2_KV_KV_REST_API_TOKEN']);
+
+function pickV2Credential(env, candidates) {
+  for (const name of candidates) {
+    if (!name.startsWith(V2_PREFIX)) {
+      throw new StoreConfigError(`refused: "${name}" is not a V2-namespaced credential variable`);
+    }
+    const value = env[name];
+    if (typeof value === 'string' && value.length > 0) return { name, value };
+  }
+  return { name: null, value: null };
 }
 
 function hostOf(u) { try { return new URL(u).host; } catch { return null; } }
@@ -192,6 +228,7 @@ function createStore(env = process.env) {
     driverKind: driver.kind,
     isolation: cfg.isolation,
     sharesProductionHost: !!cfg.sharesProductionHost,
+    credentialVars: cfg.credentialVars || { url: null, token: null },
 
     // Deployment code calls this before serving V2 traffic. It refuses to guess:
     // running the redis driver against the production host is allowed only when a
@@ -224,5 +261,6 @@ function createStore(env = process.env) {
 
 module.exports = {
   createStore, StoreConfigError, ConflictError,
-  NAMESPACE_RE, KEY_RE, LEGACY_PREFIXES, TYPES, RELAXED_ID_TYPES, assertSafeKey
+  NAMESPACE_RE, KEY_RE, LEGACY_PREFIXES, TYPES, RELAXED_ID_TYPES, assertSafeKey,
+  V2_PREFIX, REST_URL_VARS, REST_TOKEN_VARS, pickV2Credential
 };

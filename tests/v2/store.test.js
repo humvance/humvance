@@ -1,6 +1,7 @@
 'use strict';
 const { suite, test, assert } = require('./harness');
-const { createStore, StoreConfigError, assertSafeKey, LEGACY_PREFIXES } = require('../../api/v2/_store');
+const { createStore, StoreConfigError, assertSafeKey, LEGACY_PREFIXES,
+        V2_PREFIX, REST_URL_VARS, REST_TOKEN_VARS, pickV2Credential } = require('../../api/v2/_store');
 const { newId } = require('../../api/v2/_ids');
 
 const memEnv = { V2_STORE_DRIVER: 'memory', V2_NAMESPACE: 'v2test' };
@@ -137,5 +138,85 @@ suite('memory driver semantics', () => {
   test('a missing key reads as null, not undefined', async () => {
     const store = createStore({ ...memEnv, V2_NAMESPACE: 'v2null' });
     assert.equal(await store.get('case', newId('case')), null);
+  });
+});
+
+suite('V2 credential contract is a prefix, not a spelling', () => {
+  const PROD = {
+    KV_REST_API_URL: 'https://prod.upstash.io', KV_REST_API_TOKEN: 'prod-token',
+    KV_URL: 'rediss://prod', REDIS_URL: 'rediss://prod', KV_REST_API_READ_ONLY_TOKEN: 'prod-ro'
+  };
+
+  test('every candidate name lives under the V2_ prefix', () => {
+    for (const n of REST_URL_VARS.concat(REST_TOKEN_VARS)) {
+      assert.ok(n.startsWith(V2_PREFIX), `${n} must be V2-namespaced`);
+    }
+  });
+
+  test('no V1 production variable name is a candidate', () => {
+    const all = REST_URL_VARS.concat(REST_TOKEN_VARS);
+    for (const n of ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'KV_URL', 'REDIS_URL', 'KV_REST_API_READ_ONLY_TOKEN']) {
+      assert.notOk(all.includes(n), `${n} must never be a V2 candidate`);
+    }
+  });
+
+  test('a non-V2 candidate is refused outright rather than read', () => {
+    assert.throws(() => pickV2Credential({ KV_REST_API_URL: 'x' }, ['KV_REST_API_URL']), 'store_misconfigured');
+  });
+
+  test('the preferred spelling is used when both are present', () => {
+    const picked = pickV2Credential(
+      { V2_KV_REST_API_URL: 'a', V2_KV_KV_REST_API_URL: 'b' }, REST_URL_VARS);
+    assert.equal(picked.name, 'V2_KV_REST_API_URL');
+  });
+
+  test('an integration that used the V2_KV prefix still works', () => {
+    const s = createStore({
+      V2_STORE_DRIVER: 'redis', V2_NAMESPACE: 'humvance-v2-preview',
+      V2_KV_KV_REST_API_URL: 'https://preview.upstash.io',
+      V2_KV_KV_REST_API_TOKEN: 'preview-token',
+      ...PROD
+    });
+    assert.equal(s.isolation, 'separate-database');
+    assert.equal(s.credentialVars.url, 'V2_KV_KV_REST_API_URL');
+    assert.equal(s.credentialVars.token, 'V2_KV_KV_REST_API_TOKEN');
+    assert.ok(s.assertIsolated().ok);
+  });
+
+  test('the production credentials alone are still not enough to start', () => {
+    const e = assert.throws(() => createStore({
+      V2_STORE_DRIVER: 'redis', V2_NAMESPACE: 'humvance-v2-preview', ...PROD
+    }), 'store_misconfigured');
+    assert.includes(e.message, 'deliberately does NOT read');
+  });
+
+  test('a V2 variable pointing at the production host is still refused', () => {
+    const s = createStore({
+      V2_STORE_DRIVER: 'redis', V2_NAMESPACE: 'humvance-v2-preview',
+      V2_KV_KV_REST_API_URL: 'https://prod.upstash.io',
+      V2_KV_KV_REST_API_TOKEN: 'copied-prod-token',
+      ...PROD
+    });
+    assert.equal(s.isolation, 'SHARED-WITH-PRODUCTION');
+    assert.throws(() => s.assertIsolated(), 'store_misconfigured');
+  });
+
+  test('the namespace the Preview environment will use is valid', () => {
+    const s = createStore({ V2_STORE_DRIVER: 'memory', V2_NAMESPACE: 'humvance-v2-preview' });
+    assert.equal(s.namespace, 'humvance-v2-preview');
+  });
+
+  test('credential values never appear in the store object', () => {
+    const s = createStore({
+      V2_STORE_DRIVER: 'redis', V2_NAMESPACE: 'humvance-v2-preview',
+      V2_KV_KV_REST_API_URL: 'https://preview.upstash.io',
+      V2_KV_KV_REST_API_TOKEN: 'super-secret-token-value'
+    });
+    const blob = JSON.stringify({
+      namespace: s.namespace, driverKind: s.driverKind, isolation: s.isolation,
+      credentialVars: s.credentialVars, sharesProductionHost: s.sharesProductionHost
+    });
+    assert.notOk(blob.includes('super-secret-token-value'), 'a token leaked into the reported store state');
+    assert.notOk(blob.includes('preview.upstash.io'), 'a host leaked into the reported store state');
   });
 });
