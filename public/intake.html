@@ -239,7 +239,9 @@ function radioList(name, options, current, onpick, two) {
     return '<label class="choice ' + (current === v ? 'sel' : '') + '">' +
       '<input type="radio" name="' + name + '" value="' + esc(v) + '" ' + (current === v ? 'checked' : '') +
       ' onchange="' + onpick + '(this.value)">' +
-      '<span class="choice-body"><strong>' + esc(label) + '</strong>' +
+      // <bdi> because a label like "51–200" has no strong directional character:
+      // inside an RTL page the browser would otherwise render it as "200–51".
+      '<span class="choice-body"><strong><bdi>' + esc(label) + '</bdi></strong>' +
       (sub ? '<em>' + esc(sub) + '</em>' : '') + '</span></label>';
   }).join('') + '</div>';
 }
@@ -249,7 +251,7 @@ function checkList(bag, options, toggler, noteFn) {
     var v = o[0], on = !!(bag[v] && bag[v].on);
     return '<label class="choice ' + (on ? 'sel' : '') + '">' +
       '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="' + toggler + '(\'' + v + '\',this.checked)">' +
-      '<span class="choice-body"><strong>' + esc(o[1]) + '</strong>' +
+      '<span class="choice-body"><strong><bdi>' + esc(o[1]) + '</bdi></strong>' +
       (on && noteFn ? noteFn(v) : '') + '</span></label>';
   }).join('') + '</div>';
 }
@@ -408,7 +410,7 @@ function stepBody(i) {
 
   if (i === 11) {
     var rows = reviewRows().map(function (r) {
-      return '<div class="review-row"><span>' + esc(r[0]) + '</span><div>' + esc(r[1] || L('—', '—')) + '</div></div>';
+      return '<div class="review-row"><span>' + esc(r[0]) + '</span><div><bdi>' + esc(r[1] || L('—', '—')) + '</bdi></div></div>';
     }).join('');
     return '<div class="card">' + rows + '</div>' +
       '<div class="notice"><strong>' + L('الخصوصية', 'Privacy') + '</strong><br>' + L(
@@ -593,7 +595,7 @@ function render() {
   $('#root').innerHTML = header() +
     '<div class="layout">' +
     '<main class="pane">' +
-      '<div class="eyebrow"><span>' + esc(steps[S.step].t) + '</span><span>' + (S.step + 1) + ' / ' + steps.length + '</span></div>' +
+      '<div class="eyebrow"><span>' + esc(steps[S.step].t) + '</span><bdi>' + (S.step + 1) + ' / ' + steps.length + '</bdi></div>' +
       '<div class="progress"><i style="width:' + pct + '%"></i></div>' +
       '<h2 class="step-title">' + esc(steps[S.step].t) + '</h2>' +
       '<p class="step-sub">' + esc(subtitle(S.step)) + '</p>' +
