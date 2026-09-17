@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-09-17
 **Maintained on:** `v2-case-spine`
-**Contains no secrets.** Environment variables are referred to by NAME only; no value, token, URL or credential appears in this file.
+**Contains no secrets.** Environment variables are referred to by NAME only. No value, token, URL, connection string or credential appears in this file. Resource identifiers (store ids, deployment ids) are not credentials and are recorded deliberately as evidence.
 
 ---
 
@@ -14,11 +14,13 @@
 | Commit | `f2374043d3ba603fba6ab5de16437776192eaf00` |
 | State | READY |
 | Aliases | `humvance.com`, `www.humvance.com`, `humvance.vercel.app` |
+| Vercel Production Branch | **`production`** (changed from `main` on 2026-09-17; no deployment was triggered) |
+| GitHub default branch | **still `main`** — outstanding, needs a manual change |
 | Previous good deployment | `dpl_9kGyzjSgJ7RJSNrXNmdNT8aX5iCb` @ `0d60514` |
-| Plan | Vercel Hobby — **no Instant Rollback, no promote**. Rollback = redeploy from commit. |
+| Plan | Vercel Hobby — no Instant Rollback, no promote. Rollback = redeploy from commit. |
 | Repository | `github.com/humvance/humvance` — **public** |
 
-`f2374043` is the canonical baseline. Its ancestry is the complete deployment record:
+Production ancestry, complete and auditable:
 
 ```
 f2374043  Reject invalid and colliding refs in unauthenticated intake   [Hotfix 01]
@@ -27,254 +29,228 @@ f2374043  Reject invalid and colliding refs in unauthenticated intake   [Hotfix 
 20ed482   Humvance Phase 2 stable baseline                              [root]
 ```
 
-Verified 2026-09-17, read-only: homepage 200, `/api/auth/status` → `{"setupDone":true,"authenticated":false}`, `/api/v2/case` → **404** (V2 is not on Production and must not be).
+**Verified read-only, 2026-09-17:** `/` returns 200, 99,310 bytes, SHA-256 `4ec41442ef2cceac914192744f178e9fa420b82899ad3951ef074a02c7799655` — byte-identical to `production:public/index.html`. `/api/auth/status` → `{"setupDone":true,"authenticated":false}`. `/api/v2/case` → **404**.
+
+**V2 is NOT deployed to Production, and must not be.**
 
 ---
 
-## 2. Repository lineage
+## 2. Preview storage isolation — GATE: PASS
 
-Two unrelated roots share one repository.
+The V2 Preview database is a genuinely separate Upstash resource, connected to Preview only.
 
-```
-LINEAGE B — dead, unrelated application (5 commits)
-  08ca3f2 … ee129eb   ← origin/main, GitHub default, Vercel Production Branch  ⚠ STILL ARMED
-
-LINEAGE A — Humvance
-  20ed482 ─┬─ 3296bd4 ─ 0d60514 ─ f2374043    DEPLOYMENT LINE  ← live
-           │                         └─ 795cc26  V2 Case spine   (local only)
-           └─ d381dc2 … 57526a2 ─ … ─ 2605c90   DEVELOPMENT LINE (never deployed)
-```
-
-`git merge-base main f2374043` → **none**. `main` is not an old Humvance; it is a different application with a different data layer, a root-level `index.html`, no admin console and no client portal. Neither security hotfix exists on it.
-
-### Branch roles
-
-| Ref | SHA | Where | Role |
-|---|---|---|---|
-| `production` | `f2374043` | **local only** | canonical deployment branch (pending push) |
-| `v2-case-spine` | `795cc26` | **local only** | V2 development (pending push) |
-| `legacy/hr-platform-2026-09-14` | `ee129eb` | **local only** | parked dead lineage (pending push) |
-| `hotfix-submit-validation-2026-09-16` | `f2374043` | origin | what Production was built from |
-| `production-auth-hotfix-2026-09-16` | `0d60514` | origin | previous good deployment |
-| `phase3-meeting-intelligence-2026-09-16` | `2605c90` | origin | port source for V2 — **never merge into the deployment line** |
-| `recovered-phase2-2026-09-16` | `57526a2` | origin | strict ancestor of Phase 3; **zero unique content** |
-| `main` | `ee129eb` | origin | dead lineage; to be retired |
-
-### Provenance tags — created locally, NOT yet on origin
-
-| Tag | → commit |
-|---|---|
-| `prod/2026-09-16-baseline` | `3296bd4` |
-| `prod/2026-09-16-auth` | `0d60514` |
-| `prod/2026-09-16-submit` | `f2374043` |
-| `archive/legacy-hr-platform` | `ee129eb` |
-| `archive/phase2` | `57526a2` |
-| `archive/phase3` | `2605c90` |
-| `archive/superseded-auth-fix` | `f384154` |
-
-`f384154` exists on **no remote** and is patch-identical to `2605c90`; its tag is the only thing that will preserve it.
-
----
-
-## 3. Open blockers
-
-### 3.1 Preview/Production data isolation — HARD GATE, NOT SATISFIED
-
-Preview and Production share one Upstash Redis database. `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN` and `REDIS_URL` are each scoped to **both** `production` and `preview` with identical values.
-
-Provisioning a second database through the existing, already-authorised Upstash marketplace installation is **not possible without a payment method**. The plan list returned for a new resource contains eight plans — Pay As You Go, Fixed 250MB, 1GB, 5GB, 10GB, 50GB, 100GB, 500GB — and every one carries `paymentMethodRequired: true`. There is no free plan for a new resource; the existing store sits on a legacy `free` plan that is no longer offered.
-
-**Consequence: V2 must not be deployed to Preview until this is resolved.** All V2 work to date runs on the in-process memory driver and has contacted no database of any kind.
-
-### 3.2 No write credentials to `origin`
-
-The workspace has no git credential helper, no `.git-credentials`, no `~/.netrc`, no SSH key, and no `gh` or `vercel` CLI. Anonymous reads succeed (the repository is public); `git push` fails at authentication. Consequently the tags, `production`, `legacy/hr-platform-2026-09-14` and `v2-case-spine` all exist **locally only**.
-
-### 3.3 `main` is still an armed production trigger
-
-Vercel Production Branch = `main`, `ignoreCommand: null`, GitHub default branch = `main`, project Git-linked. One push to `main` deploys the unrelated application over `humvance.com`.
-
-Flipping the setting was attempted on 2026-09-17 and **could not be completed**: Vercel rejects a Production Branch that does not exist in the connected repository (`Failed to save branch tracking`), and `production` cannot be created on origin without push credentials. **Vercel configuration was left exactly as found** — `productionBranch: "main"`, all other project settings unchanged, live deployment unchanged.
-
----
-
-## 4. V2 architecture
-
-Commit `795cc26` on `v2-case-spine`, cut from `production` (`f2374043`). `git merge-base --is-ancestor production v2-case-spine` passes, so V2 inherits both security fixes through ancestry rather than by re-application. `api/submit.js` on the V2 branch is byte-identical to Production's; `requireAdmin` is present in the same four V1 files. **No V1 file is modified by V2.**
-
-### Modules
-
-| File | Lines | Responsibility |
+| | Production | V2 Preview |
 |---|---|---|
-| `api/v2/_ids.js` | 78 | server-minted opaque identifiers |
-| `api/v2/_store.js` | 220 | storage boundary and isolation barriers |
-| `api/v2/_domain.js` | 408 | pure domain rules — no I/O, no env, no framework |
-| `api/v2/_untrusted.js` | 87 | untrusted-content scanning and fencing |
-| `api/v2/_challenge.js` | 168 | deterministic adversarial review |
-| `api/v2/_repo.js` | 193 | persistence, optimistic concurrency, audit |
-| `api/v2/_authz.js` | 125 | authentication, roles, tenant scope, AI boundary |
-| `api/v2/_service.js` | 684 | application service — the only place rules compose |
-| `api/v2/case.js` | 182 | HTTP surface; parses, authorises, dispatches, maps errors |
-| `public/v2-workspace.html` | 340 | minimal reviewer workspace |
+| Store name | `humvance-redis` | `upstash-kv-violet-forest` |
+| Vercel store id | `store_32sl108ph8DN7thl` | `store_Frs3olczZI0JBWfJ` |
+| Upstash resource id | *(distinct; not recorded here)* | `632d5d4e-f87f-4c49-88da-586c70dbb618` |
+| Plan | Free (legacy) | Pay As You Go |
+| Connected environments | Production, Preview | **Preview only** |
+| Created | 2026-09-14 | 2026-09-17 |
 
-### Objects
+### Evidence
 
-`Organization`, `Case`, `Claim`, `Hypothesis`, `Evidence`, `EvidenceRequest`, `Contradiction`, `Finding`, `ChallengeReview`, `Approval`, `AuditEvent`.
+1. Both appear as **separate rows** in the team Storage list and as **two separate Installed Products** under one Upstash installation — different names, different store ids, different plans, different creation dates.
+2. The new store's Projects page lists exactly one connection: project `humvance`, environments **`Preview`**.
+3. The **Production environment variable list contains no `V2_*` variable at all.** It holds exactly nine: `RESEND_API_KEY`, `SESSION_SECRET`, `ANTHROPIC_API_KEY`, `REDIS_URL`, `KV_REST_API_TOKEN`, `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_READ_ONLY_TOKEN`, `GLOBAL_CONFIG`.
+4. The five `V2_KV_*` variables appear only in the **Preview** environment list.
+5. No credential value was read, printed or handled at any point. Isolation was established from provenance and scope, not by comparing secrets.
 
-Every object carries `organization_id`, `created_at` / `created_by` / `created_by_type`, `updated_at` / `updated_by` / `updated_by_type`, and `version`.
+### Runtime re-verification
 
-Architected for but deliberately **not built**: Engagement, Intervention, Action, Metric, Verification, Monitoring Signal, Organizational Memory. Records are memory-ready (source, source date, verification status, version, snapshot) so the graph can be added without a migration.
+Provenance is not the last word. `_store.assertIsolated()` compares the V2 host against `KV_REST_API_URL` / `KV_URL` at boot and **refuses to start** if they match, and every V2 response carries `X-Humvance-V2-Store`, `X-Humvance-V2-Isolation` and `X-Humvance-V2-Namespace`. The HTTP validation script refuses to write anything when that header reports `SHARED-WITH-PRODUCTION`. So the claim in this section is machine-checked on every request, not asserted once in a document.
 
-### Storage isolation — four barriers
+---
 
-1. **Credential namespace.** V2 reads `V2_REDIS_URL` / `V2_KV_REST_API_URL` / `V2_KV_REST_API_TOKEN` and never reads the V1 production variable names. Pointing V2 at Production requires a human to deliberately copy a production secret into a differently-named variable.
-2. **Fail closed.** No driver default, no credential default, no fallback. `V2_STORE_DRIVER` and `V2_NAMESPACE` are both required; a misconfigured deployment throws `503 store_misconfigured` on its first request.
-3. **Key namespace.** Keys are composed inside `_store.js` as `v2:{namespace}:{type}:{id}` from a validated namespace, a whitelisted type and a server-minted id. No exported function accepts a caller-supplied key.
-4. **Legacy deny-list.** Every computed key is asserted against the V2 grammar and refused if it starts with `client:`, `clients:`, `admin:`, `questions:`, `session:` or `user:`.
+## 3. V2 environment variable contract — Preview only
 
-`assertIsolated()` compares the configured host against `KV_REST_API_URL` / `KV_URL` and **refuses to start** when they match, unless `V2_ACKNOWLEDGE_SHARED_PRODUCTION_DB=yes` is set deliberately. Every V2 response carries `X-Humvance-V2-Store`, `X-Humvance-V2-Isolation` and `X-Humvance-V2-Namespace` so the isolation state is visible on every request.
+### Credentials (provisioned by the integration; values never handled)
 
-**This is code-level isolation. It is weaker than a separate database and does not satisfy §3.1.**
-
-### Case state machine
+The database was connected with a Vercel integration custom prefix of `V2_KV`, which produces:
 
 ```
-INTAKE → STRUCTURING → INVESTIGATION_PLANNING → HUMAN_REVIEW
-  → AWAITING_EVIDENCE → ANALYZING_EVIDENCE → { FINDING_DRAFT | CLARIFICATION_REQUIRED }
-  → CHALLENGE_REVIEW → HUMAN_APPROVAL → APPROVED
+V2_KV_KV_REST_API_URL
+V2_KV_KV_REST_API_TOKEN
+V2_KV_KV_REST_API_READ_ONLY_TOKEN
+V2_KV_KV_URL
+V2_KV_REDIS_URL
 ```
 
-Declarative and total: a transition absent from `CASE_TRANSITIONS` does not exist. Self-transitions are refused. Unknown states and unknown actor types are refused.
+The V2 contract is the **`V2_` prefix**, not one exact spelling, because the spelling is determined by a prefix chosen at connection time (prefix `V2` yields `V2_KV_REST_API_URL`; prefix `V2_KV` yields `V2_KV_KV_REST_API_URL`). `_store.js` accepts either, in that preference order, and records which variable it used — the name, never the value.
 
-Five transitions are human-only and are refused for `ai` and `system` actors: `HUMAN_REVIEW→AWAITING_EVIDENCE`, `HUMAN_APPROVAL→APPROVED`, `HUMAN_APPROVAL→FINDING_DRAFT`, `HUMAN_APPROVAL→AWAITING_EVIDENCE`, `APPROVED→FINDING_DRAFT`.
+`pickV2Credential()` **refuses any candidate name that does not begin `V2_`**, and a test asserts that none of `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN` or `REDIS_URL` appears in any candidate list. V1's production credentials are unreachable from V2 code by name.
 
-Entering `APPROVED` additionally requires a stored human Approval that covers the current Finding's exact version; without one the transition fails `approval_required`.
+### Required non-secret settings — ⚠ NOT YET SET
 
-### AI governance — enforced in code, not in prompts
+```
+V2_STORE_DRIVER = redis                    (Preview only)
+V2_NAMESPACE    = humvance-v2-preview      (Preview only)
+```
 
-| | |
+Until both exist in the Preview environment, V2 answers `503 store_misconfigured` and writes nothing. That is the designed behaviour, not a fault.
+
+**Do not set `V2_ACKNOWLEDGE_SHARED_PRODUCTION_DB`.** It exists only as a deliberate human override and is unnecessary here.
+
+### Fail-closed behaviour (all covered by tests)
+
+| Condition | Result |
 |---|---|
-| AI may | read, extract, classify, analyse, propose, draft, challenge, flag, summarise |
-| AI may not | approve findings, approve interventions, execute interventions, make client or employment decisions, bypass human approval |
-
-Three independent enforcement points: `_domain.canTransition` (actor type vs `HUMAN_ONLY_TRANSITIONS`), `_authz.requireApprovalAuthority` (human + approval-bearing role), `_service.recordApproval` (re-checks, and writes `security.rejected` to the audit trail on refusal).
-
-### Authorization and tenant isolation
-
-Four gates on every request, in order: authenticate → reviewer role → organization scope → operation.
-
-A valid signature is not authorization — the V1 lesson. Client portal tokens (`role:'client'`) never reach V2. Reviewer tokens must carry an `org` or `orgs` claim; an unscoped token is refused (`unscoped_token`) rather than treated as "all organisations".
-
-Cross-tenant access returns **404, not 403** — confirming that a Case exists in another organisation is itself a disclosure. The check lives in `_repo.readScoped()`, through which every read passes.
-
-### Approval model
-
-An Approval binds `organization_id` + `artifact_type` + `artifact_id` + **`artifact_version`** + reviewer + role + timestamp + decision + comment. Decisions: `APPROVED`, `MODIFIED`, `MORE_EVIDENCE_REQUIRED`, `REJECTED`.
-
-An approval of Finding v1 does not cover v2. Recording the outcome on the finding deliberately does **not** bump its version (`bumpVersion:false`), so the approval cannot invalidate the number it just named. A material revision (`statement`, `scope`, `limitations`, `alternative_explanations`, `evidence_strength`) clears the Case's `approved_finding_id`, so the Case stops having an answer until a human reviews again. Browser-side flags are never authoritative.
-
-Approving over a `BLOCKED` challenge requires a written reviewer justification of at least 20 characters.
-
-### Evidence, findings and language
-
-`original_content`, `ai_extraction` and `ai_interpretation` are separate fields and are never merged; `original_content` is not in any update allow-list, so a source can never be edited — a correction is new evidence. Submitted content is scanned for instruction-shaped text, stored **verbatim**, flagged, and written to the audit trail; it is never obeyed.
-
-Findings are rated `STRONG` / `MODERATE` / `LIMITED` by rule, with the caps that produced the rating returned alongside. Caps: no usable evidence → LIMITED; a single independent source → LIMITED; self-report only → LIMITED; any open contradiction → at most MODERATE. STRONG requires ≥3 independent sources, ≥1 non-self-report source, no open contradiction, and ≥1 alternative explanation explicitly tested. Legacy V1 material enters as `legacy_unverified` and never counts.
-
-Phase 2's confidence arithmetic survives as structured sufficiency logic. **The 0–100 score does not survive.** The caller cannot assert a strength; a claimed `evidence_strength` is ignored and recomputed.
-
-Causal phrasing with less than STRONG evidence is flagged, in English **and Arabic** — note that JavaScript's `\b` never fires between two Arabic letters, so the Arabic patterns are deliberately unanchored.
-
-### Audit
-
-Append-oriented, 18 event types, ordered, each attributed to an actor and an actor type, each organisation-scoped. Records the material chain: Claim → Evidence → Hypothesis → Contradiction → Finding → Challenge → Human decision. **No prompts, no model reasoning, no chain-of-thought** — asserted by test.
-
-### Client experience
-
-Internal state names, competing hypotheses, challenge internals and strength arithmetic are never exposed. The client sees Current Focus, Status (`Understanding` / `Reviewing` / `Clarifying` / `Finding Ready`; `Complete` reserved for the deferred Engagement close), What We Need From You, Next Step, and — only after human approval — the approved Finding with its scope, limitations, alternative explanations and bounded evidence strength.
+| `V2_STORE_DRIVER` absent | throws; no default, no fallback |
+| `V2_NAMESPACE` absent or malformed | throws |
+| namespace starting `prod` | throws unless explicitly acknowledged |
+| only V1 credentials present | throws; names not read |
+| V2 host equals the production host | `assertIsolated()` refuses to start |
+| a caller-supplied storage key | refused before it reaches the driver |
+| any V1 key prefix | denied by the key assertion |
 
 ---
 
-## 5. Phase 3 components reused
+## 4. Authorization — organization scope is server-side
 
-| Pattern | Disposition |
+**What changed and why.** Scope used to come from `org` / `orgs` JWT claims. That is the wrong kind of answer: a claim is something the caller presents, so the tenant boundary was being defined by the party it exists to constrain. Those claims are now **ignored entirely** — no code path in `api/v2` reads them, asserted by test.
+
+Scope now comes from a membership record in V2 storage (`api/v2/_membership.js`). Membership is acquired in exactly two ways, both server-side:
+
+1. **Creating an organisation makes the creator a member of it.** An ownership rule, applied on the server.
+2. **An existing member may grant access to a named principal.** Human reviewers only; a non-member attempting to grant is answered **404**, not 403.
+
+Principal identity comes from the token subject when there is one. Principal ids are hex-encoded for storage — injective, and inside the V2 key alphabet. A token from which no safe identity can be derived is refused: an unattributable action cannot be audited.
+
+### ⚠ Known limitation — reviewer-vs-reviewer separation is NOT achieved
+
+`api/auth/login.js` issues `signJWT({ role: 'admin' })` against a single shared password hash at `admin:password_hash`. The token has **no `sub`, no `uid`, no subject of any kind**. Every Humvance reviewer authenticating through V1 is therefore literally the same principal, represented explicitly as `admin:shared` rather than the previous silent `'unknown'`.
+
+Consequences, stated plainly:
+
+- **Achieved:** client organisations are separated from each other. A case in org A cannot be read or written through org B's scope, and the check is repeated on every read in `_repo.readScoped()`. Client portal tokens never gain reviewer access. Approval remains human-only and server-enforced.
+- **Not achieved:** two different Humvance reviewers cannot be told apart, so membership cannot separate them.
+
+**The smallest identity model that would close this** (a V1 change, deliberately not attempted here):
+
+1. A reviewer record per person — `reviewer:{id}` with their own credential, replacing the single shared `admin:password_hash`.
+2. `signJWT({ sub: reviewerId, role })` at login, so the token carries a subject. `_membership.principalIdFrom()` already prefers a subject when present, so V2 needs **no change** once this exists.
+3. A first-reviewer bootstrap during setup, and reviewer administration behind the existing admin role.
+
+Nothing in V2 needs to be weakened or revisited to adopt it.
+
+### Signing secret
+
+The repository is public, so two strings are known to everyone: `hv-change-this-secret` (the `api/_utils.js` fallback) and the `SESSION_SECRET` value published in `.env.example`. V1's fallback is left exactly as it is — changing it is a Production code change and out of scope — but **V2 refuses to serve on a missing, weak (<24 chars) or published signing secret**, returning `503 signing_secret_*`. The value is compared, never logged, never returned, never included in an error; a test asserts that.
+
+`SESSION_SECRET` is present in both Production and Preview as a `sensitive` variable. Its value has not been read and must not be. **Someone with dashboard access should confirm it is neither published string.** This cannot be checked from here without forging a token against Production, which was not done and must not be.
+
+---
+
+## 5. V2 architecture
+
+Branch `v2-case-spine`, cut from `production`. `git merge-base --is-ancestor production v2-case-spine` passes, so both security fixes are inherited through ancestry rather than re-applied. `api/submit.js` on V2 is byte-identical to Production's and `requireAdmin` is in the same four V1 files. **No V1 file is modified by V2.**
+
+| File | Responsibility |
 |---|---|
-| Declarative `STATUS_TRANSITIONS` table | **refactored** into `CASE_TRANSITIONS` + `HYPOTHESIS_TRANSITIONS` |
-| Pure domain functions separated from transport | **adopted** as the shape of `_domain.js` |
-| Allow-listed `UPDATABLE_FIELDS` | **adopted** per object type |
-| `buildDiagnosticSnapshot` / `isSnapshotStale` | **generalised** to `buildEvidenceSnapshot` / `isSnapshotStale` — the seed of evidence versioning |
-| Artifact-before-index writes | **adopted** in `_repo.js` |
-| Optimistic concurrency | **strengthened** — `expected_version` is mandatory, not optional |
-| `_diagnostic-core` factor/cap logic | **refactored** into `assessEvidenceStrength`; numeric score removed |
-| `isValidRef` (`/^[A-Za-z0-9._-]+$/`) | **NOT ported** — permits `.`, i.e. the namespace escape Hotfix 01 closed |
-| `client.js` diagnostic POST (blind whole-object write) | **NOT ported** |
-| Browser-side approval authority | **NOT ported** |
-| Caller-controlled storage keys | **NOT ported** — impossible to express in V2 |
+| `api/v2/_ids.js` | server-minted opaque identifiers |
+| `api/v2/_store.js` | storage boundary, credential contract, isolation barriers |
+| `api/v2/_membership.js` | principal identity and organization membership |
+| `api/v2/_domain.js` | pure domain rules — no I/O, no env, no framework |
+| `api/v2/_untrusted.js` | untrusted-content scanning and fencing |
+| `api/v2/_challenge.js` | deterministic adversarial review |
+| `api/v2/_repo.js` | persistence, optimistic concurrency, audit |
+| `api/v2/_authz.js` | authentication, roles, tenant scope, AI boundary, secret posture |
+| `api/v2/_service.js` | application service — the only place rules compose |
+| `api/v2/case.js` | HTTP surface; parses, authorises, dispatches, maps errors |
+| `public/v2-workspace.html` | minimal reviewer workspace |
+
+Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRequest, Contradiction, Finding, ChallengeReview, Approval, AuditEvent. Architected for but not built: Engagement, Intervention, Action, Metric, Verification, Monitoring Signal, Organizational Memory.
+
+**Case lifecycle:** INTAKE → STRUCTURING → INVESTIGATION_PLANNING → HUMAN_REVIEW → AWAITING_EVIDENCE → ANALYZING_EVIDENCE → {FINDING_DRAFT | CLARIFICATION_REQUIRED} → CHALLENGE_REVIEW → HUMAN_APPROVAL → APPROVED. Declarative and total; a transition absent from the table does not exist. Five transitions are human-only and refused for `ai` and `system`. Entering APPROVED additionally requires a stored human approval covering the current finding's exact version.
+
+**Approval** binds organization + artifact type + artifact id + **version** + reviewer + role + timestamp + decision + comment. An approval of v1 does not cover v2; a material revision clears the case's approved answer. Approving over a BLOCKED challenge requires written justification.
+
+**Evidence:** `original_content`, `ai_extraction` and `ai_interpretation` are separate fields, never merged; `original_content` is in no update allow-list, so a source can never be edited — a correction is new evidence. Submitted content is scanned for instruction-shaped text, stored verbatim, flagged, audited, never obeyed.
+
+**Findings** are rated STRONG / MODERATE / LIMITED by rule with the caps that produced the rating. A caller-asserted strength is ignored and recomputed. No numeric truth score exists anywhere. Causal phrasing below STRONG is flagged in English and Arabic.
+
+**Audit:** 20 event types, ordered, attributed, org-scoped. No prompts, no reasoning, no chain-of-thought — asserted by test.
 
 ---
 
-## 6. Legacy compatibility
-
-No legacy data migrated, no Production data rewritten, the V1 flow untouched. `Case.legacy_source_ref` exists as a forward hook. Legacy diagnostic text has no provenance and is not trusted V2 evidence; a legacy browser-side approval is not a V2 Approval.
-
----
-
-## 7. Tests
+## 6. Tests
 
 ```
-node tests/v2/run.js        →  119 checks, 119 passed, 0 failed
-node scripts/v2-case-001.js →   56 checks,  56 passed, 0 failed
+node tests/v2/run.js         →  162 checks, 162 passed, 0 failed   (baseline was 119)
+node scripts/v2-case-001.js  →   62 checks,  62 passed, 0 failed   (baseline was 56)
 ```
 
-Both run on the memory driver. **No KV of any kind is contacted.** No external dependency; `node` alone.
+Both run on the in-process memory driver. **No database of any kind is contacted.** No external dependency; `node` alone.
 
-Coverage: identifier safety and namespace escape; state-machine reachability and totality; invalid transitions; the AI/human boundary; client status mapping; hypothesis lifecycle; evidence sufficiency rules and caps; causality guard (English and Arabic); allow-listed updates; approval version binding; snapshots and staleness; the burden gate; untrusted-content scanning and fencing; the ten challenge checks; storage fail-closed configuration; V1 credential-name avoidance; key namespace escape; legacy prefix denial; case creation; transitions; stale and missing versions; evidence provenance; evidence update allow-list; evidence requests; finding drafting and versioning; unauthorized and authorized approval; tenant isolation (read and write); authorization layer; audit completeness and chain-of-thought absence; client-view leakage.
+`scripts/v2-case-001-http.js` drives the same synthetic pilot against a deployed Preview over HTTP. It refuses to run against a Production host, refuses to run when the deployment reports `SHARED-WITH-PRODUCTION`, refuses to run when storage is unconfigured, and prints no secret.
 
 ### Synthetic Case #001
 
-Invented Saudi owner-led company, ~120 employees, rapid growth. Sponsor claim recorded as `UNVERIFIED`. Six competing hypotheses (H1–H6). Six evidence items plus a deliberately hostile document. A `policy_vs_practice` contradiction — the delegation matrix grants authority up to SAR 20,000 while 412 of 480 sub-threshold purchase orders carry the owner as final approver — is recorded openly and drives the finding rather than being resolved away.
+Invented Saudi owner-led company, ~120 employees. Sponsor claim recorded as `UNVERIFIED`. Six competing hypotheses. Six evidence items plus a deliberately hostile document. A `policy_vs_practice` contradiction — the delegation matrix grants authority up to SAR 20,000 while 412 of 480 sub-threshold purchase orders carry the owner as final approver — is carried openly and drives the finding.
 
-The challenge engine returned **BLOCKED** (two live competing explanations; one open contradiction). The reviewer approved over it with a written justification, which is the designed path, and every refusal below fired as intended: AI approval, stale-version approval, blocked-challenge approval without justification, the v1 approval failing to cover v2, cross-tenant read and write, undefined transition, stale version, malformed payload, and a V1-shaped identifier reaching the store.
+The challenge engine returns **BLOCKED** (two live competing explanations, one open contradiction) and the reviewer approves over it with written justification. That is the designed path. Every refusal fires: AI approval, stale-version approval, blocked-challenge approval without justification, the v1 approval failing to cover v2, cross-tenant read and write, a non-member organisation, token org claims granting nothing, an undefined transition, a stale version, a malformed payload, and a V1-shaped identifier reaching the store.
 
-**All data synthetic. No real company, employee or client record.**
+**All data synthetic. No real company, employee or client record. The Preview database must contain synthetic test data only.**
 
 ---
 
-## 8. Known technical debt — recorded, not fixed
+## 7. Repository
+
+**Branches on origin:** `production` (`f2374043`), `v2-case-spine`, `legacy/hr-platform-2026-09-14` (`ee129eb`), `main` (`ee129eb`), `hotfix-submit-validation-2026-09-16`, `production-auth-hotfix-2026-09-16`, `phase3-meeting-intelligence-2026-09-16`, `recovered-phase2-2026-09-16`.
+
+**Tags on origin (7, annotated):** `prod/2026-09-16-baseline` → `3296bd4` · `prod/2026-09-16-auth` → `0d60514` · `prod/2026-09-16-submit` → `f2374043` · `archive/legacy-hr-platform` → `ee129eb` · `archive/phase2` → `57526a2` · `archive/phase3` → `2605c90` · `archive/superseded-auth-fix` → `f384154`.
+
+---
+
+## 8. Open blockers
+
+| # | Blocker | What is needed |
+|---|---|---|
+| 1 | `V2_STORE_DRIVER` and `V2_NAMESPACE` are not set in Preview | two Preview-only variables, values given in §3 |
+| 2 | This workspace has **no git push credentials** | the operator pushes `v2-case-spine` |
+| 3 | V2 Preview deployment not yet created | follows from 1 and 2 |
+| 4 | Isolated-store Case #001 not yet run | follows from 3; `scripts/v2-case-001-http.js` is ready |
+| 5 | GitHub default branch is still `main` | a manual change; `main` can no longer deploy, but it is still what a fresh clone targets |
+| 6 | No branch protection on `production` | free for public repos |
+| 7 | Reviewer identity model | §4; needed before multiple reviewers can be separated |
+| 8 | `SESSION_SECRET` value unverified against the two published strings | a human check in the dashboard |
+
+---
+
+## 9. Technical debt — recorded, not fixed
 
 | # | Item | Notes |
 |---|---|---|
-| 1 | V1 `submit.js` non-atomic get-then-set | check-then-act; fix is a single conditional write (`SET … NX`) |
-| 2 | V1 `genRef()` — 9,000 values/year, client-side `Math.random()` | ~50% chance of a collision by ~112 submissions/year; ~13.9 expected colliding pairs at 500. Self-heals via the 409 only because Hotfix 01 is deployed |
+| 1 | V1 `submit.js` non-atomic get-then-set | check-then-act; fix is one conditional write (`SET … NX`) |
+| 2 | V1 `genRef()` — 9,000 values/year, client-side `Math.random()` | ~50% collision chance by ~112 submissions/year; ~13.9 expected colliding pairs at 500. Self-heals via the 409 only because Hotfix 01 is deployed |
 | 3 | V1 flat KV namespace | no prefixing, no key grammar |
 | 4 | QA records awaiting cleanup | `HUM-QA-DUMMY-A-1789588888234`, `HUM-QA-DUMMY-B-1789588888234`, `client:HUM-2026-2420` + its `clients:refs` entry. **No cleanup performed; none authorised** |
-| 5 | Hardcoded JWT fallback secret in `api/_utils.js` | inert while `SESSION_SECRET` is set; V2 should fail closed instead |
+| 5 | Hardcoded JWT fallback secret in `api/_utils.js` | inert while `SESSION_SECRET` is set; V2 now fails closed on it |
 | 6 | Phase 3 permissive `isValidRef` | not in Production, not ported to V2 |
 | 7 | Phase 3 blind diagnostic POST | not in Production, not ported to V2 |
 | 8 | V1 browser-only approval state | `public/admin.html` sets approval in the browser with no server authority |
-| 9 | **The repository is public** | `.env.example` publishes a plausible `SESSION_SECRET` value, and `_utils.js` publishes the fallback string. History scanned across all refs: no real secret was ever committed. **Verify that the live `SESSION_SECRET` is neither published string** |
-| 10 | V1 admin tokens carry no `org` claim | V2 refuses them by design; admin login must issue org-scoped tokens before the reviewer workspace can be used |
+| 9 | Repository is public | history scanned across all refs — no real secret was ever committed |
+| 10 | V1 admin tokens carry no subject | see §4 |
+| 11 | Integration prefix is `V2_KV`, producing doubled names | cosmetic; the code contract covers it. Tidy by reconnecting with prefix `V2` if desired |
 
 None of these were introduced into V2.
 
 ---
 
-## 9. PDPL and privacy readiness
+## 10. PDPL and privacy readiness
 
-**No claim of PDPL compliance is made.** No real employee data has been used.
+**No claim of PDPL compliance is made.** No real employee data has been used, and the Preview database is for synthetic data only.
 
-Present in the architecture: organisation scoping on every object and every read; role-based access with deny-by-default; append-oriented audit of material events; source provenance and versioning; explicit separation of source from AI interpretation; retention hooks (`version`, `superseded_by` semantics, snapshots); no chain-of-thought retention.
+Present: organisation scoping on every object and read; role-based access, deny by default; append-oriented audit of material events; source provenance and versioning; explicit separation of source from AI interpretation; retention hooks; no chain-of-thought retention.
 
-Required before any real client employee data is processed: a lawful-processing basis and recorded purpose per data category; data minimisation review of Evidence intake; a retention and deletion policy with enforcement; data-subject access, correction and erasure paths; cross-border transfer controls (the Upstash primary region is a configuration decision with PDPL consequences); AI-processing transparency notices; a DPA with the processor; encryption-at-rest confirmation; breach notification runbook; and a decision on whether interview transcripts naming individuals may be stored verbatim as `original_content`.
+Required before any real client employee data is processed: lawful basis and recorded purpose per data category; data-minimisation review of Evidence intake; a retention and deletion policy with enforcement; data-subject access, correction and erasure paths; cross-border transfer controls (the Upstash primary region is a configuration decision with PDPL consequences); AI-processing transparency notices; a DPA with the processor; encryption-at-rest confirmation; a breach-notification runbook; and a decision on whether interview transcripts naming individuals may be stored verbatim as `original_content`.
 
 ---
 
-## 10. Next recommended build slice
+## 11. Next recommended build slice
 
-1. **Resolve §3.2** — one `git push` publishes the tags, `production`, `legacy/hr-platform-2026-09-14` and `v2-case-spine`.
-2. **Resolve §3.3** — flip Vercel's Production Branch to `production` (only possible once the branch exists on origin), then GitHub's default branch, then branch protection. Public repositories get rulesets free.
-3. **Resolve §3.1** — a payment-method decision on a second Upstash resource, or an equivalent isolated store. Until then V2 stays off Preview.
-4. **Org-scoped admin tokens** — add `org`/`orgs` claims at login so the reviewer workspace can authenticate. Small, self-contained, and it unblocks the whole V2 UI.
-5. **Then, and only then:** deploy V2 to Preview and re-run Case #001 against the isolated store.
+Once blockers 1–4 clear and the isolated-store run is green: **Evidence intake for the client** — the portal side of `EvidenceRequest`, so a sponsor can answer the five investigation questions directly instead of a consultant transcribing them.
 
-After that, the first product slice worth building is **Evidence intake for the client** — the portal side of `EvidenceRequest`, so a sponsor can answer the five investigation questions without a consultant transcribing them. It is the narrowest path from "Humvance can reason about a case" to "a real client can be in one", and it needs no new domain concepts.
+It is the narrowest path from "Humvance can reason about a case" to "a real client can be in one", it introduces no new domain concepts, and it exercises the parts of the spine that matter most under real use: provenance on arrival, the burden gate doing its job, and the client view staying simple while the inside stays sophisticated.
+
+Blocker 7 (reviewer identity) should land before a second person joins the reviewing side, not before this slice.
