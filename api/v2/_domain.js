@@ -377,6 +377,7 @@ const EVIDENCE_REQUEST_STATES = Object.freeze([
 // chain-of-thought — those are neither durable nor appropriate to keep.
 
 const AUDIT_EVENTS = Object.freeze([
+  'organization.created', 'access.granted',
   'case.created', 'case.state_changed', 'case.updated',
   'claim.created', 'claim.updated',
   'hypothesis.created', 'hypothesis.state_changed',

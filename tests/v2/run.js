@@ -5,6 +5,7 @@ const { run } = require('./harness');
 
 require('./domain.test');
 require('./store.test');
+require('./authz.test');
 require('./service.test');
 
 run().then(ok => process.exit(ok ? 0 : 1)).catch(err => {

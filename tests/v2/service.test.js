@@ -12,8 +12,10 @@ function freshService() {
   return { store, service: createService(store) };
 }
 
-const human = (id, role = 'admin', orgs = []) => ({ actor_id: id, actor_type: 'human', role, allowed_orgs: orgs });
-const ai     = (id = 'act_ai')                => ({ actor_id: id, actor_type: 'ai', role: 'reviewer', allowed_orgs: [] });
+// Principals no longer carry organization scope: it is read from server-side
+// membership at the HTTP boundary. See _membership.js and authz.test.js.
+const human = (id, role = 'admin') => ({ actor_id: id, actor_type: 'human', role });
+const ai     = (id = 'act_ai')      => ({ actor_id: id, actor_type: 'ai', role: 'reviewer' });
 
 const REVIEWER = human('act_reviewer');
 const AI = ai();
@@ -528,12 +530,15 @@ suite('tenant isolation', () => {
       { statement: 's' }), 'not_found');
   });
 
-  test('the token scope layer refuses an unscoped or wrong-org token', () => {
-    assert.equal(resolveOrgScope(human('u', 'admin', []), 'org_x').code, 'unscoped_token');
-    assert.equal(resolveOrgScope(human('u', 'admin', ['org_a']), 'org_b').code, 'not_found');
-    assert.equal(resolveOrgScope(human('u', 'admin', ['org_a']), 'org_b').status, 404);
-    assert.ok(resolveOrgScope(human('u', 'admin', ['org_a']), 'org_a').ok);
-    assert.equal(resolveOrgScope(human('u', 'admin', ['org_a']), undefined).code, 'organization_required');
+  // Organization scope itself is decided by _authz.resolveOrgScope against a
+  // server-side membership record; that layer is covered in authz.test.js. What
+  // this file asserts is the deeper guarantee: even a caller who HAS passed the
+  // scope layer for org B cannot reach org A's objects, because the tenant check
+  // is repeated on every read in _repo.readScoped().
+  test('the scope layer refuses a non-member organization with 404', () => {
+    assert.equal(resolveOrgScope({ orgs: [] }, human('u', 'admin'), 'org_x').code, 'no_org_membership');
+    assert.equal(resolveOrgScope({ orgs: ['org_a'] }, human('u', 'admin'), 'org_b').status, 404);
+    assert.ok(resolveOrgScope({ orgs: ['org_a'] }, human('u', 'admin'), 'org_a').ok);
   });
 });
 

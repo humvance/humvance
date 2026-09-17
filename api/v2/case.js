@@ -12,7 +12,8 @@
 const { setJSON } = require('../_utils');
 const { createStore, StoreConfigError } = require('./_store');
 const { createService } = require('./_service');
-const { authenticate, requireReviewer, requireApprovalAuthority, resolveOrgScope } = require('./_authz');
+const { authenticate, requireReviewer, requireApprovalAuthority, resolveOrgScope, assertSigningSecret } = require('./_authz');
+const { loadMembership } = require('./_membership');
 
 // Built once per warm serverless instance. A misconfigured store throws here, so a
 // deployment with no V2 storage configuration fails on its first request rather
@@ -20,6 +21,16 @@ const { authenticate, requireReviewer, requireApprovalAuthority, resolveOrgScope
 let cached = null;
 function boot() {
   if (cached) return cached;
+
+  // Refuse to serve V2 on a default, published or weak signing secret. The value
+  // is never read into a message, a log or a response.
+  const secret = assertSigningSecret(process.env);
+  if (!secret.ok) {
+    const err = new Error(secret.error);
+    err.code = secret.code;
+    throw err;
+  }
+
   const store = createStore(process.env);
   store.assertIsolated({
     // Deliberately explicit: the only way V2 runs against the production database
@@ -32,7 +43,8 @@ function boot() {
 }
 
 const OPS = new Set([
-  'create_organization', 'create_case', 'transition',
+  'create_organization', 'grant_org_access', 'list_my_organizations',
+  'create_case', 'transition',
   'add_hypothesis', 'set_hypothesis_state',
   'add_evidence', 'update_evidence', 'record_contradiction',
   'propose_evidence_request', 'decide_evidence_request',
@@ -62,7 +74,12 @@ module.exports = async function handler(req, res) {
     ctx = boot();
   } catch (err) {
     // Fail closed and say why, without leaking any credential material.
-    return send(res, 503, { error: 'V2 storage is not configured', code: err.code || 'store_misconfigured', detail: err.message });
+    const isSecret = String(err.code || '').startsWith('signing_secret');
+    return send(res, 503, {
+      error: isSecret ? 'V2 is not configured to verify tokens safely' : 'V2 storage is not configured',
+      code: err.code || 'store_misconfigured',
+      detail: err.message
+    });
   }
   const { store, service } = ctx;
   const isolationHeaders = {
@@ -85,7 +102,8 @@ module.exports = async function handler(req, res) {
       const case_id = req.query?.case_id;
       const view = req.query?.view || 'reviewer';
 
-      const scope = resolveOrgScope(principal, organization_id);
+      const membership = await loadMembership(store, principal.actor_id);
+      const scope = resolveOrgScope(membership, principal, organization_id);
       if (!scope.ok) return send(res, scope.status, { error: scope.error, code: scope.code }, isolationHeaders);
       if (typeof case_id !== 'string' || !case_id) {
         return send(res, 400, { error: 'case_id is required', code: 'case_id_required' }, isolationHeaders);
@@ -124,6 +142,12 @@ module.exports = async function handler(req, res) {
       if (!ap.ok) return send(res, ap.status, { error: ap.error, code: ap.code }, isolationHeaders);
     }
 
+    // Reads the caller's own membership; needs no organization scope because it
+    // IS the answer to "what scope do I have".
+    if (op === 'list_my_organizations') {
+      return send(res, 200, await service.listMyOrganizations(principal), isolationHeaders);
+    }
+
     if (op === 'create_organization') {
       if (principal.actor_type !== 'human' || principal.role !== 'admin') {
         return send(res, 403, { error: 'creating an organization requires a human admin', code: 'forbidden_role' }, isolationHeaders);
@@ -132,13 +156,17 @@ module.exports = async function handler(req, res) {
       return send(res, 201, org, isolationHeaders);
     }
 
-    // Everything else is organisation-scoped.
-    const scope = resolveOrgScope(principal, body.organization_id);
+    // Everything else is organisation-scoped, and the scope comes from a
+    // server-side membership record — never from a claim in the token.
+    const membership = await loadMembership(store, principal.actor_id);
+    const scope = resolveOrgScope(membership, principal, body.organization_id);
     if (!scope.ok) return send(res, scope.status, { error: scope.error, code: scope.code }, isolationHeaders);
     const org = scope.organization_id;
 
     let out;
     switch (op) {
+      case 'grant_org_access':
+        out = await service.grantOrganizationAccess(principal, org, body.target_principal_id); break;
       case 'create_case':
         out = await service.createCase(principal, org, body); break;
       case 'transition':

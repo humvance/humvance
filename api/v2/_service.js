@@ -9,6 +9,7 @@ const D = require('./_domain');
 const { runChallenge } = require('./_challenge');
 const { scanUntrusted, splitSourceAndInterpretation } = require('./_untrusted');
 const { createRepo, RepoError, idx } = require('./_repo');
+const { loadMembership, grantOrg, hasOrg } = require('./_membership');
 
 function fail(code, message, status = 400) { throw new RepoError(code, message, status); }
 
@@ -37,7 +38,75 @@ function createService(store) {
       version: 1, metadata
     };
     if (!await store.putIfAbsent('org', org_id, org)) fail('id_collision', 'identifier collision', 500);
+
+    // The creator becomes a member. This is the only bootstrap path into an
+    // organisation, and it is an ownership rule applied on the server — not a
+    // claim the caller made, and not a default granted to everyone.
+    await grantOrg(store, actor.actor_id, org_id, { granted_by: 'creation' });
+
+    await repo.audit('organization.created', {
+      organization_id: org_id, case_id: null, actor,
+      subject_type: 'org', subject_id: org_id,
+      summary: `Organization created: ${org.name}`,
+      details: { country, size_band }
+    });
+    await repo.audit('access.granted', {
+      organization_id: org_id, case_id: null, actor,
+      subject_type: 'membership', subject_id: actor.actor_id,
+      summary: 'Creator granted membership of the new organization',
+      details: { via: 'creation', principal_id: actor.actor_id }
+    });
     return org;
+  }
+
+  /**
+   * Extend membership to another principal. Only an existing member may do it,
+   * only a human reviewer, and the target is named explicitly — there is no way
+   * for a principal to grant itself access to an organisation it cannot already
+   * reach.
+   */
+  async function grantOrganizationAccess(principal, organization_id, target_principal_id) {
+    const actor = actorOf(principal);
+    if (actor.actor_type !== 'human') {
+      fail('human_required', 'granting organization access requires a human reviewer', 403);
+    }
+    if (typeof target_principal_id !== 'string' || !target_principal_id.trim()) {
+      fail('invalid_principal', 'target_principal_id is required');
+    }
+    const mine = await loadMembership(store, actor.actor_id);
+    if (!hasOrg(mine, organization_id)) {
+      // Not 403: the caller must not learn that this organisation exists.
+      fail('not_found', 'not found', 404);
+    }
+    const org = await repo.readScoped('org', organization_id, organization_id);
+    if (!org) fail('not_found', 'organization not found', 404);
+
+    let result;
+    try {
+      result = await grantOrg(store, target_principal_id.trim(), organization_id, { granted_by: actor.actor_id });
+    } catch (err) {
+      fail('invalid_principal', err.message, 400);
+    }
+
+    await repo.audit('access.granted', {
+      organization_id, case_id: null, actor,
+      subject_type: 'membership', subject_id: target_principal_id.trim(),
+      summary: `Organization access granted to ${target_principal_id.trim()}`,
+      details: { via: 'grant', already_had_access: !result.granted }
+    });
+    return { organization_id, principal_id: target_principal_id.trim(), granted: result.granted };
+  }
+
+  /** The organisations this principal may act in, read from server-side state. */
+  async function listMyOrganizations(principal) {
+    const actor = actorOf(principal);
+    const m = await loadMembership(store, actor.actor_id);
+    const out = [];
+    for (const id of m.orgs) {
+      const org = await repo.readScoped('org', id, id);
+      if (org) out.push({ org_id: org.org_id, name: org.name, created_at: org.created_at });
+    }
+    return { principal_id: actor.actor_id, organizations: out };
   }
 
   async function getOrganization(principal, organization_id) {
@@ -670,7 +739,7 @@ function createService(store) {
 
   return {
     repo, idx,
-    createOrganization, getOrganization,
+    createOrganization, getOrganization, grantOrganizationAccess, listMyOrganizations,
     createCase, getCase, transitionCase,
     addHypothesis, setHypothesisState,
     addEvidence, updateEvidence, recordContradiction,

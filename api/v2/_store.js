@@ -50,8 +50,14 @@ const LEGACY_PREFIXES = ['client:', 'clients:', 'admin:', 'questions:', 'session
 // Object types V2 may persist. Anything else is a programming error, not input.
 const TYPES = new Set([
   'org', 'case', 'claim', 'hypothesis', 'evidence', 'evidencereq',
-  'contradiction', 'finding', 'challenge', 'approval', 'audit', 'index'
+  'contradiction', 'finding', 'challenge', 'approval', 'audit', 'index', 'membership'
 ]);
+
+// Two types are addressed by something other than a minted V2 id: an index, whose
+// name is composed from ids by _repo.js, and a membership record, whose id is the
+// hex encoding of a principal id (see _membership.js). Both are still constrained
+// to the key alphabet, so neither can escape the namespace.
+const RELAXED_ID_TYPES = new Set(['index', 'membership']);
 
 class StoreConfigError extends Error {
   constructor(message) { super(message); this.name = 'StoreConfigError'; this.code = 'store_misconfigured'; }
@@ -172,9 +178,11 @@ function createStore(env = process.env) {
   const key = (type, id) => {
     const t = String(type).toLowerCase();
     if (!TYPES.has(t)) throw new StoreConfigError(`refused: unknown V2 object type "${type}"`);
-    if (t !== 'index' && !isAnyId(id)) throw new StoreConfigError('refused: storage id is not a server-minted V2 id');
-    if (t === 'index' && !/^[A-Za-z0-9_-]{1,120}$/.test(String(id))) {
-      throw new StoreConfigError('refused: malformed index name');
+    if (!RELAXED_ID_TYPES.has(t) && !isAnyId(id)) {
+      throw new StoreConfigError('refused: storage id is not a server-minted V2 id');
+    }
+    if (RELAXED_ID_TYPES.has(t) && !/^[A-Za-z0-9_-]{1,120}$/.test(String(id))) {
+      throw new StoreConfigError(`refused: malformed ${t} id`);
     }
     return assertSafeKey(`v2:${cfg.namespace}:${t}:${id}`);
   };
@@ -216,5 +224,5 @@ function createStore(env = process.env) {
 
 module.exports = {
   createStore, StoreConfigError, ConflictError,
-  NAMESPACE_RE, KEY_RE, LEGACY_PREFIXES, TYPES, assertSafeKey
+  NAMESPACE_RE, KEY_RE, LEGACY_PREFIXES, TYPES, RELAXED_ID_TYPES, assertSafeKey
 };

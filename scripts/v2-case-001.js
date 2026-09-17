@@ -18,6 +18,9 @@
 
 const { createStore } = require('../api/v2/_store');
 const { createService } = require('../api/v2/_service');
+const { resolveOrgScope, authenticate } = require('../api/v2/_authz');
+const { loadMembership } = require('../api/v2/_membership');
+const { signJWT } = require('../api/_utils');
 
 const env = {
   V2_STORE_DRIVER: process.env.V2_STORE_DRIVER || 'memory',
@@ -305,6 +308,26 @@ function h(title) { console.log(`\n\x1b[1m${title}\x1b[0m`); }
   // ── 11. Negative controls ──────────────────────────────────────────────────
   h('11. Negative controls');
   const orgB = await svc.createOrganization(REVIEWER_B, { name: 'Other Co (synthetic)', country: 'SA' });
+
+  // Organization scope comes from a server-side membership record, never from the
+  // token. Reviewer B was granted org B by creating it, and nothing else.
+  const mA = await loadMembership(store, REVIEWER.actor_id);
+  const mB = await loadMembership(store, REVIEWER_B.actor_id);
+  ok('reviewer A is a member of org A only', mA.orgs.length === 1 && mA.orgs[0] === org.org_id);
+  ok('reviewer B is a member of org B only', mB.orgs.length === 1 && mB.orgs[0] === orgB.org_id);
+  ok('reviewer B is refused org A at the scope layer with 404',
+    resolveOrgScope(mB, REVIEWER_B, org.org_id).status === 404);
+  ok('a principal with no membership is refused distinctly',
+    resolveOrgScope({ orgs: [] }, REVIEWER, org.org_id).code === 'no_org_membership');
+
+  // A token that names its own scope must gain nothing from doing so.
+  const claimed = authenticate({ headers: { authorization: 'Bearer ' +
+    signJWT({ role: 'admin', org: org.org_id, orgs: [org.org_id, orgB.org_id] }) } });
+  ok('token org claims are ignored entirely',
+    claimed.ok && !JSON.stringify(claimed.principal).includes(org.org_id));
+  ok('a self-asserted scope grants nothing without a membership record',
+    resolveOrgScope(await loadMembership(store, claimed.principal.actor_id),
+                    claimed.principal, org.org_id).code === 'no_org_membership');
   ok('organisation B cannot read organisation A’s case',
     (await svc.getCase(REVIEWER_B, orgB.org_id, kase.case_id)) === null);
   await mustFail('organisation B cannot write to organisation A’s case',
