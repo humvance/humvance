@@ -15,31 +15,36 @@
 |---|---|
 | `fe17368` | Diagnostic Intake V2: anonymous holding area and its human gate |
 | `fdb94d7` | Intake page: isolate numeric labels so Arabic does not reverse them |
-| *(this file)* | docs: Sprint 1 engineering state and checkpoint |
+| `94f1eb8` | docs: Sprint 1 engineering state and checkpoint |
+| *(hardening)* | Promotion is durable, resumable and decided exactly once |
 
 ## Verification, last run 2026-09-18 on the device, memory driver only
 
 ```
-node tests/v2/run.js          → 227/227   (baseline 162 unchanged, 65 added)
+node tests/v2/run.js          → 246/246   (baseline 162 unchanged, 84 added)
 node scripts/v2-case-001.js   →  62/62    (unchanged)
-node scripts/v2-intake-001.js →  75/75    (new)
+node scripts/v2-intake-001.js →  90/90    (includes the interrupted-promotion path)
 ```
 
 No database of any kind was contacted. `V2_STORE_DRIVER` and `V2_NAMESPACE` are still unset in Preview, so nothing could have been written even by accident.
 
 ## Files
 
-**New (7)** — `api/v2/_intake.js`, `api/v2/intake.js`, `api/v2/intake-review.js`, `public/intake.html`, `public/v2-intake-review.html`, `tests/v2/intake.test.js`, `scripts/v2-intake-001.js`
+**New (8)** — `api/v2/_intake.js`, `api/v2/intake.js`, `api/v2/intake-review.js`, `public/intake.html`, `public/v2-intake-review.html`, `tests/v2/intake.test.js`, `tests/v2/intake-recovery.test.js`, `scripts/v2-intake-001.js`
 
-**Modified (8)** — `api/v2/_domain.js`, `api/v2/_ids.js`, `api/v2/_store.js`, `api/v2/_service.js`, `tests/v2/run.js`, `package.json`, `vercel.json`, `docs/ENGINEERING-STATE.md`
+**Modified (9)** — `api/v2/_domain.js`, `api/v2/_ids.js`, `api/v2/_store.js`, `api/v2/_repo.js`, `api/v2/_service.js`, `tests/v2/run.js`, `package.json`, `vercel.json`, `docs/ENGINEERING-STATE.md`
 
-**Untouched, verified** — every V1 file (`api/submit.js`, `api/agent.js`, `api/client.js`, `api/portal.js`, `api/questions.js`, `api/send-questions.js`, `api/_utils.js`, `api/auth/*`, `public/index.html`, `public/admin.html`, `public/portal.html`, `public/questions.html`) and, in V2, `api/v2/case.js`, `_authz.js`, `_repo.js`, `_membership.js`, `_untrusted.js`, `_challenge.js`.
+**Untouched, verified** — every V1 file (`api/submit.js`, `api/agent.js`, `api/client.js`, `api/portal.js`, `api/questions.js`, `api/send-questions.js`, `api/_utils.js`, `api/auth/*`, `public/index.html`, `public/admin.html`, `public/portal.html`, `public/questions.html`) and, in V2, `api/v2/case.js`, `_authz.js`, `_membership.js`, `_untrusted.js`, `_challenge.js`.
+
+`api/v2/_repo.js` gained two additive changes in the hardening pass: `createObject` accepts an internally-minted planned id, and `attachToIndex` became idempotent. Neither is reachable from an HTTP body, and the 162 baseline checks are unchanged.
 
 `api/v2/case.js` being unmodified is asserted by a test, not just by inspection.
 
 ## What exists now
 
-See `docs/ENGINEERING-STATE.md` §11 for the architecture. In one paragraph: an anonymous visitor at `/intake` fills in twelve steps; `POST /api/v2/intake` validates against an allow-list, scans every free-text field, and writes one immutable `intakeseed` plus one `intakereview` in `PENDING_REVIEW`. Nothing else is created. A reviewer at `/v2-intake-review` reads the submission with client-reported content and Humvance's review visually separated, and accepts or rejects it. Accept creates the Organization, a Case in `INTAKE`, two `UNVERIFIED` claims and up to three `sponsor_statement` evidence items. Reject creates nothing.
+See `docs/ENGINEERING-STATE.md` §11 for the architecture. In one paragraph: an anonymous visitor at `/intake` fills in twelve steps; `POST /api/v2/intake` validates against an allow-list, scans every free-text field, and writes one immutable `intakeseed` plus one `intakereview` in `PENDING_REVIEW`. Nothing else is created. A reviewer at `/v2-intake-review` reads the submission with client-reported content and Humvance's review visually separated, and accepts or rejects it. Accept creates the Organization, a Case in `INTAKE`, two `UNVERIFIED` claims and up to three `sponsor_statement` evidence items. Reject creates nothing. The decision is claimed atomically and the promotion is resumable — see `ENGINEERING-STATE.md` §11 "Recovery".
+
+**Status: locally verified on the memory driver. Not integration verified.** No run has touched the isolated Preview store.
 
 ## What is deliberately NOT done
 

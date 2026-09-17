@@ -51,10 +51,16 @@ const LEGACY_PREFIXES = ['client:', 'clients:', 'admin:', 'questions:', 'session
 const TYPES = new Set([
   'org', 'case', 'claim', 'hypothesis', 'evidence', 'evidencereq',
   'contradiction', 'finding', 'challenge', 'approval', 'audit', 'index', 'membership',
-  // Diagnostic Intake V2. These two are PRE-TENANT: they exist before any
-  // Organization does, so they carry no organization_id and _repo.readScoped()
-  // must never be used on them. They are reachable only from api/v2/_intake.js.
-  'intakeseed', 'intakereview'
+  // Diagnostic Intake V2. These are PRE-TENANT: they exist before any Organization
+  // does, so they carry no organization_id and _repo.readScoped() must never be used
+  // on them. They are reachable only from api/v2/_intake.js.
+  //
+  // `intakedecision` is written once per submission with setIfAbsent, which is the
+  // one genuinely atomic operation this store has (Redis SET NX). It is what makes
+  // "a submission is decided exactly once" true under real concurrency rather than
+  // only under sequential calls — a read-then-write version check cannot promise
+  // that across two serverless instances.
+  'intakeseed', 'intakereview', 'intakedecision'
 ]);
 
 // Two types are addressed by something other than a minted V2 id: an index, whose

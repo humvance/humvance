@@ -203,8 +203,17 @@ function renderOne(){
     '</div></div>' +
 
     '<div class="panel humvance"><h2>Humvance review — the only place a decision is made</h2><div class="body">' +
+      (review.status === 'ACCEPTED' && review.promotion_state === 'PENDING'
+        ? '<div class="banner bad"><strong>This submission was accepted, but the work of opening the case did not finish.</strong> ' +
+          'The decision stands and is not made again — resuming completes exactly what is missing and creates nothing twice.' +
+          (review.promotion_last_error ? '<div class="mono" style="margin-top:6px">stopped at: '+esc(review.promotion_last_error)+'</div>' : '') +
+          '<div class="actions"><button class="primary" onclick="resume()">Resume promotion</button>' +
+          '<span class="mono">attempt '+((review.promotion_attempts||0)+1)+'</span></div></div>'
+        : '') +
+
       '<dl class="kv">' +
-        '<dt>Status</dt><dd>'+statusChip(review.status)+'</dd>' +
+        '<dt>Status</dt><dd>'+statusChip(review.status)+
+          (review.promotion_state ? ' <span class="chip '+(review.promotion_state==='COMPLETE'?'good':'bad')+'">promotion '+esc(review.promotion_state)+'</span>' : '')+'</dd>' +
         '<dt>Review record</dt><dd class="mono">'+esc(review.intakereview_id)+' · v'+review.version+'</dd>' +
         (review.decided_by ? '<dt>Decided by</dt><dd>'+esc(review.decided_by)+' · '+fmt(review.decided_at)+'</dd>' : '') +
         (review.decision_reason ? '<dt>Reason</dt><dd>'+esc(review.decision_reason)+'</dd>' : '') +
@@ -231,6 +240,20 @@ function renderOne(){
                '<td class="mono" style="width:60px">'+esc(a.actor_type)+'</td><td>'+esc(a.summary)+'</td></tr>';
       }).join('') +
     '</tbody></table></div></div>';
+}
+
+async function resume(){
+  var seed = S.current.seed;
+  banner('');
+  try {
+    var out = await api('/api/v2/intake-review', { method:'POST', body: JSON.stringify({
+      op: 'resume_promotion', intakeseed_id: seed.intakeseed_id
+    })});
+    await openOne(seed.intakeseed_id);
+    banner(out.already_complete
+      ? 'Nothing to do — the promotion was already complete.'
+      : 'Promotion completed. Nothing was created twice.', 'info');
+  } catch (e) { renderError(e); }
 }
 
 async function decide(decision){

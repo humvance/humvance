@@ -41,7 +41,10 @@ function boot() {
   return cached;
 }
 
-const OPS = new Set(['decide_intake']);
+// `resume_promotion` asks for no new decision — it finishes carrying out one that
+// a human already made and that is already durable. It is still gated on approval
+// authority, because what it completes is the material act of opening a tenant.
+const OPS = new Set(['decide_intake', 'resume_promotion']);
 
 function send(res, status, body, extraHeaders = {}) {
   setJSON(res);
@@ -100,6 +103,11 @@ module.exports = async function handler(req, res) {
 
     const ap = requireApprovalAuthority(principal);
     if (!ap.ok) return send(res, ap.status, { error: ap.error, code: ap.code }, isolationHeaders);
+
+    if (body.op === 'resume_promotion') {
+      const out = await service.resumeIntakePromotion(principal, { intakeseed_id: body.intakeseed_id });
+      return send(res, 200, out, isolationHeaders);
+    }
 
     const out = await service.decideIntake(principal, {
       intakeseed_id: body.intakeseed_id,

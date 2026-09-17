@@ -459,6 +459,24 @@ const INTAKE_CONTACT_PREFERENCES = Object.freeze(['email', 'phone', 'whatsapp'])
 const INTAKE_REVIEW_STATES = Object.freeze(['PENDING_REVIEW', 'ACCEPTED', 'REJECTED']);
 const INTAKE_REVIEW_DECISIONS = Object.freeze(['ACCEPTED', 'REJECTED']);
 
+// ── The decision is not the promotion ────────────────────────────────────────
+//
+// DECISION STATE ≠ PROMOTION EXECUTION STATE.
+//
+// `status` above is what a human decided, and it is decided exactly once. What
+// follows an ACCEPT — creating an Organization, a Case, two Claims and up to three
+// Evidence items — is a sequence of writes against a store with no transactions,
+// so it can be interrupted half-way. Modelling those as the same field is what made
+// an interrupted promotion unrecoverable: the decision was already ACCEPTED, so the
+// lifecycle refused to touch it again, and the work simply stopped.
+//
+// They are therefore two fields. The decision is durable and final; the execution
+// is PENDING until it finishes, and a PENDING promotion may be resumed as many
+// times as necessary without asking a human to decide anything a second time.
+const INTAKE_PROMOTION_STATES = Object.freeze(['PENDING', 'COMPLETE']);
+
+function isIntakePromotionState(v) { return INTAKE_PROMOTION_STATES.includes(v); }
+
 // A submission carries at most three examples. The cap is a burden decision, not
 // a storage one: three concrete events are enough to start an investigation, and
 // asking for more before anyone has read the first three spends goodwill (§11).
@@ -507,6 +525,7 @@ function canIntakeReviewTransition(from, to) {
 const AUDIT_EVENTS = Object.freeze([
   'organization.created', 'access.granted',
   'intake.received', 'intake.accepted', 'intake.rejected',
+  'intake.promotion_resumed', 'intake.promotion_completed',
   'case.created', 'case.state_changed', 'case.updated',
   'claim.created', 'claim.updated',
   'hypothesis.created', 'hypothesis.state_changed',
@@ -541,6 +560,7 @@ module.exports = {
   INTAKE_EMPLOYEE_BANDS, INTAKE_GROWTH_STAGES, INTAKE_CONTACT_PREFERENCES,
   INTAKE_REVIEW_STATES, INTAKE_REVIEW_DECISIONS, INTAKE_REVIEW_TRANSITIONS,
   isIntakeReviewState, canIntakeReviewTransition,
+  INTAKE_PROMOTION_STATES, isIntakePromotionState,
   INTAKE_EPISTEMIC_STATUS, MAX_RECENT_EXAMPLES,
   AUDIT_EVENTS
 };

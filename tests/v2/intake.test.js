@@ -637,7 +637,8 @@ suite('intake — storage boundary', () => {
     const { TYPES } = require('../../api/v2/_store');
     assert.ok(TYPES.has('intakeseed'));
     assert.ok(TYPES.has('intakereview'));
-    assert.equal(TYPES.size, 15, 'two new types, no more');
+    assert.equal(TYPES.size, 16, 'the three intake types, no more');
+    assert.ok(TYPES.has('intakedecision'));
   });
 });
 

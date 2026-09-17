@@ -1,6 +1,6 @@
 # Humvance — Engineering State
 
-**Last updated:** 2026-09-18
+**Last updated:** 2026-09-18 (Sprint 1 hardening pass)
 **Maintained on:** `v2-case-spine`; §11 was added on `sprint1-diagnostic-intake-v2`, which is not merged
 **Contains no secrets.** Environment variables are referred to by NAME only. No value, token, URL, connection string or credential appears in this file. Resource identifiers (store ids, deployment ids) are not credentials and are recorded deliberately as evidence.
 
@@ -262,12 +262,14 @@ Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRe
 ## 6. Tests
 
 ```
-node tests/v2/run.js          →  227 checks, 227 passed, 0 failed   (baseline was 162)
+node tests/v2/run.js          →  246 checks, 246 passed, 0 failed   (baseline was 162)
 node scripts/v2-case-001.js   →   62 checks,  62 passed, 0 failed   (unchanged)
-node scripts/v2-intake-001.js →   75 checks,  75 passed, 0 failed   (new, §11)
+node scripts/v2-intake-001.js →   90 checks,  90 passed, 0 failed   (new, §11)
 ```
 
-The 162 baseline checks are unchanged by Sprint 1; the 65 added checks are all in `tests/v2/intake.test.js`.
+The 162 baseline checks are unchanged by Sprint 1. Of the 84 added: 65 in `tests/v2/intake.test.js` (the holding area) and 19 in `tests/v2/intake-recovery.test.js` (failure injection, idempotency and concurrency).
+
+**These are memory-driver results. Sprint 1 is locally verified, not integration verified** — no run has yet touched the isolated Preview store (§8, blockers 1–4).
 
 Both run on the in-process memory driver. **No database of any kind is contacted.** No external dependency; `node` alone.
 
@@ -327,7 +329,7 @@ The challenge engine returns **BLOCKED** (two live competing explanations, one o
 | 13 | `case_intent` rides in `case.metadata`, not as a first-class Case field | tightening `createCase()` would change the authenticated Case API, which Sprint 1 did not do. The value is validated against `CASE_INTENTS` before it is written and is never rewritten |
 | 14 | `add_claim` is not exposed on `api/v2/case.js` | promotion creates the client-belief claim through an internal service helper. A reviewer still cannot add a claim to a live case over HTTP; needed for reviewer case work, not for intake |
 | 15 | Intake rate limiting is per serverless instance | the V2 store driver exposes no TTL primitive, so a durable counter would accumulate keys forever and hashed-IP counters would be personal data at rest. Fix is a platform-level rule (Vercel Firewall) or a TTL primitive on the store |
-| 16 | Promotion writes the review record twice | the decision is claimed first (version-checked), then the resulting ids are filled in. A failure between the two leaves a visible "ACCEPTED, no case" rather than an invisible orphan tenant — chosen deliberately, but it is not atomic |
+| 16 | Promotion is convergent, not atomic | the store has no transaction. Each attempt moves strictly closer to the planned end state and the end state is identical whichever attempt reaches it, but a single ACCEPT is several writes and can still be observed half-done between them. See §11 "Recovery" for what is and is not guaranteed |
 | 17 | `public/v2-workspace.html` still explains `unscoped_token` | that code no longer exists; `_authz.js` returns `no_org_membership` / `not_found` since scope moved to server-side membership. Cosmetic, left alone to keep Sprint 1 scoped |
 
 None of these were introduced into V2 except 13–17, which are Sprint 1's own recorded debt.
@@ -388,9 +390,30 @@ The Case is left in **INTAKE**. Acceptance proposes no hypothesis, drafts no fin
 
 **§23 is enforced mechanically:** an `OPPORTUNITY` submission whose title contains pathology language (English or Arabic) is refused with `pathology_language_in_opportunity_title`, and the generated default title is `"<company> — preparation for growth or organizational change"`.
 
-### Ordering, and the defect that produced it
+### Recovery — the decision is not the work
 
-The first implementation created the Organization and the Case **before** the version check, so a stale "Accept" was refused *after* it had already built a tenant nobody could see. `scripts/v2-intake-001.js` caught it. The decision is now claimed (version-checked) before anything is created, and a refused decision leaves nothing behind — asserted by two regression tests.
+**DECISION STATE ≠ PROMOTION EXECUTION STATE.** The review record carries both, separately:
+
+| Field | Meaning | Lifecycle |
+|---|---|---|
+| `status` | what a human decided | `PENDING_REVIEW` → `ACCEPTED` \| `REJECTED`, once, never again |
+| `promotion_state` | whether the work finished | `null` → `PENDING` → `COMPLETE`, retried as often as needed |
+
+Two mechanisms make that work:
+
+1. **The decision is claimed atomically.** `intakedecision` is written once per submission with `setIfAbsent` — Redis `SET NX`, the only operation in this store that cannot be interleaved. The version check that preceded it is read-then-write and therefore *cannot* promise one decision: two reviewers pressing Accept in the same instant both read version 1, both pass, and without the marker one of them would go on to build a second Organization and a second Case from the same submission. That was measured, not theorised — a concurrency test produced exactly that before the marker existed.
+2. **Every identifier is minted before anything is created.** The promotion plan — organization, case, primary claim, belief claim, one id per example — is written down in the same operation that records the decision. A resumed attempt therefore asks the store *"does `case_id` exist yet?"* instead of *"did I already make a case for this?"*. The first question has an answer; the second does not, which is why a crash between creating an object and recording its id used to produce a duplicate.
+
+`resume_promotion` finishes an interrupted promotion. It asks for no new decision, is gated on the same human approval authority, and running it against a `COMPLETE` promotion creates nothing and reports what exists.
+
+**What is guaranteed, and what is not.** The store offers no transaction, and this does not pretend otherwise. The guarantee is **convergence**: each attempt moves strictly closer to the planned end state, and the end state is identical whichever attempt reaches it. A single ACCEPT is still several writes and can be observed half-done between them — which is why `resulting_organization_id` and `resulting_case_id` stay null until the promotion is `COMPLETE`, so a half-built promotion never *looks* finished.
+
+**Audit reconciliation.** Creations audit themselves, but an attempt that died between creating an object and auditing it would leave a gap the resumed attempt cannot see — it correctly skips the creation, and would skip the entry too. So before declaring the promotion complete, the case's trail is read and any missing entry is written with `backfilled: true`. Idempotent: an uninterrupted run finds everything present and writes nothing.
+
+### Two defects, both found by testing rather than by reading
+
+1. **Sprint 1:** the Organization and the Case were created *before* the version check, so a stale Accept was refused after it had already built a tenant nobody could see. Caught by `scripts/v2-intake-001.js`.
+2. **Hardening pass:** every failure boundary after the decision left the submission permanently stranded — `ACCEPTED`, nothing built, and a retry refused as "already decided". Six injected failures, six strandings. That is what the plan/marker/resume design above fixes, and `tests/v2/intake-recovery.test.js` injects a real write failure at each of those six boundaries and proves the promotion converges on one Organization, one Case, two Claims and three Evidence items every time.
 
 ### Epistemic labels in the data
 

@@ -316,6 +316,76 @@ HOSTILE.reported_situation =
   ok('nothing in the store looks like a score',
     !/(score|maturity|confidence|percent)/i.test(JSON.stringify([...store._dump().values()])));
 
+  // ── 13. Interrupted promotion ──────────────────────────────────────────────
+  h('13. An interrupted promotion is recoverable, not stranded');
+
+  // A view of the store in which the second Evidence write fails, the way a
+  // process killed mid-promotion would.
+  function faultyView(s, { op, type, nth }) {
+    const counts = new Map();
+    const view = Object.create(s);
+    for (const name of ['put', 'putIfAbsent']) {
+      view[name] = (...args) => {
+        const key = `${name}:${args[0]}`;
+        const n = (counts.get(key) || 0) + 1;
+        counts.set(key, n);
+        if (name === op && args[0] === type && n === nth) {
+          const e = new Error(`injected failure at ${key} #${n}`);
+          e.code = 'injected_failure';
+          throw e;
+        }
+        return s[name](...args);
+      };
+    }
+    return view;
+  }
+
+  const recov = await svc.receiveIntake(OWNER_DEPENDENCY);
+  const recovRow = (await svc.listIntakeSubmissions(REVIEWER)).submissions
+    .find(r => r.submission_reference === recov.submission_reference);
+  const recovSeedKey = [...store._dump().keys()].find(k => k.includes(':intakeseed:') && k.includes(recovRow.intakeseed_id.split('_')[1]));
+  const recovSeedBefore = store._dump().get(recovSeedKey);
+
+  const brokenSvc = createService(faultyView(store, { op: 'putIfAbsent', type: 'evidence', nth: 2 }));
+  await mustFail('the promotion dies part-way through the evidence',
+    brokenSvc.decideIntake(REVIEWER, {
+      intakeseed_id: recovRow.intakeseed_id, decision: 'ACCEPTED', expected_version: recovRow.version
+    }), 'injected_failure');
+
+  const stranded = await svc.getIntakeSubmission(REVIEWER, recovRow.intakeseed_id);
+  ok('the human decision survived the failure', stranded.review.status === 'ACCEPTED');
+  ok('the work is marked unfinished', stranded.review.promotion_state === 'PENDING');
+  ok('the plan was written down before anything was created', !!stranded.review.promotion_plan);
+  ok('a half-built promotion does not look finished', stranded.review.resulting_case_id === null);
+  ok('why it stopped is recorded', !!stranded.review.promotion_last_error);
+
+  await mustFail('the human is not asked to decide a second time',
+    svc.decideIntake(REVIEWER, {
+      intakeseed_id: recovRow.intakeseed_id, decision: 'ACCEPTED', expected_version: stranded.review.version
+    }), 'promotion_incomplete');
+
+  const beforeCounts = ['org', 'case', 'claim', 'evidence'].map(t => typeOf(t).length);
+  const resumed = await svc.resumeIntakePromotion(REVIEWER, { intakeseed_id: recovRow.intakeseed_id });
+  ok('the promotion resumes to completion', resumed.review.promotion_state === 'COMPLETE');
+  ok('and lands on the planned case id', resumed.case.case_id === stranded.review.promotion_plan.case_id);
+  ok('the case is still only in INTAKE', resumed.case.status === 'INTAKE');
+  // The failure landed after the Case already existed, so a correct resume adds
+  // no Case at all. A duplicate would show up here as a second one.
+  ok('the resume created no second organization or case',
+    typeOf('org').length === beforeCounts[0] && typeOf('case').length === beforeCounts[1],
+    `orgs ${beforeCounts[0]} -> ${typeOf('org').length}, cases ${beforeCounts[1]} -> ${typeOf('case').length}`);
+  ok('the evidence item that already existed was not duplicated',
+    resumed.evidence.length === 3 && resumed.created.evidence === 2);
+
+  const again = await svc.resumeIntakePromotion(REVIEWER, { intakeseed_id: recovRow.intakeseed_id });
+  ok('resuming a completed promotion is a no-op', again.already_complete === true);
+
+  ok('the client submission was never rewritten by any of it',
+    store._dump().get(recovSeedKey) === recovSeedBefore);
+
+  const recovAudit = typeOf('audit').map(k => JSON.parse(store._dump().get(k))).map(a => a.event);
+  ok('the recovery is auditable', recovAudit.includes('intake.promotion_resumed') && recovAudit.includes('intake.promotion_completed'));
+
   console.log(`\n${'─'.repeat(64)}`);
   console.log(`  Intake #001: ${checks} checks, ${checks - failures} passed, ${failures} failed`);
   if (store._size) console.log(`  ${store._size()} keys written, all under "v2:${store.namespace}:"`);

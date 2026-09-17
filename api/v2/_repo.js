@@ -17,7 +17,7 @@
 //   dangling index entry (a 404 the UI cannot explain). Pattern ported from Phase 3
 //   _meeting-core's upsertIndex discipline.
 
-const { PREFIXES, newId, isAnyId } = require('./_ids');
+const { PREFIXES, newId, isAnyId, isId } = require('./_ids');
 const { AUDIT_EVENTS } = require('./_domain');
 
 class RepoError extends Error {
@@ -59,11 +59,22 @@ function createRepo(store) {
   // `prefixKey` names an entry in _ids.PREFIXES (e.g. 'evidenceReq'), not the raw
   // prefix string — so the id alphabet stays in one place and a typo here is a
   // startup error rather than a malformed identifier in storage.
-  async function createObject(type, prefixKey, organization_id, actor, fields) {
+  //
+  // `opts.id` lets a caller supply an identifier that was MINTED EARLIER BY THIS
+  // SAME CODE and written down before the object was created. It exists for one
+  // purpose: making a multi-step creation resumable, so that a retry after a crash
+  // writes to the same key instead of minting a second object. It is never reachable
+  // from an HTTP body — every caller passes it as a separate argument, and the value
+  // is still checked against the id grammar here, so a caller-supplied identifier
+  // cannot enter storage through it.
+  async function createObject(type, prefixKey, organization_id, actor, fields, { id: plannedId = null } = {}) {
     const prefix = PREFIXES[prefixKey];
     if (!prefix) throw new RepoError('invalid_prefix', `no id prefix registered for "${prefixKey}"`, 500);
+    if (plannedId !== null && !isId(prefix, plannedId)) {
+      throw new RepoError('invalid_id', `planned ${type} id is not a well-formed ${prefix} identifier`, 500);
+    }
     const now = Date.now();
-    const id = newId(prefix);
+    const id = plannedId || newId(prefix);
     const idField = `${type === 'evidencereq' ? 'evidence_request' : type}_id`;
     const obj = {
       [idField]: id,
@@ -186,7 +197,20 @@ function createRepo(store) {
     store, idx, RepoError,
     readScoped, createObject, updateObject,
     audit, readAudit, listByIndex, loadCaseBundle,
-    async attachToIndex(indexName, id) { await store.appendToIndex(indexName, id); }
+
+    /**
+     * Idempotent by design. An index is a set of ids, not a log: appending the same
+     * id twice has never been meaningful, and after a crash between "object created"
+     * and "object indexed", a resumed run must be able to finish the indexing without
+     * producing a second entry. Reading first costs one round trip on a list that is
+     * bounded by the size of a single case.
+     */
+    async attachToIndex(indexName, id) {
+      const current = await store.readIndex(indexName);
+      if (current.includes(id)) return { appended: false };
+      await store.appendToIndex(indexName, id);
+      return { appended: true };
+    }
   };
 }
 

@@ -431,19 +431,63 @@ function buildIntakeReview(seed, { now = Date.now() } = {}) {
     intakereview_id: newId('irv'),
     intakeseed_id: seed.intakeseed_id,
     submission_reference: seed.submission_reference,
+
+    // THE DECISION — made once by a human, then final.
     status: 'PENDING_REVIEW',
-    created_at: now,
-    updated_at: now,
-    version: 1,
     decided_at: null,
     decided_by: null,
     decided_by_type: null,
     decision_reason: null,
+
+    // THE EXECUTION — a separate concern with a separate lifetime. null until an
+    // ACCEPT, then PENDING until every object in the plan exists, then COMPLETE.
+    promotion_state: null,
+    promotion_plan: null,
+    promotion_attempts: 0,
+    promotion_started_at: null,
+    promotion_completed_at: null,
+    promotion_last_error: null,
+
+    created_at: now,
+    updated_at: now,
+    version: 1,
+
     // Named `resulting_*` rather than `organization_id` on purpose: this record is
     // pre-tenant, and a field called `organization_id` would look like a tenant
-    // scope to _repo.readScoped() and to the next person reading this file.
+    // scope to _repo.readScoped() and to the next person reading this file. They are
+    // set only when the promotion is COMPLETE — while it is PENDING the ids live in
+    // the plan, where they cannot be mistaken for objects that already exist.
     resulting_organization_id: null,
     resulting_case_id: null
+  };
+}
+
+/**
+ * Mint every identifier the promotion will need, BEFORE anything is created.
+ *
+ * This is the whole recovery design in one function. The plan is written down in
+ * the same update that records the human decision, so from that moment every object
+ * the promotion will create has a known address. A resumed run asks the store "does
+ * `case_id` exist yet?" instead of "did I already make a case for this?" — the first
+ * question has an answer, the second does not.
+ *
+ * Without it, a crash between creating an object and recording its id produces a
+ * duplicate on retry, because the retry has no way to recognise its own earlier work.
+ */
+function buildPromotionPlan(seed, { organization_id = null } = {}) {
+  return {
+    // When the reviewer chose an organisation they already belong to, the plan
+    // records THAT id and marks it pre-existing, so a resume never tries to create
+    // an organisation that was never the promotion's to create.
+    organization_id: organization_id || newId('org'),
+    organization_preexisting: !!organization_id,
+    case_id: newId('case'),
+    primary_claim_id: newId('clm'),
+    // Planned only when there is something to put in it: an absent belief must not
+    // leave a planned id that a resume would then try to fill.
+    belief_claim_id: seed.client_belief ? newId('clm') : null,
+    evidence_ids: seed.recent_examples.map(() => newId('evd')),
+    planned_at: Date.now()
   };
 }
 
@@ -467,6 +511,30 @@ function createIntakeRepo(store) {
   async function getSeed(intakeseed_id) {
     if (!isId('seed', intakeseed_id)) return null;
     return store.get('intakeseed', intakeseed_id);
+  }
+
+  /**
+   * Claim the decision atomically.
+   *
+   * `setIfAbsent` is the only operation in this store that cannot be interleaved:
+   * on Redis it is SET NX, and it either writes or reports that somebody already
+   * did. Everything else here is read-modify-write, which two serverless instances
+   * can run at the same time and both believe they won — which is precisely what
+   * "one human decision per submission" cannot tolerate, because the loser would go
+   * on to build a second Organization and a second Case from the same submission.
+   *
+   * Returns { won:true, marker } or { won:false, marker } with the marker that the
+   * winner wrote, so the caller can say who decided and when.
+   */
+  async function claimDecision(intakereview_id, marker) {
+    const won = await store.putIfAbsent('intakedecision', intakereview_id, marker);
+    if (won) return { won: true, marker };
+    return { won: false, marker: await store.get('intakedecision', intakereview_id) };
+  }
+
+  async function getDecisionMarker(intakereview_id) {
+    if (!isId('irv', intakereview_id)) return null;
+    return store.get('intakedecision', intakereview_id);
   }
 
   async function putReview(review) {
@@ -538,6 +606,7 @@ function createIntakeRepo(store) {
         case_intent: seed.case_intent,
         scope_kind: seed.scope.kind,
         status: review.status,
+        promotion_state: review.promotion_state,
         version: review.version,
         untrusted_flagged: !seed.untrusted_scan.clean,
         resulting_case_id: review.resulting_case_id
@@ -590,6 +659,7 @@ function createIntakeRepo(store) {
 
   return {
     putSeed, getSeed, putReview, getReview, updateReview,
+    claimDecision, getDecisionMarker,
     indexSubmission, listSubmissions, auditIntake, readIntakeAudit
   };
 }
@@ -598,6 +668,6 @@ module.exports = {
   LIMITS, TOP_LEVEL_KEYS, IntakeError,
   validateIntakeSubmission, scanSubmission,
   newSubmissionReference, SUBMISSION_REFERENCE_RE,
-  buildIntakeSeed, buildIntakeReview,
+  buildIntakeSeed, buildIntakeReview, buildPromotionPlan,
   createIntakeRepo, INTAKE_INDEX, INTAKE_AUDIT_INDEX
 };
