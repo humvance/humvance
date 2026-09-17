@@ -51,3 +51,11 @@ npm-debug.log*
 
 # ── Claude session reports (not part of the app) ──
 Claude outputs/
+
+# ── OneDrive device-conflict artifacts ──
+# OneDrive renames a file to <name>-<DEVICE>.<ext> when two computers write it.
+# The 2026-09-17 incident produced 27 of these; all were verified to contain no
+# unique work (docs/ENGINEERING-STATE.md §0). Ignored so that `git add -A` can
+# never commit a stale copy on top of good work.
+*-MOHAMMED*
+-MOHAMMED*

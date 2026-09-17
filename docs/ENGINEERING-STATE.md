@@ -6,6 +6,87 @@
 
 ---
 
+## 0. OneDrive recovery incident — 2026-09-17
+
+**Outcome: nothing was lost. `64206ee` was recovered exactly. No reconstruction was performed and no recovery commit was needed.**
+
+### What happened
+
+The project lives in a OneDrive-synced folder and the owner works from two computers. OneDrive synchronised `.git` itself, which it is not safe to do: git writes a loose object to `.git/objects/xx/tmp_obj_*` and then renames it into place, and it rewrites `.git/index` under `.git/index.lock`. While OneDrive holds those files open, the rename and the unlink fail — visible throughout the previous session as `unable to unlink '.git/objects/…/tmp_obj_…': Operation not permitted`.
+
+Two consequences followed:
+
+1. **Stale lock files.** `.git/index.lock` and several `.lock` files survived, and 35 orphaned `tmp_obj_*` files accumulated. A lingering `index.lock` is enough on its own to make git refuse to read the index, which is what surfaced as `fatal: bad object HEAD` on the second computer.
+2. **Conflict duplicates.** The second computer synchronised an older state, so OneDrive renamed 27 working files to `*-MOHAMMED*` and created a branch ref `refs/heads/v2-case-spine-MOHAMMED` at `08eb9db`.
+
+### What was actually true
+
+The object database was **complete and uncorrupted**. All 201 loose objects were present and verified, including every commit in the V2 chain:
+
+```
+64206ee  commit  886 B   sha-1 verified
+4dd35ce  commit 1502 B   sha-1 verified
+cd2f06c  commit 2628 B   sha-1 verified
+08eb9db  commit 1635 B   sha-1 verified
+```
+
+Each of the 35 `tmp_obj_*` files was decompressed and hashed: every one was a **duplicate of an object already correctly stored**. None was a missing object, so none needed rescuing.
+
+`git fsck --full` reports one dangling tree (`e65d1df`) and nothing else — no missing object, no corruption. The working tree was clean against `64206ee` with zero modified tracked files.
+
+**The symptom was a lock file, not data loss.** No file was recovered from the safety backup, the recovery ZIP or any remote, because none needed to be.
+
+### Conflict-file analysis — all 27 accounted for
+
+Each `*-MOHAMMED*` file was hashed and compared against its canonical counterpart and against every commit in the V2 chain, normalising CRLF (OneDrive rewrote line endings, which is why a byte comparison alone is misleading):
+
+| Class | Count | Finding |
+|---|---|---|
+| Identical to the canonical file | 16 | pure duplicates; differ only in line endings |
+| Identical to the **`08eb9db`** version of the same path | 11 | the older state from the second computer |
+| Containing unique work | **0** | — |
+
+Every one is **class D — stale conflict artifact**. Not one contains work that is missing from `64206ee`, so there was nothing to merge and no risk in leaving them in place.
+
+They were **not deleted**: deletion is unnecessary for the recovery, their content is fully accounted for, and they remain in the safety backup. They are untracked and cannot enter a commit unless someone runs `git add -A` — see §8.
+
+### What was cleaned
+
+Only git-internal debris, after the object store was proven complete:
+
+- 35 orphaned `.git/objects/*/tmp_obj_*` files (all proven duplicates)
+- `.git/index.lock` and 8 `.lock.stale-*` files
+- the branch ref `v2-case-spine-MOHAMMED`, first preserved as the annotated tag **`recovery/onedrive-conflict-ref-2026-09-17`** → `08eb9db`
+
+No source file, no conflict file, no backup and no remote ref was touched.
+
+### Canonical repository health after recovery
+
+| | |
+|---|---|
+| Location | `C:\Users\abbal\OneDrive\المستندات\claucode` — unchanged, still OneDrive-synced |
+| Branch | `v2-case-spine` |
+| HEAD | `64206ee02aaa7729d1c3d418f72f5de882c26d46` |
+| Upstream | `origin/v2-case-spine` (tracking configured) |
+| `git status` | clean — 0 modified tracked files, 27 untracked conflict artifacts |
+| `git fsck --full` | clean (one harmless dangling tree) |
+| `git log` / `branch` / `fetch` | all working |
+| Loose objects | 201, all verified |
+| Lock / temp debris | none |
+| `origin/HEAD` | corrected from the stale `main` to **`production`** |
+
+### Recommendation — stop OneDrive from syncing `.git`
+
+The incident will recur while `.git` is inside a synced folder. The working files can stay exactly where they are; it is only `.git` that must not be synchronised. Options, in order of preference:
+
+1. **Right-click `.git` → "Always keep on this device" is not enough** — the problem is concurrent write access, not availability. Prefer excluding the folder from sync, or
+2. keep the repository in OneDrive but **never run git on two machines without letting sync settle first**, and never leave a git command interrupted, or
+3. move only `.git` out of OneDrive using a `.git` file pointing at an external gitdir (`gitdir: C:/git-repos/claucode.git`), which keeps every source file in OneDrive and takes the object database out of the sync path.
+
+Option 3 preserves the non-negotiable requirement — the working files stay in the OneDrive project folder, available on both computers — while removing the cause entirely.
+
+---
+
 ## 1. Production
 
 | | |
@@ -15,7 +96,7 @@
 | State | READY |
 | Aliases | `humvance.com`, `www.humvance.com`, `humvance.vercel.app` |
 | Vercel Production Branch | **`production`** (changed from `main` on 2026-09-17; no deployment was triggered) |
-| GitHub default branch | **still `main`** — outstanding, needs a manual change |
+| GitHub default branch | **`production`** — verified 2026-09-17 from the remote symref (`git ls-remote --symref origin HEAD`), not from local state |
 | Previous good deployment | `dpl_9kGyzjSgJ7RJSNrXNmdNT8aX5iCb` @ `0d60514` |
 | Plan | Vercel Hobby — no Instant Rollback, no promote. Rollback = redeploy from commit. |
 | Repository | `github.com/humvance/humvance` — **public** |
@@ -210,10 +291,12 @@ The challenge engine returns **BLOCKED** (two live competing explanations, one o
 | 2 | This workspace has **no git push credentials** | the operator pushes `v2-case-spine` |
 | 3 | V2 Preview deployment not yet created | follows from 1 and 2 |
 | 4 | Isolated-store Case #001 not yet run | follows from 3; `scripts/v2-case-001-http.js` is ready |
-| 5 | GitHub default branch is still `main` | a manual change; `main` can no longer deploy, but it is still what a fresh clone targets |
+| ~~5~~ | ~~GitHub default branch~~ | **RESOLVED** — GitHub's default is `production`; local `origin/HEAD` corrected to match |
 | 6 | No branch protection on `production` | free for public repos |
 | 7 | Reviewer identity model | §4; needed before multiple reviewers can be separated |
 | 8 | `SESSION_SECRET` value unverified against the two published strings | a human check in the dashboard |
+| 9 | 27 untracked `*-MOHAMMED*` OneDrive conflict artifacts remain in the working tree | harmless and fully accounted for (§0); delete when convenient, or add `*-MOHAMMED*` to `.gitignore` so `git add -A` can never pick them up |
+| 10 | `.git` is inside a OneDrive-synced folder | the cause of the 2026-09-17 incident; see the recommendation at the end of §0 |
 
 ---
 
