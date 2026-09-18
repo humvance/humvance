@@ -1,7 +1,7 @@
 # Humvance — Engineering State
 
-**Last updated:** 2026-09-18 (Sprint 1 hardening pass)
-**Maintained on:** `v2-case-spine`; §11 was added on `sprint1-diagnostic-intake-v2`, which is not merged
+**Last updated:** 2026-09-18 (V1 auth consolidation — §13)
+**Maintained on:** `v2-case-spine`; §11 and §13 were added on `sprint1-diagnostic-intake-v2`, which is not merged and, since the auth-consolidation commit, not pushed
 **Contains no secrets.** Environment variables are referred to by NAME only. No value, token, URL, connection string or credential appears in this file. Resource identifiers (store ids, deployment ids) are not credentials and are recorded deliberately as evidence.
 
 ---
@@ -161,14 +161,34 @@ The V2 contract is the **`V2_` prefix**, not one exact spelling, because the spe
 
 `pickV2Credential()` **refuses any candidate name that does not begin `V2_`**, and a test asserts that none of `KV_URL`, `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN` or `REDIS_URL` appears in any candidate list. V1's production credentials are unreachable from V2 code by name.
 
-### Required non-secret settings — ⚠ NOT YET SET
+### Required non-secret settings — ⚠ CORRECTED 2026-09-18
+
+An earlier version of this section said these two variables were "NOT YET SET". **That is stale and was wrong.** Mohammed reports that the Vercel dashboard shows:
+
+- **`V2_STORE_DRIVER` and `V2_NAMESPACE` entries scoped to Production**, and
+- **branch-specific entries for `v2-case-spine`.**
+
+What follows from that, precisely:
+
+| | |
+|---|---|
+| Their **values** | **unverified.** Never read in this session, and must remain untouched. Nothing below assumes what they contain |
+| Production-scoped entries | leave alone. V2 is not deployed to Production and must not be |
+| `v2-case-spine` branch entries | **must not be assumed to apply to `sprint1-diagnostic-intake-v2`.** Branch-scoped Vercel variables apply to the branch they name. Sprint 1 is a different branch and may have none |
+| Scope of the Preview database credentials | **still needs verification** — §2 records the store as Preview-only from the dashboard, which is not the same as confirming which branches receive the credentials |
+
+The intended Preview-only values for Sprint 1 remain:
 
 ```
-V2_STORE_DRIVER = redis                    (Preview only)
-V2_NAMESPACE    = humvance-v2-preview      (Preview only)
+V2_STORE_DRIVER = redis                    (Preview)
+V2_NAMESPACE    = humvance-v2-preview      (Preview)
 ```
 
-Until both exist in the Preview environment, V2 answers `503 store_misconfigured` and writes nothing. That is the designed behaviour, not a fault.
+**Do not silently adopt a different namespace.** If a different value is already present, or a different one is wanted, record the proposed change here and have it decided deliberately — a namespace change silently applied would split the store in a way that looks like data loss.
+
+Until both exist for the environment the deployment actually runs in, V2 answers `503 store_misconfigured` and writes nothing. That is the designed behaviour, not a fault, and it is the fail-closed reason this uncertainty is safe to carry overnight.
+
+**Network reachability:** this session cannot reach `vercel.com`, `api.vercel.com` or `*.vercel.app` from either the cloud container or the device VM. Nothing about the dashboard, the deployment or the Preview host can be verified from here; every statement about them in this document is either Mohammed's report or an inference clearly labelled as one.
 
 **Do not set `V2_ACKNOWLEDGE_SHARED_PRODUCTION_DB`.** It exists only as a deliberate human override and is unnecessary here.
 
@@ -262,14 +282,21 @@ Objects: Organization, Membership, Case, Claim, Hypothesis, Evidence, EvidenceRe
 ## 6. Tests
 
 ```
+node tests/v1/run.js          →  105 checks, 105 passed, 0 failed   (new, §13)
 node tests/v2/run.js          →  246 checks, 246 passed, 0 failed   (baseline was 162)
 node scripts/v2-case-001.js   →   62 checks,  62 passed, 0 failed   (unchanged)
 node scripts/v2-intake-001.js →   90 checks,  90 passed, 0 failed   (new, §11)
 ```
 
+`npm run test:all` runs all four in that order. `npm run test:v1` and `npm run test:v2` run one each. Last run 2026-09-18; the numbers above are the runner's own output, not an expectation copied forward.
+
 The 162 baseline checks are unchanged by Sprint 1. Of the 84 added: 65 in `tests/v2/intake.test.js` (the holding area) and 19 in `tests/v2/intake-recovery.test.js` (failure injection, idempotency and concurrency).
 
+The 105 V1 checks are the auth consolidation's evidence (§13): 36 in `tests/v1/auth-equivalence.test.js` (behavioural equivalence against frozen copies of the Production handlers), 40 in `tests/v1/auth-dispatch.test.js` (the dispatcher's fail-closed matrix) and 29 in `tests/v1/baseline-integrity.test.js` (everything the consolidation was not allowed to touch).
+
 **These are memory-driver results. Sprint 1 is locally verified, not integration verified** — no run has yet touched the isolated Preview store (§8, blockers 1–4).
+
+**The recovery tests inject failures into the memory driver. That does not establish deployed failure-injection behaviour.** A real Redis driver fails in ways the memory driver cannot reproduce — partial writes, timeouts, retries that succeed after the caller has given up, connection resets mid-sequence. What the memory-driver tests establish is that the *promotion algorithm* converges under interruption at six named boundaries; what they do not establish is how the real store behaves when it is the thing that breaks.
 
 Both run on the in-process memory driver. **No database of any kind is contacted.** No external dependency; `node` alone.
 
@@ -297,7 +324,7 @@ The challenge engine returns **BLOCKED** (two live competing explanations, one o
 
 | # | Blocker | What is needed |
 |---|---|---|
-| 1 | `V2_STORE_DRIVER` and `V2_NAMESPACE` are not set in Preview | two Preview-only variables, values given in §3 |
+| 1 | `V2_STORE_DRIVER` / `V2_NAMESPACE` scope for the Sprint 1 branch is unknown | **corrected 2026-09-18** — entries exist for Production and for `v2-case-spine`; whether `sprint1-diagnostic-intake-v2` receives them is unverified, as is the scope of the Preview credentials. See §3 |
 | 2 | This workspace has **no git push credentials** | the operator pushes `v2-case-spine` |
 | 3 | V2 Preview deployment not yet created | follows from 1 and 2 |
 | 4 | Isolated-store Case #001 not yet run | follows from 3; `scripts/v2-case-001-http.js` is ready |
@@ -307,6 +334,9 @@ The challenge engine returns **BLOCKED** (two live competing explanations, one o
 | 8 | `SESSION_SECRET` value unverified against the two published strings | a human check in the dashboard |
 | 9 | 27 untracked `*-MOHAMMED*` OneDrive conflict artifacts remain in the working tree | harmless and fully accounted for (§0); delete when convenient, or add `*-MOHAMMED*` to `.gitignore` so `git add -A` can never pick them up |
 | 10 | `.git` is inside a OneDrive-synced folder | the cause of the 2026-09-17 incident; see the recommendation at the end of §0 |
+| 11 | Preview build for `295635b` failed: *"No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan"* | **addressed locally, unverified in deployment** — the auth consolidation (§13) takes the source-level count from 14 to 10. Only a successful Preview build confirms it |
+| 12 | Auth routing under the legacy `routes` key is unverified | `vercel.json` uses top-level `routes`. Whether Vercel's filesystem handler still resolves `api/auth/[action].js` under that configuration cannot be established locally. A concrete fallback is prepared and **not applied** — see §13 "Routing" |
+| 13 | Branch not pushed since `295635b` | the auth-consolidation commit is local only. Mohammed's decision; no push authorization was used |
 
 ---
 
@@ -459,3 +489,91 @@ Two things should land before or alongside it:
 2. **Debt 12 — `api/questions.js` ref validation**, as its own small hotfix on the V1 line.
 
 Not next, and deliberately so: the 14-domain taxonomy, any automatic hypothesis generation from an intake, and any AI step inside the intake path. Sprint 1's value is that the input is clean and the epistemic state is preserved; adding reasoning before that has been used in anger would be building on an untested foundation.
+
+---
+
+## 13. V1 auth consolidation — buying back the function budget (2026-09-18)
+
+### The blocker, stated precisely
+
+The Preview build for `295635b` failed with:
+
+> No more than 12 Serverless Functions can be added to a Deployment on the Hobby plan.
+
+Vercel creates one Serverless Function per `.js` file under `api/`, **except** files whose basename begins with an underscore, which are treated as shared modules. The evidence for that exclusion is a single direct observation, not documentation: the READY `v2-case-spine` deployment at `88a866c` reports **Functions 12** from an `api/` tree of 22 `.js` files, of which exactly 10 are underscore-prefixed. 22 − 10 = 12.
+
+| branch | `.js` under `api/` | `_`-prefixed | would-be functions |
+|---|---|---|---|
+| `production` | 12 | 1 | 11 |
+| `v2-case-spine` @ `88a866c` | 22 | 10 | **12** (matches the reported count) |
+| `sprint1-diagnostic-intake-v2` @ `295635b` | 25 | 11 | **14** → over the limit |
+| `sprint1-diagnostic-intake-v2` after this change | 21 | 11 | **10** |
+
+Sprint 1 added two endpoints (`api/v2/intake.js`, `api/v2/intake-review.js`). Those are the work; they are not negotiable. The five `api/auth/*.js` handlers are, because they are five functions doing one job.
+
+### What was done
+
+`api/auth/{login,setup,status,forgot,reset}.js` are superseded by a single file, `api/auth/[action].js`, which contains all five handler bodies **lifted verbatim** — same method gate, same status codes, same Arabic strings, same `catch` semantics, same KV call order — plus a dispatcher.
+
+This is a **packaging change, not a behaviour change**. Nothing was refactored, unified or tidied on the way through, because every difference would be behaviour risk bought for no benefit.
+
+**Every public URL is unchanged.** `/api/auth/login`, `/api/auth/setup`, `/api/auth/status`, `/api/auth/forgot`, `/api/auth/reset` are all still live, and `public/index.html` and `public/admin.html` were not modified.
+
+### The dispatcher — the URL decides, not the query string
+
+This is the only genuinely new code, and therefore the new risk surface.
+
+```
+path names a known action   → that action runs; a query `action` may agree, never contradict
+path names something else   → 404, whatever the query says
+path names no action        → the query decides, if it names a known action
+anything else               → 404
+```
+
+Concretely: `/api/auth/anything?action=login` **does not reach login**; `/api/auth/status?action=setup` is refused rather than resolved either way; a repeated `?action=` (which arrives as an array), or any non-string value, is refused rather than silently narrowed to one element. Every refusal is a 404 that performs **no storage access and no outbound call** — asserted, because a dispatcher that answered 404 *after* running `reset` would pass a status-only test.
+
+The lookup table is a null-prototype object over a frozen allow-list, so `constructor`, `__proto__`, `toString` and a deliberately poisoned `Object.prototype` all resolve to nothing. That is tested directly.
+
+**Recorded uncertainty, deliberately not claimed as solved:** we could not establish locally how Vercel's runtime represents a *dynamic path parameter* versus a *caller-supplied query parameter* of the same name, or which wins when they differ. There is no local Vercel runtime here and the question is about the platform, not this code. The dispatcher is therefore written so that the answer does not matter: it never lets a query parameter override an action the path has already named.
+
+### Routing — the prepared fallback, NOT applied
+
+`vercel.json` uses the legacy top-level `routes` key. Whether the filesystem handler still resolves the dynamic segment `api/auth/[action].js` under that legacy configuration is **unverified and unverifiable locally**. If a Preview deployment shows the five auth URLs 404ing, the fix is a configuration change with **no code change**, because the dispatcher already resolves correctly under it:
+
+```json
+{ "src": "/api/auth/(login|setup|status|forgot|reset)",
+  "dest": "/api/auth/[action]?action=$1" }
+```
+
+It is left unapplied pending Mohammed's decision, per the instruction to prepare the alternative and stop before implementing it.
+
+### How equivalence is evidenced
+
+`tests/fixtures/v1-auth-baseline/{login,setup,status,forgot,reset}.js` are **byte-identical frozen copies** of the Production files; their SHA-256 hashes are asserted against the recorded Production values on every run. `tests/v1/harness-v1.js` runs the frozen handler and the consolidated one in identical isolated worlds — same fake KV, same pinned clock, same pinned `Math.random`, same stubbed `fetch` — and compares status, body, headers, **the exact ordered sequence of KV operations including expiry options**, the resulting stored state and the outbound calls.
+
+Behaviours that a rewrite would plausibly have lost, and that are now pinned by name:
+
+- a portal token (`role:'client'`) is a validly signed JWT and must still read as **not** authenticated (Hotfix 00);
+- a KV failure in `status` returns **200 with both flags false**, not 500;
+- `forgot` answers `200 {sent:true}` for a non-matching address **without touching storage at all** (anti-enumeration);
+- `reset` deletes the OTP **before** writing the new hash, so a code cannot be replayed if the write then fails;
+- a wrong OTP leaves the stored code intact.
+
+**Nothing real is touched by these tests.** No database, no mail service, no secret, no customer data. `@vercel/kv` is not installed in this checkout and is intercepted at require time rather than resolved; the interception hook is removed immediately after loading and a test asserts it is gone.
+
+### What this changes about our guarantees
+
+Until now, every V1 file was byte-identical to Production. That is **no longer true of `api/auth/*`**, deliberately. The weaker, accurate claim that replaces it:
+
+> **Auth packaging differs from the Production baseline. Local behavioural equivalence is tested. Other V1 files and the Case API remain unchanged. Real Preview routing and deployed function count remain unverified until deployment.**
+
+`tests/v1/baseline-integrity.test.js` pins the rest of that sentence: the seven untouched V1 files, `api/v2/case.js` and `scripts/v2-intake-http.js` are each asserted against their recorded Production hash, and the source-level function count is asserted to be within the limit.
+
+**The budget test guards source structure, not Vercel's deployed artifact count.** It counts files in this repository under an inferred naming convention. Only a deployment reports the real number.
+
+### Not done, deliberately
+
+- No endpoint was deleted to save a slot. `api/send-questions.js` (email) is retained, as instructed.
+- Anonymous intake and reviewer operations remain two separate files; merging them to save a slot was explicitly out of bounds and is asserted against.
+- No plan upgrade, no Production change, no Vercel setting touched.
+- No authentication redesign. Equivalence to the baseline is not a claim that the baseline is secure — see debt 5, 8 and 10.

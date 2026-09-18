@@ -10,6 +10,9 @@
   },
   "scripts": {
     "test": "node tests/v2/run.js",
+    "test:v1": "node tests/v1/run.js",
+    "test:v2": "node tests/v2/run.js",
+    "test:all": "node tests/v1/run.js && node tests/v2/run.js && node scripts/v2-case-001.js && node scripts/v2-intake-001.js",
     "case001": "node scripts/v2-case-001.js",
     "case001:http": "node scripts/v2-case-001-http.js",
     "intake001": "node scripts/v2-intake-001.js"
