@@ -243,73 +243,129 @@ async function reset(req, res) {
 
 // ── Dispatch ─────────────────────────────────────────────────────────────────
 //
-// THE URL DECIDES, NOT THE QUERY STRING.
+// THE PUBLIC URL IS THE ONLY SOURCE OF THE ACTION.
 //
-// This function is reached by one of two routings, and the dispatcher is written
-// so that it behaves identically under both:
+// There are exactly five reachable spellings:
 //
-//   * a dynamic segment — `/api/auth/login` lands here with `login` in the path
-//     and, on Vercel, also merged into `req.query`;
-//   * an explicit rewrite — `/api/auth/login` → `/api/auth?action=login`, where
-//     the action exists only in the query.
+//     /api/auth/login   /api/auth/setup   /api/auth/status
+//     /api/auth/forgot  /api/auth/reset
 //
-// UNVERIFIED, AND DELIBERATELY NOT ASSUMED: we could not establish locally how
-// Vercel's runtime represents a dynamic path parameter versus a caller-supplied
-// query parameter of the same name, or which wins when they differ. So the
-// dispatcher never lets a query parameter override an action that the path has
-// already named. A path that names a real action wins outright; a path that
-// names something else is refused whatever the query says; the query is consulted
-// only when the path carries no action at all. Anything ambiguous fails closed.
+// Everything else is 404, including the bare endpoint. `/api/auth?action=login`
+// and `/api/auth/?action=login` do NOT reach login: the action comes from the
+// path and only from the path, and when the path names no action there is
+// nothing to fall back to.
+//
+// "The path" means the WHOLE path, matched against `/api/auth/<action>` with at
+// most one trailing slash — not merely its last segment. `/other/login`,
+// `/login`, `/api/other/status`, `/api/auth/v2/login` and `//api/auth/login` are
+// all refused, because each of them is a different URL that happens to end in an
+// action name.
+//
+// An earlier draft of this file also accepted `?action=` on the bare path, so
+// that a rewrite-based routing fallback would work without a code change. That
+// was removed deliberately (2026-09-18). It bought a contingency that may never
+// be needed, and paid for it with a sixth reachable spelling of the auth surface
+// that no WAF rule, rate limit, log filter or allow-list keyed on the five
+// canonical paths would ever see. A caller-controlled query parameter is not a
+// routing signal, and inventing one to keep a hypothetical option open is the
+// wrong trade.
+//
+// The query string is still READ, but only ever to refuse: if it carries an
+// `action` that disagrees with the path, or one that is repeated (an array) or
+// otherwise not a string, the request is refused rather than resolved. A
+// dynamic-segment runtime that mirrors the path parameter into `req.query` is
+// the one case where it agrees, and that is the only case that passes.
+//
+// ── What could not be established locally ────────────────────────────────────
+//
+// We have no Vercel runtime here, so the following is UNVERIFIED and is not
+// assumed anywhere in this file:
+//
+//   * how Vercel represents a dynamic path parameter versus a caller-supplied
+//     query parameter of the same name, and which wins if they differ;
+//   * whether `req.url` inside the function is the original request path
+//     (`/api/auth/login`) or something else — the unresolved template
+//     (`/api/auth/[action]`), or a rewrite destination.
+//
+// This dispatcher requires the first of those: that `req.url` carries the
+// resolved path. If a deployment shows all five URLs returning 404, that
+// assumption is what failed, and the fix is a deliberate code change made with
+// the real representation in hand — NOT a fallback invented in advance from
+// caller-controlled input. The literal `[action]` template is therefore refused
+// like any other unknown segment, which is the fail-closed answer.
+//
+// Consequence, recorded honestly: the rewrite alternative sketched in
+// ENGINEERING-STATE §13 (`dest: "/api/auth/[action]?action=$1"`) will NOT work
+// against this dispatcher, because the rewritten path names no action. Routing
+// is no longer a configuration-only escape hatch. That is the cost of closing
+// the query-only path, and it was accepted knowingly.
 
 const ACTIONS = Object.assign(Object.create(null), { login, setup, status, forgot, reset });
 const ACTION_NAMES = Object.freeze(['login', 'setup', 'status', 'forgot', 'reset']);
-
-// Segments that mean "this path carries no action of its own": the bare
-// endpoint, and the literal dynamic-segment filename in case a runtime hands us
-// the template rather than the resolved value.
-const PLACEHOLDER_SEGMENTS = new Set(['auth', '[action]', '%5Baction%5D']);
 
 function isKnownAction(v) {
   return typeof v === 'string' && ACTION_NAMES.indexOf(v) !== -1;
 }
 
-/** The last path segment of the request, with any query string removed. */
-function pathSegment(req) {
+/**
+ * The one canonical shape a Humvance auth URL may have:
+ *
+ *     /api/auth/<action>          with at most a single trailing slash
+ *
+ * CORRECTED 2026-09-18. The first version of this took the LAST path segment,
+ * which is not the same thing at all: it accepted `/other/login`, `/login`,
+ * `/api/other/status`, `/api/auth/v2/login` and `//api/auth/login`, because each
+ * of those ends in an action name. Vercel should never route those here, but
+ * "the platform probably will not send that" is a hope, not a check, and the
+ * whole point of this dispatcher is that the URL is the authority. It now
+ * matches the full path or refuses.
+ *
+ * Percent-encoding is deliberately NOT decoded: `/api/auth/%6Cogin` is not
+ * `/api/auth/login`, and treating it as such would add a spelling nobody wrote.
+ */
+const CANONICAL_AUTH_PATH = /^\/api\/auth\/([^/]+)\/?$/;
+
+/** The path portion of the request, with query and fragment removed. */
+function requestPath(req) {
   const raw = typeof req.url === 'string' ? req.url : '';
-  const pathOnly = raw.split('?')[0].split('#')[0];
-  const parts = pathOnly.split('/').filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : '';
+  return raw.split('?')[0].split('#')[0];
 }
 
 /**
- * Returns { action } when dispatch is unambiguous, or { refuse } when it is not.
- * Never throws, and never reads a property off a caller-controlled prototype.
+ * Returns { action } when the PATH is one of the five canonical URLs, or
+ * { refuse } with a reason. Never throws, and never reads a property off a
+ * caller-controlled prototype.
+ *
+ * ASSUMPTION, recorded because it is not verifiable here: that `req.url` inside
+ * the function is the original request path including the `/api` prefix. That is
+ * what a Vercel Node function is expected to receive. If a deployment shows the
+ * five URLs 404ing, this is ONE candidate cause among several — a routing
+ * failure, a build that did not produce the function, and a platform-level
+ * rewrite would all look identical from outside. Investigate before concluding.
  */
 function resolveAction(req) {
-  const seg = pathSegment(req);
+  const m = CANONICAL_AUTH_PATH.exec(requestPath(req));
+
+  // Not a Humvance auth URL at all: a bare `/api/auth`, a nested or prefixed
+  // path, a double slash, anything outside `/api/auth/`.
+  if (!m) return { refuse: 'unknown_path' };
+
+  const seg = m[1];
+
+  // Inside the right path, but not one of the five: an unknown name, a prototype
+  // name, the unresolved `[action]` template, a percent-encoded or
+  // differently-cased spelling.
+  if (!isKnownAction(seg)) return { refuse: 'unknown_action' };
+
   const q = req.query ? req.query.action : undefined;
-
-  // A repeated `?action=` yields an array, and an object is never a valid action.
-  // Either means the caller is probing the dispatcher; refuse rather than pick one.
-  if (q !== undefined && typeof q !== 'string') return { refuse: 'ambiguous_action' };
-
-  if (isKnownAction(seg)) {
-    // The URL has named an action. A query parameter may agree with it and may
-    // not contradict it — which is what a dynamic-segment runtime produces when
-    // it merges the path parameter into req.query.
-    if (typeof q === 'string' && q !== seg) return { refuse: 'action_mismatch' };
-    return { action: seg };
+  if (q !== undefined) {
+    // A repeated `?action=` yields an array, and an object is never a valid
+    // action. Either means something upstream is not what we think it is.
+    if (typeof q !== 'string') return { refuse: 'ambiguous_action' };
+    if (q !== seg) return { refuse: 'action_mismatch' };
   }
 
-  if (seg && !PLACEHOLDER_SEGMENTS.has(seg)) {
-    // The URL named something that is not an action. `/api/auth/nonsense?action=login`
-    // must not reach login.
-    return { refuse: 'unknown_action' };
-  }
-
-  // The path carries no action: this is the explicit-rewrite routing.
-  if (isKnownAction(q)) return { action: q };
-  return { refuse: 'unknown_action' };
+  return { action: seg };
 }
 
 module.exports = async function handler(req, res) {

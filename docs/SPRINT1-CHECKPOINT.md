@@ -22,12 +22,14 @@
 | `94f1eb8` | docs: Sprint 1 engineering state and checkpoint | yes |
 | `d9eda3b` | Intake promotion: durable decision, resumable work, decided exactly once | yes |
 | `295635b` | Add the Preview HTTP integration gate for Diagnostic Intake | yes |
-| *(auth consolidation)* | Five auth handlers into one deployed function | **no — local only** |
+| `2fa9772` | Five auth handlers into one deployed function | **no — local only** |
+| `1058c41` | docs: two pre-existing V1 auth defects recorded, not introduced | **no — local only** |
+| *(dispatch correction)* | Query-only dispatch removed; whole-path matching enforced | see "Commit status" below |
 
 ## Verification, last run 2026-09-18 on the device, memory driver only
 
 ```
-node tests/v1/run.js          → 105/105   (new: auth equivalence, dispatch, baseline integrity)
+node tests/v1/run.js          → 121/121   (new: auth equivalence, dispatch, baseline integrity)
 node tests/v2/run.js          → 246/246   (baseline 162 unchanged, 84 added)
 node scripts/v2-case-001.js   →  62/62    (unchanged)
 node scripts/v2-intake-001.js →  90/90    (includes the interrupted-promotion path)
@@ -47,10 +49,19 @@ The Preview build for `295635b` failed: *"No more than 12 Serverless Functions c
 
 **The budget test guards source structure, not Vercel's deployed artifact count.** Only a deployment reports the real number.
 
-### Two things that remain unverified, by nature
+### The dispatch correction, 2026-09-18
 
-1. **Routing.** `vercel.json` uses the legacy top-level `routes` key. Whether Vercel still resolves the dynamic segment `api/auth/[action].js` under it cannot be established locally. A concrete fallback is written down in §13 and **deliberately not applied**; the dispatcher already works under it, so applying it would be a configuration change with no code change.
-2. **How the runtime represents a dynamic path parameter versus a caller-supplied query parameter of the same name.** Unknown, and not assumed: the dispatcher never lets a query parameter override an action the URL has named.
+The first version of the dispatcher also accepted `?action=` on a path that named no action, so that a rewrite-based routing fallback would need no code change. **That was removed.** It created a sixth reachable spelling of the auth surface — one invisible to anything keyed on the five canonical paths — in exchange for a contingency that may never be needed.
+
+A second correction the same day tightened it further: the dispatcher had still been reading only the **last path segment**, so `/other/login`, `/login`, `/api/other/status`, `/api/auth/v2/login` and `//api/auth/login` all resolved to a real action. It now matches the whole path against `/api/auth/<action>` with at most one trailing slash, and refuses everything else with a distinct `unknown_path` reason.
+
+Now: **the whole public URL is the only source of the action.** Exactly five paths resolve (ten counting their trailing-slash forms). `/api/auth`, `/api/auth/`, the unresolved `[action]` template, unknown names, prototype names, percent-encoded variants, conflicting, repeated, array-valued and non-string actions all return 404 with **zero storage access and zero outbound calls**. The query string is still read, but only ever to refuse. No environment flag re-enables the old behaviour, and a test asserts none exists.
+
+### Three things that remain unverified, by nature
+
+1. **Routing.** `vercel.json` uses the legacy top-level `routes` key. Whether Vercel resolves the dynamic segment under it cannot be established locally. **There is no longer a configuration-only fallback:** the rewrite sketched earlier (`dest: "/api/auth/[action]?action=$1"`) names no action in its rewritten path and would now be refused. If the five URLs 404 on Preview, **investigate before concluding** — that would be consistent with the `req.url` assumption failing, and equally with the route never reaching the function, the function not being built, or a platform rewrite. Fix it deliberately once the cause is established. That cost was accepted knowingly.
+2. **How the runtime represents a dynamic path parameter versus a caller-supplied query parameter of the same name**, and whether `req.url` inside the function carries the resolved path, the template, or a rewrite destination. This dispatcher requires the resolved path; the template is refused fail-closed rather than guessed at.
+3. **The deployed function count.** Source-level count is 10, actually measured by the test. Vercel's artifact count is not measurable from here.
 
 ## Files
 
@@ -60,7 +71,17 @@ The Preview build for `295635b` failed: *"No more than 12 Serverless Functions c
 
 **Modified (1)** — `package.json` (`test:v1`, `test:v2`, `test:all`), plus these docs.
 
-**Untouched, asserted by hash, not by inspection** — `api/_utils.js`, `api/agent.js`, `api/client.js`, `api/portal.js`, `api/questions.js`, `api/send-questions.js`, `api/submit.js`, `api/v2/case.js`, `scripts/v2-intake-http.js`. `vercel.json` unchanged.
+**Untouched, asserted by hash against three distinct baselines, not by inspection:**
+
+| What | Baseline | Result |
+|---|---|---|
+| `api/{_utils,agent,client,portal,questions,send-questions,submit}.js` + the 5 frozen fixtures | `origin/production` `f2374043` | 12/12 match |
+| `api/v2/case.js` | `v2-case-spine` `88a866c` (branch point) — **absent from Production** | match |
+| `scripts/v2-intake-http.js` | `295635b` (pre-consolidation) — **absent from Production** | match |
+
+`vercel.json` unchanged. An earlier summary said all nine were "against Production"; that was inaccurate for the last two and is corrected here.
+
+**OneDrive artifacts — ignored, not untracked.** `git status --porcelain` reports **0** untracked entries and **27** ignored ones, matched by `.gitignore:60` (`*-MOHAMMED*`). An untracked file is one `git add -A` away from a commit; an ignored one is not added even by `-A`. `git ls-tree -r HEAD` carries none of them, so they cannot enter a Git-integration deployment. A local `vercel` CLI upload is a separate **unresolved** question: no `.vercelignore` exists here and the CLI's fallback could not be verified — `.env.local` and `local.db` matter more there than the stale duplicates. No exclusion file was added; that is a deployment change and out of scope.
 
 **Earlier Sprint 1 files (8 new, 9 modified)** — unchanged by the consolidation; see the list in `ENGINEERING-STATE.md` §11.
 
@@ -75,8 +96,9 @@ See `docs/ENGINEERING-STATE.md` §11 for the intake architecture and §13 for th
 - No push since `295635b`, no merge, no deployment, no Production change, no Vercel setting touched, no plan upgrade.
 - No endpoint deleted to save a function slot; the email endpoint is retained.
 - Anonymous intake and reviewer operations remain separate files.
-- No authentication redesign. Equivalence to the baseline is not a claim that the baseline is secure (debt 5, 8, 10).
-- The routing fallback in §13 is written down, not applied.
+- No authentication redesign, and **no change to password-reset behaviour** in this packaging correction. Equivalence to the baseline is not a claim that the baseline is secure: debt 5, 8, 10, and the two **open** password-reset defects at 18 and 19, which need their own hotfix.
+- No environment flag re-enabling query-only dispatch. No `.vercelignore`. No OneDrive artifact deleted.
+- The routing rewrite is not applied, and no longer would work unchanged — see §13.
 - The landing CTA on `/` still points at the V1 questionnaire. `/intake` is parallel.
 - No 14-domain taxonomy, no `PLAYBOOKS`, no `calculateConfidence()`.
 - No `add_claim` on `api/v2/case.js`. No AI anywhere in the intake path.
@@ -85,7 +107,7 @@ See `docs/ENGINEERING-STATE.md` §11 for the intake architecture and §13 for th
 ## To resume
 
 1. `git rev-parse --abbrev-ref HEAD` → expect `sprint1-diagnostic-intake-v2`; `git status` clean.
-2. `npm run test:all` → 105 / 246 / 62 / 90.
+2. `npm run test:all` → 121 / 246 / 62 / 90.
 3. Read `ENGINEERING-STATE.md` §13 first (the auth change), then §8 blockers 11–13, then §11.
 
 ### The exact next action, in order

@@ -6,10 +6,21 @@
 // everything else, so that the blast radius of the change is a fact on record
 // rather than an assurance.
 //
-// The recorded hashes below were taken from the Production branch with
-// `git show production:<path> | sha256sum` before any edit. They are the
-// baseline, not a snapshot of the current tree: if a file drifts, the test
-// fails and names it.
+// THREE BASELINES, NOT ONE. An earlier summary of this file said "against
+// Production", which was inaccurate for two of the nine files, because V2 does
+// not exist on the Production line at all (`git cat-file -e
+// origin/production:api/v2/case.js` → absent). Each hash below is anchored to
+// the commit it actually came from:
+//
+//   origin/production  f2374043  the 7 untouched V1 files + the 5 frozen fixtures
+//   v2-case-spine      88a866c   api/v2/case.js — the Sprint 1 branch point
+//                                (it differs from 795cc26, which introduced it)
+//   sprint1            295635b   scripts/v2-intake-http.js — the pre-consolidation
+//                                commit that introduced it
+//
+// Each was taken with `git show <commit>:<path> | sha256sum` before any edit.
+// They are baselines, not a snapshot of the current tree: if a file drifts, the
+// test fails and names it.
 //
 // SCOPE WARNING — read before quoting the budget test.
 // The function-budget check counts FILES IN THIS REPOSITORY under the naming
@@ -58,9 +69,12 @@ const AUTH_BASELINE = {
 };
 
 // The V2 Case API, which this sprint's auth work must leave completely alone.
+// Baseline: v2-case-spine @ 88a866c, the Sprint 1 branch point. NOT Production —
+// api/v2/case.js does not exist on the Production line.
 const CASE_API = '8f7a23813a36ff1e8fb1c0a05d3ce322a15e001b1533e5673a479e2a4bf4ca69';
 
 // The Preview HTTP gate, which must keep targeting the preserved public URLs.
+// Baseline: 295635b, the pre-consolidation Sprint 1 commit that introduced it.
 const INTAKE_HTTP_GATE = 'f2444565d79496cfb9f7d19213dd5e24dc402b61dd687675850e6ae9f463acef';
 
 // Vercel builds one Serverless Function per non-underscore .js file under api/.
@@ -70,10 +84,19 @@ const HOBBY_FUNCTION_LIMIT = 12;
 //
 // The working copy lives in a OneDrive-synced folder, and OneDrive renamed 27
 // files to `*-MOHAMMED*` during the 2026-09-17 incident (ENGINEERING-STATE §0,
-// blocker 9). Every one was hashed and proven to be a stale duplicate; all are
-// UNTRACKED, so git never carries them and Vercel — which deploys from git —
-// never sees them. They are excluded from the source inventories below for that
+// blocker 9). Every one was hashed and proven to be a stale duplicate.
+//
+// They are IGNORED, not untracked — `.gitignore:60` matches `*-MOHAMMED*`, so
+// `git status --porcelain` reports zero `??` entries and 27 `!!` ones. The
+// distinction matters: an untracked file is one `git add -A` away from a commit,
+// whereas an ignored file is not added even by `-A`. Git never carries them, and
+// Vercel's Git integration deploys the commit, so they cannot reach a deployment
+// by that route. They are excluded from the source inventories below for that
 // reason, and only for that reason.
+//
+// (A local `vercel` CLI upload is a different question, unresolved: there is no
+// `.vercelignore` in this repository, and the CLI's fallback behaviour could not
+// be verified from here. Adding one is a deployment change and out of scope.)
 //
 // This is not a way of looking away from them. `api/auth/status-MOHAMMED.js`
 // would become a publicly reachable eleventh function the moment someone ran
@@ -83,7 +106,7 @@ const isConflictArtifact = p => /-MOHAMMED/.test(p);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-suite('v1 baseline — untouched files still match Production', () => {
+suite('v1 baseline — untouched files still match their recorded baseline', () => {
 
   for (const [rel, expected] of Object.entries(V1_UNCHANGED)) {
     test(`${rel} is byte-identical to the Production baseline`, () => {
@@ -92,11 +115,11 @@ suite('v1 baseline — untouched files still match Production', () => {
     });
   }
 
-  test('api/v2/case.js is untouched by the auth work', () => {
+  test('api/v2/case.js matches its V2 baseline (v2-case-spine @ 88a866c)', () => {
     assert.equal(sha256(at('api/v2/case.js')), CASE_API, 'api/v2/case.js content hash');
   });
 
-  test('scripts/v2-intake-http.js is untouched', () => {
+  test('scripts/v2-intake-http.js matches its pre-consolidation baseline (295635b)', () => {
     // The Preview gate targets /api/v2/intake and /api/v2/intake-review, neither
     // of which the auth consolidation moves. It must not have been "adjusted".
     assert.equal(sha256(at('scripts/v2-intake-http.js')), INTAKE_HTTP_GATE);
@@ -240,7 +263,7 @@ suite('v1 baseline — source-level function budget (NOT a deployed count)', () 
     // The budget count above excludes `*-MOHAMMED*` files on the grounds that
     // git never carries them. This test is what makes that reasoning sound.
     const found = conflictArtifactsUnderApi();
-    if (found.length) console.log(`      untracked OneDrive artifacts under api/ (blocker 9): ${found.join(', ')}`);
+    if (found.length) console.log(`      ignored OneDrive artifacts under api/ (blocker 9): ${found.join(', ')}`);
 
     if (!exists(at('.git'))) {
       console.log('      no .git here — tracked-ness not checked in this working copy');
@@ -280,19 +303,24 @@ suite('v1 baseline — routing configuration', () => {
 
   test('RECORDED UNCERTAINTY: auth routing is unverified until deployment', () => {
     // vercel.json uses the legacy top-level `routes` key. Whether Vercel's
-    // filesystem handler still resolves the dynamic segment api/auth/[action].js
-    // under that legacy configuration could not be established locally — there is
-    // no local Vercel runtime here, and the question is about the platform, not
-    // this code. This test does not assert routing works; it asserts that the
-    // configuration is still the one whose behaviour is pending verification, so
-    // that a silent change to it cannot slip past the handoff.
+    // filesystem handler resolves the dynamic segment api/auth/[action].js under
+    // that legacy configuration could not be established locally — there is no
+    // Vercel runtime here, and the question is about the platform, not this code.
+    // This test does not assert routing works; it asserts the configuration is
+    // still the one whose behaviour is pending verification, so that a silent
+    // change to it cannot slip past the handoff.
     assert.ok(Array.isArray(vercel.routes), 'legacy `routes` key still in use');
     assert.notOk(vercel.rewrites, 'no `rewrites` key (it cannot be combined with `routes`)');
-    // The prepared fallback, NOT implemented: add an explicit route
+
+    // CHANGED 2026-09-18. The dispatcher no longer accepts `?action=` on a path
+    // that names no action, so the rewrite sketched earlier —
     //   { "src": "/api/auth/(login|setup|status|forgot|reset)",
     //     "dest": "/api/auth/[action]?action=$1" }
-    // The dispatcher already resolves correctly under that shape, so the fallback
-    // is a configuration change with no code change. It is deliberately left
-    // unapplied pending Mohammed's decision.
+    // — would NOT work against it: the rewritten path names no action and is
+    // refused. Routing is therefore no longer a configuration-only escape hatch.
+    // If a deployment shows the five URLs 404ing, the fix is a deliberate code
+    // change made with Vercel's real request representation in hand. That cost
+    // was accepted knowingly, in exchange for the auth surface being exactly
+    // five spellings rather than six.
   });
 });
