@@ -23,3 +23,9 @@ Windows Node 24.19.0, with installed Chrome: V1 121/121, UI 66/66, V2 249/249, c
 Artifact checks confirmed 24 static files, redesigned `index.html` matching `home.html`, no fixture asset, and disabled fixture mode. A Production-environment build was refused before any artifact bytes changed.
 
 The first baseline run failed because Windows checkout converted unchanged LF Git blobs into CRLF files. Every restored file was first proven identical to its Git blob after CRLF-to-LF normalization; only those unchanged files were restored byte-for-byte in this isolated checkout. The original failed output was retained. Existing hashes/assertions were not changed, and the subsequent full baseline passed.
+
+## Live follow-up: review-to-case navigation
+
+The first protected Preview (`dda1bc8`, `dpl_2zzUQ2MTQAxans71zMq5a5xuqeoP`) built successfully with 10 functions and 24 static files. A synthetic request persisted in isolated Redis and acceptance completed promotion. Clicking the review screen's actual case link then exposed a missing `organization_id`: the workspace correctly refused to guess a tenant and displayed no selected case. The earlier journey test had constructed a correct URL itself, so its pass did not cover this link.
+
+The review link now uses the actual resulting organization and case identifiers, and is not offered without the organization identifier. The journey regression asserts both identifiers and clicks the real link before checking the workspace. No API, tenant authorization, or diagnostic policy changed. This follow-up remains Preview-only.

@@ -441,8 +441,8 @@
           (review.resulting_case_id ? '<div class="rv-block"><div class="rv-block-title">' + esc(t('rv.resulting')) + '</div>' +
             '<p class="hv-sm">' + esc(t('rv.case')) + ' ' + I.code(review.resulting_case_id) + '</p>' +
             '<p class="hv-sm">' + esc(t('rv.org')) + ' ' + I.code(review.resulting_organization_id || '') + '</p>' +
-            '<a class="hv-btn hv-btn-outline hv-btn-sm" style="margin-block-start:10px" href="/v2-workspace?case=' + encodeURIComponent(review.resulting_case_id) + '">' +
-              ic('external', { size: 14 }) + esc(t('rv.openCase')) + '</a></div>' : '') +
+            (review.resulting_organization_id ? '<a class="hv-btn hv-btn-outline hv-btn-sm" style="margin-block-start:10px" href="/v2-workspace?organization_id=' + encodeURIComponent(review.resulting_organization_id) + '&amp;case_id=' + encodeURIComponent(review.resulting_case_id) + '">' +
+              ic('external', { size: 14 }) + esc(t('rv.openCase')) + '</a>' : '') + '</div>' : '') +
 
           (needsResume ? '<div class="rv-block">' +
             U.note('conflict', '<strong>' + esc(t('rv.resume.t')) + '</strong><br>' + esc(t('rv.resume.b')) +

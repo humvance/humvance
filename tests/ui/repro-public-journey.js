@@ -255,8 +255,19 @@ async function fillForm(page) {
     JSON.stringify((bundle.claims || []).map(c => c.verification_status)));
   check('no finding exists on a case nobody has investigated', (bundle.findings || []).length === 0);
 
-  await page.goto(BASE + '/v2-workspace?organization_id=' + after.review.resulting_organization_id +
-    '&case_id=' + after.review.resulting_case_id, { waitUntil: 'networkidle' });
+  // Click the real review link: constructing a correct URL here hid a deployed
+  // defect where the link carried a case id but omitted its organization.
+  const caseLink = page.locator('a[href^="/v2-workspace?"]');
+  const caseHref = await caseLink.getAttribute('href');
+  const caseTarget = new URL(caseHref, BASE);
+  check('the review link carries the actual organization scope',
+    caseTarget.searchParams.get('organization_id') === after.review.resulting_organization_id, caseHref);
+  check('the review link carries the actual resulting case',
+    caseTarget.searchParams.get('case_id') === after.review.resulting_case_id, caseHref);
+  await Promise.all([
+    page.waitForURL('**/v2-workspace?*', { waitUntil: 'networkidle' }),
+    caseLink.click()
+  ]);
   await page.waitForTimeout(400);
   const ws = await page.$eval('#app', n => n.innerText);
   check('the workspace opens on the case the acceptance created',
