@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بعد إرسال طلبك — Humvance</title>
+<meta name="description" content="ما الذي يحدث بعد إرسال طلبك إلى Humvance، وكيف تتواصل معنا بشأنه.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  .rs-steps { display: grid; gap: 0; }
+  .rs-step { display: grid; grid-template-columns: 30px 1fr; gap: 16px; padding-block: 18px; position: relative; }
+  .rs-step + .rs-step::before { content: ""; position: absolute; inset-block-start: -10px; inset-inline-start: 14px;
+                                width: 1.5px; height: 26px; background: var(--hv-line-2); }
+  .rs-dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none;
+            border: 1.5px solid var(--hv-line-2); color: var(--hv-ink-3); background: var(--hv-surface);
+            font-family: var(--hv-font-en); font-size: .74rem; font-weight: 700; }
+  .rs-step[data-now="true"] .rs-dot { border-color: var(--hv-signal); color: var(--hv-signal); border-width: 2.5px; }
+  .rs-legacy { border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); background: var(--hv-surface-2); padding: 22px 24px; }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script>
+/* ===========================================================================
+   After you send a request.
+   ---------------------------------------------------------------------------
+   WHY THIS PAGE EXISTS. The public navigation used to send everyone to
+   /portal — the legacy V1 client portal, which signs in against `client:<ref>`
+   records. A visitor who has just used the new intake does not have one of
+   those: their submission produced an `HVS-…` reference in V2, and the V1
+   portal cannot recognise it. Sending them there is sending them to a login
+   that cannot work, which is worse than sending them nowhere.
+
+   So new applicants come here instead, and this page says what is true:
+
+     · there is no self-service tracking for a new request yet;
+     · a person reads the request and replies through the channel they chose;
+     · to reach us in the meantime, email us and quote the reference.
+
+   It promises no email notification, no automatic tracking and no response
+   time, because none of those is implemented. The legacy portal is still
+   linked, once, clearly labelled as the route for existing clients who already
+   have a HUM- reference — their route keeps working and nothing was migrated.
+   =========================================================================== */
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+
+  function steps() {
+    return [1, 2, 3].map(function (n) {
+      return '<div class="rs-step"' + (n === 1 ? ' data-now="true"' : '') + '>' +
+        '<span class="rs-dot">' + (n === 1 ? ic('check', { size: 14 }) : I.num(n)) + '</span>' +
+        '<div><strong class="hv-sm">' + esc(t('rs.s' + n + '.t')) + '</strong>' +
+          '<p class="hv-sm hv-muted" style="margin-block-start:4px">' + esc(t('rs.s' + n + '.d')) + '</p></div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'بعد إرسال طلبك' : 'After you send a request') + ' — Humvance';
+    document.getElementById('app').innerHTML =
+      U.demoBar() + U.siteHeader() +
+      '<main id="main"><div class="hv-container-narrow" style="padding-block:clamp(36px,6vw,72px) clamp(56px,8vw,96px)">' +
+
+        '<p class="hv-eyebrow">' + esc(t('rs.eyebrow')) + '</p>' +
+        '<h1 class="hv-h1" style="margin-block:14px 16px">' + esc(t('rs.title')) + '</h1>' +
+        '<p class="hv-lead">' + esc(t('rs.sub')) + '</p>' +
+
+        '<div class="hv-card" style="margin-block-start:32px"><div class="rs-steps">' + steps() + '</div></div>' +
+
+        '<div style="margin-block-start:24px">' +
+          U.note('signal', '<strong>' + esc(t('rs.contact.t')) + '</strong><br>' + esc(t('rs.contact.d')) +
+            '<br><a href="mailto:info@humvance.com" style="text-decoration:underline;text-underline-offset:3px">' +
+            I.mail('info@humvance.com') + '</a>', 'mail') +
+        '</div>' +
+
+        '<div style="margin-block-start:20px">' +
+          U.note('caution', esc(t('rs.noTracking')), 'info') +
+        '</div>' +
+
+        /* The legacy route, named for what it is. */
+        '<div class="rs-legacy" style="margin-block-start:36px">' +
+          '<div class="hv-row" style="gap:10px;margin-block-end:8px">' + ic('lock', { size: 17 }) +
+            '<strong class="hv-sm">' + esc(t('rs.legacy.t')) + '</strong></div>' +
+          '<p class="hv-sm hv-muted">' + esc(t('rs.legacy.d')) + '</p>' +
+          '<a class="hv-btn hv-btn-outline hv-btn-sm" style="margin-block-start:14px" href="/portal">' +
+            esc(t('rs.legacy.cta')) + ic('arrow', { size: 14 }) + '</a>' +
+        '</div>' +
+
+        '<div class="hv-row" style="gap:12px;margin-block-start:36px">' +
+          '<a class="hv-btn hv-btn-primary" href="/intake">' + esc(t('nav.start')) + ic('arrow', { size: 15 }) + '</a>' +
+          '<a class="hv-btn hv-btn-ghost" href="/how-we-work">' + esc(t('nav.how')) + '</a>' +
+        '</div>' +
+
+      '</div></main>' + U.siteFooter();
+    U.wire();
+  }
+
+  I.onChange(render);
+  render();
+})();
+</script>
+</body>
+</html>

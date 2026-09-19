@@ -250,6 +250,35 @@ async function api(method, path, body) {
   return d;
 }
 
+/* ── Allow-listed return destination — ADDED 2026-09-18 ───────────────────────
+   The administration entrance in the public header sends people here with
+   `?return=manage`. After a successful sign-in they should land where they were
+   going, not on a screen they have to navigate away from.
+
+   The allow-list is a FIXED MAP from a short name to a path in this
+   application. `?return=` never carries a URL, so there is nothing to parse,
+   nothing to normalise and no way to express an external host, a protocol, a
+   protocol-relative `//evil.example` or an encoded traversal. An unknown name
+   is ignored and the normal screen renders, which is the existing behaviour
+   unchanged.
+
+   No token is ever placed in a URL. The session continues to live in
+   sessionStorage exactly as before, and the destination re-verifies it against
+   the API the moment it loads. */
+const RETURN_ALLOWLIST = { manage: '/manage' };
+function returnTarget() {
+  try {
+    const name = new URLSearchParams(location.search).get('return');
+    return (name && Object.prototype.hasOwnProperty.call(RETURN_ALLOWLIST, name))
+      ? RETURN_ALLOWLIST[name] : null;
+  } catch (e) { return null; }
+}
+function goReturnIfAny() {
+  const to = returnTarget();
+  if (to) { location.replace(to); return true; }
+  return false;
+}
+
 // ── Auth ──
 async function init() {
   if (!S.token) { renderLogin(); return; }
@@ -257,6 +286,7 @@ async function init() {
     const s = await fetch('/api/auth/status', { headers: { Authorization: `Bearer ${S.token}` } });
     const d = await s.json();
     if (!d.authenticated) { S.token = null; sessionStorage.removeItem('hv_token'); renderLogin(); return; }
+    if (goReturnIfAny()) return;
     renderPipeline();
   } catch { renderPipeline(); }
 }
@@ -290,6 +320,7 @@ async function doLogin() {
     S.token = d.token;
     sessionStorage.setItem('hv_token', d.token);
     sessionStorage.setItem('hv_admin', '1');
+    if (goReturnIfAny()) return;
     renderPipeline();
   } catch (e) { if(btn){btn.disabled=false;btn.textContent='دخول';} toast(e.message,'error'); }
 }

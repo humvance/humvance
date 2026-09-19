@@ -12,9 +12,14 @@
     "test": "node tests/v2/run.js",
     "test:v1": "node tests/v1/run.js",
     "test:v2": "node tests/v2/run.js",
-    "test:all": "node tests/v1/run.js && node tests/v2/run.js && node scripts/v2-case-001.js && node scripts/v2-intake-001.js",
+    "test:all": "node tests/v1/run.js && node tests/ui/run.js && node tests/v2/run.js && node scripts/v2-case-001.js && node scripts/v2-intake-001.js",
     "case001": "node scripts/v2-case-001.js",
     "case001:http": "node scripts/v2-case-001-http.js",
-    "intake001": "node scripts/v2-intake-001.js"
+    "intake001": "node scripts/v2-intake-001.js",
+    "test:ui": "node tests/ui/run.js",
+    "test:browser": "node tests/ui/browser-run.js",
+    "test:beta": "node tests/ui/beta-run.js",
+    "dev": "node scripts/dev-server.js",
+    "beta": "node scripts/beta-server.js"
   }
 }

@@ -1,0 +1,850 @@
+/* ===========================================================================
+   Humvance — design foundation
+   ---------------------------------------------------------------------------
+   ONE visual system for three areas of ONE product:
+     • an expressive public website
+     • a calm client workspace
+     • an efficient administration interface
+
+   It is an evolution of the existing Humvance identity, not a replacement.
+   Kept: the warm paper ground (#F6F5F1), the near-black ink, IBM Plex Sans
+   Arabic + Inter, the 8px radius family, the three-figure people mark, and the
+   dark-mode behaviour that was already there.
+
+   Added: a restrained signal colour so interactive and diagnostic elements stop
+   reading as generic monochrome; a real type scale; a 4px spacing scale; an
+   epistemic status system (claim / evidence / finding / approved), because the
+   distinction between what a client said and what we concluded is the product,
+   and it belongs in the design system rather than in ad-hoc styling.
+
+   Arabic is the default. Every rule here is written RTL-first and corrected for
+   LTR, not the other way round.
+   =========================================================================== */
+
+/* ── Tokens ──────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Ground and ink — unchanged from the existing brand */
+  --hv-paper:        #F6F5F1;
+  --hv-surface:      #FFFFFF;
+  --hv-surface-2:    #FBFAF7;
+  --hv-ink:          #0A0A0A;
+  --hv-ink-2:        #3D3D3B;
+  --hv-ink-3:        #6F6E6A;
+  --hv-line:         #E4E2DC;
+  --hv-line-2:       #CBC8C0;
+
+  /* Signal — deep petrol. Interactive, and the "we are investigating" colour.
+     Chosen over a consultancy blue because it sits with the warm paper instead
+     of fighting it, and because nobody else in this market uses it. */
+  --hv-signal:       #0F5257;
+  --hv-signal-ink:   #0B3E42;
+  --hv-signal-soft:  #E6EEEE;
+  --hv-signal-line:  #B9CFCF;
+
+  /* Clay — used only for emphasis marks and the underline accent. Never a button. */
+  --hv-clay:         #A64B28;
+  --hv-clay-soft:    #F6EAE4;
+
+  /* Epistemic states. These are not decoration: they carry meaning. */
+  --hv-unverified:      #7A5A12;   /* client said it; nobody checked  */
+  --hv-unverified-soft: #F7F0DC;
+  --hv-unverified-line: #E3D3A3;
+  --hv-verified:        #1A6B45;   /* corroborated                    */
+  --hv-verified-soft:   #E4F0E9;
+  --hv-verified-line:   #AFD3C1;
+  --hv-conflict:        #A5342A;   /* contradiction, error            */
+  --hv-conflict-soft:   #F8E9E7;
+  --hv-conflict-line:   #E6BDB7;
+
+  /* Type */
+  --hv-font-ar: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  --hv-font-en: 'Inter', system-ui, -apple-system, sans-serif;
+  --hv-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  /* Fluid scale. Arabic needs a slightly larger optical size than Latin at the
+     same nominal value, which is why body sits at 16.5px rather than 16px. */
+  --hv-t-display: clamp(2.35rem, 1.5rem + 3.6vw, 4.25rem);
+  --hv-t-h1:      clamp(1.95rem, 1.35rem + 2.4vw, 3.1rem);
+  --hv-t-h2:      clamp(1.5rem, 1.15rem + 1.5vw, 2.25rem);
+  --hv-t-h3:      clamp(1.2rem, 1.05rem + 0.6vw, 1.5rem);
+  --hv-t-lead:    clamp(1.05rem, 0.98rem + 0.4vw, 1.3rem);
+  --hv-t-body:    1.03rem;
+  --hv-t-sm:      0.9rem;
+  --hv-t-xs:      0.8rem;
+
+  /* Space — 4px base */
+  --hv-1: 4px;   --hv-2: 8px;   --hv-3: 12px;  --hv-4: 16px;
+  --hv-5: 24px;  --hv-6: 32px;  --hv-7: 48px;  --hv-8: 64px;
+  --hv-9: 96px;  --hv-10: 136px;
+
+  /* Shape and depth — restrained. One shadow, used rarely. */
+  --hv-r-sm: 6px;  --hv-r: 10px;  --hv-r-lg: 16px;  --hv-r-xl: 24px;
+  --hv-shadow: 0 1px 2px rgba(10,10,10,.04), 0 8px 24px -12px rgba(10,10,10,.14);
+  --hv-shadow-lift: 0 2px 4px rgba(10,10,10,.05), 0 18px 40px -18px rgba(10,10,10,.22);
+
+  --hv-maxw: 1180px;
+  --hv-maxw-text: 68ch;
+  --hv-ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --hv-paper:        #100F0E;
+    --hv-surface:      #191817;
+    --hv-surface-2:    #201F1D;
+    --hv-ink:          #F2F0EA;
+    --hv-ink-2:        #C4C1B9;
+    --hv-ink-3:        #8C8A84;
+    --hv-line:         #2C2B28;
+    --hv-line-2:       #45443F;
+
+    --hv-signal:       #7BC4C4;
+    --hv-signal-ink:   #A8DCDA;
+    --hv-signal-soft:  #16302F;
+    --hv-signal-line:  #2E5250;
+
+    --hv-clay:         #D98A66;
+    --hv-clay-soft:    #33201A;
+
+    --hv-unverified:      #D7B463;  --hv-unverified-soft: #2B2412;  --hv-unverified-line: #4D411F;
+    --hv-verified:        #6FBF95;  --hv-verified-soft:   #12281D;  --hv-verified-line:   #24462F;
+    --hv-conflict:        #E08A7E;  --hv-conflict-soft:   #2C1815;  --hv-conflict-line:   #4D2A25;
+
+    --hv-shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    --hv-shadow-lift: 0 2px 4px rgba(0,0,0,.45), 0 18px 40px -18px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --hv-paper:#100F0E; --hv-surface:#191817; --hv-surface-2:#201F1D;
+  --hv-ink:#F2F0EA; --hv-ink-2:#C4C1B9; --hv-ink-3:#8C8A84;
+  --hv-line:#2C2B28; --hv-line-2:#45443F;
+  --hv-signal:#7BC4C4; --hv-signal-ink:#A8DCDA; --hv-signal-soft:#16302F; --hv-signal-line:#2E5250;
+  --hv-clay:#D98A66; --hv-clay-soft:#33201A;
+  --hv-unverified:#D7B463; --hv-unverified-soft:#2B2412; --hv-unverified-line:#4D411F;
+  --hv-verified:#6FBF95; --hv-verified-soft:#12281D; --hv-verified-line:#24462F;
+  --hv-conflict:#E08A7E; --hv-conflict-soft:#2C1815; --hv-conflict-line:#4D2A25;
+}
+
+/* ── Reset and base ──────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+}
+
+body {
+  font-family: var(--hv-font-ar);
+  font-size: var(--hv-t-body);
+  line-height: 1.7;
+  color: var(--hv-ink);
+  background: var(--hv-paper);
+  direction: rtl;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body[data-lang="en"] { direction: ltr; font-family: var(--hv-font-en); line-height: 1.65; }
+
+h1,h2,h3,h4,h5,h6 { line-height: 1.2; text-wrap: balance; color: var(--hv-ink); font-weight: 700; letter-spacing: -.01em; }
+body[data-lang="en"] h1, body[data-lang="en"] h2 { letter-spacing: -.025em; }
+p { color: var(--hv-ink-2); }
+a { color: inherit; text-decoration: none; }
+img, svg { max-width: 100%; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font: inherit; font-size: 16px; color: inherit; }
+ul, ol { list-style: none; }
+
+/* Focus: one visible ring everywhere, never removed. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2.5px solid var(--hv-signal);
+  outline-offset: 2px;
+  border-radius: var(--hv-r-sm);
+}
+
+::selection { background: var(--hv-signal); color: #fff; }
+
+.hv-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.hv-skip {
+  position: absolute; inset-inline-start: var(--hv-4); top: -100px; z-index: 200;
+  background: var(--hv-ink); color: var(--hv-paper); padding: var(--hv-3) var(--hv-5);
+  border-radius: var(--hv-r); font-weight: 600; transition: top .18s var(--hv-ease);
+}
+.hv-skip:focus { top: var(--hv-4); }
+
+.hv-hidden { display: none !important; }
+
+/* ── Mixed-direction text ────────────────────────────────────────────────────
+   Arabic pages carry Latin identifiers, emails, numbers and dates constantly.
+   Left alone, the bidi algorithm reverses them ("200–51", "12 / 1"). These
+   classes are the fix, and they are used, not optional. */
+
+.hv-ltr  { direction: ltr; unicode-bidi: isolate; text-align: start; }
+.hv-num  { font-family: var(--hv-font-en); font-variant-numeric: tabular-nums lining-nums; direction: ltr; unicode-bidi: isolate; }
+.hv-code { font-family: var(--hv-font-mono); direction: ltr; unicode-bidi: isolate; letter-spacing: .02em; font-size: .92em;
+  /* CORRECTED 2026-09-19 — an id like `case_zam09re7c2v2xsq17tsrtwj` has no
+     space in it, so at 390px it refused to wrap and pushed the whole layout
+     viewport out to 488px. The page then rendered zoomed out, and taps
+     landed off their targets — which is how a header return link that was
+     built correctly still did nothing on a phone. It breaks only when it
+     must; a reference that fits is still shown unbroken on one line. */
+  overflow-wrap: anywhere; }
+.hv-mail { direction: ltr; unicode-bidi: isolate; }
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.hv-container { width: 100%; max-width: var(--hv-maxw); margin-inline: auto; padding-inline: var(--hv-5); }
+.hv-container-narrow { width: 100%; max-width: 860px; margin-inline: auto; padding-inline: var(--hv-5); }
+.hv-prose { max-width: var(--hv-maxw-text); }
+.hv-section { padding-block: clamp(var(--hv-8), 9vw, var(--hv-10)); }
+.hv-section-tight { padding-block: clamp(var(--hv-7), 6vw, var(--hv-9)); }
+.hv-stack > * + * { margin-block-start: var(--hv-4); }
+.hv-stack-lg > * + * { margin-block-start: var(--hv-6); }
+.hv-row { display: flex; align-items: center; gap: var(--hv-3); flex-wrap: wrap; }
+.hv-row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--hv-4); flex-wrap: wrap; }
+
+/* ── Type helpers ────────────────────────────────────────────────────────── */
+
+.hv-display { font-size: var(--hv-t-display); font-weight: 800; line-height: 1.08; letter-spacing: -.028em; }
+body[data-lang="ar"] .hv-display { line-height: 1.24; letter-spacing: 0; font-weight: 700; }
+.hv-h1 { font-size: var(--hv-t-h1); font-weight: 800; }
+body[data-lang="ar"] .hv-h1 { font-weight: 700; line-height: 1.34; }
+.hv-h2 { font-size: var(--hv-t-h2); font-weight: 700; }
+body[data-lang="ar"] .hv-h2 { line-height: 1.38; }
+.hv-h3 { font-size: var(--hv-t-h3); font-weight: 650; }
+.hv-lead { font-size: var(--hv-t-lead); line-height: 1.6; color: var(--hv-ink-2); }
+body[data-lang="ar"] .hv-lead { line-height: 1.85; }
+.hv-sm { font-size: var(--hv-t-sm); }
+.hv-xs { font-size: var(--hv-t-xs); }
+.hv-muted { color: var(--hv-ink-3); }
+.hv-ink2 { color: var(--hv-ink-2); }
+
+/* The eyebrow: a small rule plus a label. Replaces the old bare uppercase text. */
+.hv-eyebrow {
+  display: inline-flex; align-items: center; gap: var(--hv-3);
+  font-family: var(--hv-font-en); font-size: .74rem; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--hv-signal);
+}
+body[data-lang="ar"] .hv-eyebrow { font-family: var(--hv-font-ar); letter-spacing: 0; font-size: .82rem; text-transform: none; }
+.hv-eyebrow::before { content: ""; width: 26px; height: 2px; background: currentColor; opacity: .55; flex: none; }
+
+/* Clay underline for one emphasised phrase per page. Used sparingly. */
+.hv-mark {
+  background-image: linear-gradient(transparent 62%, var(--hv-clay-soft) 62%);
+  padding-inline: .08em;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.hv-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--hv-2);
+  padding: 13px 26px; border-radius: var(--hv-r);
+  font-size: var(--hv-t-sm); font-weight: 650; line-height: 1.2;
+  white-space: nowrap; text-align: center;
+  transition: background .16s var(--hv-ease), color .16s var(--hv-ease),
+              border-color .16s var(--hv-ease), transform .16s var(--hv-ease);
+  border: 1.5px solid transparent;
+}
+.hv-btn:active { transform: translateY(1px); }
+.hv-btn[disabled], .hv-btn[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+.hv-btn svg { width: 1.05em; height: 1.05em; flex: none; }
+
+.hv-btn-primary   { background: var(--hv-ink); color: var(--hv-paper); }
+.hv-btn-primary:hover { background: var(--hv-signal); }
+.hv-btn-signal    { background: var(--hv-signal); color: #fff; }
+.hv-btn-signal:hover { background: var(--hv-signal-ink); }
+:root[data-theme="dark"] .hv-btn-signal, :root:not([data-theme="light"]) .hv-btn-signal { color: #08201F; }
+.hv-btn-outline   { border-color: var(--hv-line-2); color: var(--hv-ink); }
+.hv-btn-outline:hover { border-color: var(--hv-ink); background: var(--hv-surface); }
+.hv-btn-ghost     { color: var(--hv-ink-2); padding: 10px 14px; }
+.hv-btn-ghost:hover { color: var(--hv-ink); background: var(--hv-surface); }
+.hv-btn-lg { padding: 16px 32px; font-size: var(--hv-t-body); border-radius: var(--hv-r); }
+.hv-btn-sm { padding: 8px 16px; font-size: var(--hv-t-xs); }
+.hv-btn-block { width: 100%; }
+
+/* Directional icons flip with the writing direction; non-directional ones do not.
+   Applied by hv-icons.js, which marks arrows and chevrons as directional. */
+[data-hv-dir-icon] svg { transition: transform .16s var(--hv-ease); }
+body[data-lang="ar"] [data-hv-dir-icon] svg { transform: scaleX(-1); }
+
+/* ── Surfaces ────────────────────────────────────────────────────────────── */
+
+.hv-card {
+  background: var(--hv-surface); border: 1px solid var(--hv-line);
+  border-radius: var(--hv-r-lg); padding: var(--hv-5);
+}
+.hv-card-quiet { background: var(--hv-surface-2); border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); padding: var(--hv-5); }
+.hv-card-lift { box-shadow: var(--hv-shadow); }
+.hv-panel { background: var(--hv-surface); border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); }
+.hv-panel-head {
+  padding: var(--hv-4) var(--hv-5); border-block-end: 1px solid var(--hv-line);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--hv-3);
+}
+.hv-panel-body { padding: var(--hv-5); }
+.hv-divider { height: 1px; background: var(--hv-line); border: 0; }
+
+/* Dark editorial band, used once or twice per page for rhythm. */
+.hv-band-ink { background: var(--hv-ink); color: var(--hv-paper); }
+.hv-band-ink h1, .hv-band-ink h2, .hv-band-ink h3 { color: var(--hv-paper); }
+.hv-band-ink p { color: rgba(242,240,234,.72); }
+:root[data-theme="dark"] .hv-band-ink, :root:not([data-theme="light"]) .hv-band-ink { background: #06100F; }
+.hv-band-signal { background: var(--hv-signal); color: #fff; }
+.hv-band-signal h2, .hv-band-signal h3 { color: #fff; }
+.hv-band-signal p { color: rgba(255,255,255,.78); }
+
+/* ── Epistemic status pills ──────────────────────────────────────────────────
+   The product's central discipline made visible. A claim must never look like a
+   finding, and a draft must never look approved — including at a glance, from
+   across a desk. Shape carries the meaning as well as colour, so the system
+   still works in greyscale and for colour-blind readers. */
+
+.hv-pill {
+  display: inline-flex; align-items: center; gap: var(--hv-2);
+  padding: 3px 11px; border-radius: 999px;
+  font-size: var(--hv-t-xs); font-weight: 650; line-height: 1.6;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.hv-pill::before { content: ""; width: 7px; height: 7px; flex: none; }
+
+/* client said it — hollow circle, amber: nobody has checked this */
+.hv-pill-claim { background: var(--hv-unverified-soft); color: var(--hv-unverified); border-color: var(--hv-unverified-line); }
+.hv-pill-claim::before { border-radius: 50%; border: 1.5px solid currentColor; }
+/* evidence — filled square: a thing that exists and can be pointed at */
+.hv-pill-evidence { background: var(--hv-signal-soft); color: var(--hv-signal); border-color: var(--hv-signal-line); }
+.hv-pill-evidence::before { background: currentColor; border-radius: 1px; }
+/* finding — filled diamond: our conclusion, drawn from evidence */
+.hv-pill-finding { background: var(--hv-signal-soft); color: var(--hv-signal-ink); border-color: var(--hv-signal-line); }
+.hv-pill-finding::before { background: currentColor; transform: rotate(45deg); border-radius: 1px; }
+/* approved — filled circle, green: a human signed it */
+.hv-pill-approved { background: var(--hv-verified-soft); color: var(--hv-verified); border-color: var(--hv-verified-line); }
+.hv-pill-approved::before { background: currentColor; border-radius: 50%; }
+/* contradiction */
+.hv-pill-conflict { background: var(--hv-conflict-soft); color: var(--hv-conflict); border-color: var(--hv-conflict-line); }
+.hv-pill-conflict::before { background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+/* neutral / process state */
+.hv-pill-neutral { background: var(--hv-surface-2); color: var(--hv-ink-3); border-color: var(--hv-line); }
+.hv-pill-neutral::before { background: currentColor; border-radius: 50%; opacity: .5; }
+/* waiting on a human */
+.hv-pill-human { background: var(--hv-clay-soft); color: var(--hv-clay); border-color: color-mix(in srgb, var(--hv-clay) 30%, transparent); }
+.hv-pill-human::before { background: currentColor; border-radius: 2px 2px 50% 50%; }
+
+/* A block-level provenance label attached to a quoted client statement. */
+.hv-provenance {
+  display: flex; align-items: flex-start; gap: var(--hv-3);
+  font-size: var(--hv-t-xs); color: var(--hv-ink-3);
+  padding-block-start: var(--hv-3); margin-block-start: var(--hv-3);
+  border-block-start: 1px dashed var(--hv-line-2);
+  /* The epistemic caption carries a long SCREAMING_SNAKE label next to its
+     sentence. At 390px that label is one unbreakable word wider than the
+     column, so the row spilled past its card. It wraps now, and the text
+     beside it is allowed to be narrower than its longest word. 2026-09-19. */
+  flex-wrap: wrap;
+}
+.hv-provenance > * { min-inline-size: 0; overflow-wrap: anywhere; }
+.hv-quote {
+  border-inline-start: 3px solid var(--hv-unverified-line);
+  background: var(--hv-surface-2);
+  padding: var(--hv-4) var(--hv-5);
+  border-radius: 0 var(--hv-r) var(--hv-r) 0;
+}
+body[data-lang="en"] .hv-quote { border-radius: var(--hv-r) 0 0 var(--hv-r); }
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+
+.hv-field { display: flex; flex-direction: column; gap: var(--hv-2); }
+.hv-label { font-size: var(--hv-t-sm); font-weight: 650; color: var(--hv-ink); }
+.hv-label .hv-req { color: var(--hv-conflict); margin-inline-start: 3px; }
+.hv-help { font-size: var(--hv-t-xs); color: var(--hv-ink-3); line-height: 1.6; }
+.hv-input, .hv-textarea, .hv-select {
+  width: 100%; padding: 12px 14px;
+  background: var(--hv-surface); color: var(--hv-ink);
+  border: 1.5px solid var(--hv-line); border-radius: var(--hv-r);
+  transition: border-color .16s var(--hv-ease), box-shadow .16s var(--hv-ease);
+}
+.hv-input:hover, .hv-textarea:hover, .hv-select:hover { border-color: var(--hv-line-2); }
+.hv-input:focus, .hv-textarea:focus, .hv-select:focus {
+  outline: none; border-color: var(--hv-signal);
+  box-shadow: 0 0 0 3px var(--hv-signal-soft);
+}
+.hv-textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
+.hv-input::placeholder, .hv-textarea::placeholder { color: var(--hv-ink-3); opacity: .8; }
+.hv-select {
+  appearance: none; padding-inline-end: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%236F6E6A' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: left 14px center;
+}
+body[data-lang="en"] .hv-select { background-position: right 14px center; }
+.hv-input[aria-invalid="true"], .hv-textarea[aria-invalid="true"], .hv-select[aria-invalid="true"] {
+  border-color: var(--hv-conflict); background: var(--hv-conflict-soft);
+}
+.hv-error {
+  display: flex; align-items: center; gap: var(--hv-2);
+  font-size: var(--hv-t-xs); font-weight: 600; color: var(--hv-conflict);
+}
+.hv-error svg { width: 14px; height: 14px; flex: none; }
+.hv-counter { font-size: var(--hv-t-xs); color: var(--hv-ink-3); text-align: end; }
+.hv-counter[data-over="true"] { color: var(--hv-conflict); font-weight: 650; }
+
+/* Choice cards — bigger hit area than a bare radio, and legible on a phone. */
+.hv-choices { display: grid; gap: var(--hv-2); }
+.hv-choice {
+  display: flex; align-items: flex-start; gap: var(--hv-3);
+  padding: var(--hv-4); cursor: pointer;
+  background: var(--hv-surface); border: 1.5px solid var(--hv-line);
+  border-radius: var(--hv-r);
+  transition: border-color .16s var(--hv-ease), background .16s var(--hv-ease);
+}
+.hv-choice:hover { border-color: var(--hv-line-2); }
+.hv-choice input { margin-block-start: 4px; accent-color: var(--hv-signal); width: 17px; height: 17px; flex: none; }
+.hv-choice:has(input:checked) { border-color: var(--hv-signal); background: var(--hv-signal-soft); }
+.hv-choice:has(input:focus-visible) { outline: 2.5px solid var(--hv-signal); outline-offset: 2px; }
+.hv-choice-title { display: block; font-weight: 600; font-size: var(--hv-t-sm); }
+.hv-choice-desc { display: block; font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 3px; line-height: 1.6; }
+
+.hv-consent {
+  background: var(--hv-surface-2); border: 1px solid var(--hv-line);
+  border-radius: var(--hv-r); padding: var(--hv-4);
+}
+
+/* Progress — a real meter, labelled for screen readers by the markup. */
+.hv-progress { display: flex; flex-direction: column; gap: var(--hv-2); }
+.hv-progress-track { height: 4px; background: var(--hv-line); border-radius: 999px; overflow: hidden; }
+.hv-progress-fill { height: 100%; background: var(--hv-signal); border-radius: 999px; transition: width .35s var(--hv-ease); }
+.hv-steps { display: flex; gap: 5px; }
+.hv-step-tick { height: 4px; flex: 1; background: var(--hv-line); border-radius: 999px; transition: background .25s var(--hv-ease); }
+.hv-step-tick[data-state="done"] { background: var(--hv-signal); }
+.hv-step-tick[data-state="current"] { background: var(--hv-signal); opacity: .5; }
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+.hv-table-wrap { overflow-x: auto; border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); background: var(--hv-surface);
+  /* A grid or flex item will not shrink below its content unless told to,
+     so `overflow-x: auto` here did nothing: the audit table pushed its
+     column wider instead of scrolling inside it. 2026-09-19. */
+  min-inline-size: 0; }
+/* …and inside that scrollable table, a code value keeps its shape. Letting
+   `overflow-wrap: anywhere` reach here broke `intake.received` across two lines
+   as `intake.re / ceived`, which is worse than a sideways scroll in a box that
+   was built to scroll. Wrapping is for prose; an event name is an identifier. */
+.hv-table .hv-code { overflow-wrap: normal; white-space: nowrap; }
+.hv-table { width: 100%; border-collapse: collapse; font-size: var(--hv-t-sm); }
+.hv-table th, .hv-table td { padding: var(--hv-3) var(--hv-4); text-align: start; vertical-align: top; }
+.hv-table thead th {
+  font-size: var(--hv-t-xs); font-weight: 700; color: var(--hv-ink-3);
+  text-transform: uppercase; letter-spacing: .06em;
+  border-block-end: 1px solid var(--hv-line); white-space: nowrap;
+}
+body[data-lang="ar"] .hv-table thead th { text-transform: none; letter-spacing: 0; }
+.hv-table tbody tr + tr td { border-block-start: 1px solid var(--hv-line); }
+.hv-table tbody tr:hover { background: var(--hv-surface-2); }
+
+/* ── Navigation ──────────────────────────────────────────────────────────── */
+
+.hv-header {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--hv-paper) 88%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-block-end: 1px solid transparent;
+  transition: border-color .2s var(--hv-ease), background .2s var(--hv-ease);
+}
+.hv-header[data-scrolled="true"] { border-block-end-color: var(--hv-line); }
+/* CORRECTED 2026-09-18 — the header is deliberately translucent, which is fine
+   for a 70px strip and wrong for an open mobile drawer: the page behind it
+   showed through the whole menu, and Arabic menu labels read over blurred
+   Arabic body text are genuinely hard to make out. While the drawer is open the
+   header becomes opaque and draws its own edge. Nothing else about the header
+   changes, and the effect ends when the menu closes. */
+.hv-header[data-menu-open="true"],
+.hv-header:has(.hv-mobile-nav[data-open="true"]) {
+  background: var(--hv-paper);
+  border-block-end-color: var(--hv-line);
+}
+.hv-header-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--hv-4); min-height: 70px; }
+.hv-logo { display: inline-flex; align-items: center; gap: var(--hv-3); }
+.hv-logo-mark { width: 34px; height: 26px; color: var(--hv-ink); flex: none; }
+.hv-logo-name { font-family: var(--hv-font-en); font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.hv-logo-sub { font-family: var(--hv-font-en); font-size: .62rem; color: var(--hv-ink-3); letter-spacing: .06em; line-height: 1.4; }
+
+.hv-nav { display: flex; align-items: center; gap: var(--hv-1); }
+.hv-nav-link {
+  padding: 9px 13px; border-radius: var(--hv-r-sm);
+  font-size: var(--hv-t-sm); font-weight: 550; color: var(--hv-ink-2);
+  transition: color .16s var(--hv-ease), background .16s var(--hv-ease);
+}
+.hv-nav-link:hover { color: var(--hv-ink); background: var(--hv-surface); }
+.hv-nav-link[aria-current="page"] { color: var(--hv-ink); font-weight: 650; }
+.hv-lang {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border: 1.5px solid var(--hv-line-2); border-radius: 999px;
+  font-size: var(--hv-t-xs); font-weight: 650;
+  transition: border-color .16s var(--hv-ease), background .16s var(--hv-ease);
+}
+.hv-lang:hover { border-color: var(--hv-ink); background: var(--hv-surface); }
+.hv-lang svg { width: 14px; height: 14px; opacity: .65; }
+
+/* CORRECTED 2026-09-18: this was 35×35px, under every touch-target guideline
+   and noticeably fiddly on a phone. The icon is unchanged; the box around it
+   is now 44×44. */
+.hv-burger { display: none; padding: 9px; border-radius: var(--hv-r-sm);
+             min-inline-size: 44px; min-block-size: 44px;
+             align-items: center; justify-content: center; }
+.hv-mobile-nav {
+  display: none; flex-direction: column; gap: var(--hv-1);
+  padding: var(--hv-4) 0 var(--hv-5);
+  border-block-start: 1px solid var(--hv-line);
+}
+.hv-mobile-nav[data-open="true"] { display: flex; }
+.hv-mobile-nav .hv-nav-link { padding: 12px var(--hv-3); font-size: var(--hv-t-body); }
+
+@media (max-width: 860px) {
+  .hv-nav-desktop { display: none; }
+  .hv-burger { display: inline-flex; }
+}
+
+/* Workspace shell — sidebar + content, for the client and admin areas. */
+.hv-shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+.hv-aside {
+  background: var(--hv-surface); border-inline-end: 1px solid var(--hv-line);
+  padding: var(--hv-5) var(--hv-4); display: flex; flex-direction: column; gap: var(--hv-5);
+}
+.hv-aside-nav { display: flex; flex-direction: column; gap: 2px; }
+.hv-aside-link {
+  display: flex; align-items: center; gap: var(--hv-3);
+  padding: 10px var(--hv-3); border-radius: var(--hv-r-sm);
+  font-size: var(--hv-t-sm); font-weight: 550; color: var(--hv-ink-2);
+  transition: background .16s var(--hv-ease), color .16s var(--hv-ease);
+}
+.hv-aside-link svg { width: 17px; height: 17px; flex: none; opacity: .75; }
+.hv-aside-link:hover { background: var(--hv-surface-2); color: var(--hv-ink); }
+.hv-aside-link[aria-current="page"] { background: var(--hv-signal-soft); color: var(--hv-signal); font-weight: 650; }
+.hv-aside-link[aria-current="page"] svg { opacity: 1; }
+.hv-main { padding: var(--hv-6) var(--hv-5) var(--hv-9); min-width: 0; }
+
+@media (max-width: 900px) {
+  .hv-shell { grid-template-columns: 1fr; }
+  .hv-aside { border-inline-end: 0; border-block-end: 1px solid var(--hv-line); }
+  .hv-aside-nav { flex-direction: row; overflow-x: auto; gap: var(--hv-1); padding-block-end: var(--hv-1); }
+  .hv-aside-link { white-space: nowrap; }
+}
+
+/* Tabs */
+.hv-tabs { display: flex; gap: var(--hv-1); border-block-end: 1px solid var(--hv-line); overflow-x: auto; }
+.hv-tab {
+  padding: 11px var(--hv-4); font-size: var(--hv-t-sm); font-weight: 600; color: var(--hv-ink-3);
+  border-block-end: 2px solid transparent; margin-block-end: -1px; white-space: nowrap;
+  transition: color .16s var(--hv-ease), border-color .16s var(--hv-ease);
+}
+.hv-tab:hover { color: var(--hv-ink-2); }
+.hv-tab[aria-selected="true"] { color: var(--hv-signal); border-block-end-color: var(--hv-signal); }
+
+/* ── States ──────────────────────────────────────────────────────────────── */
+
+.hv-empty {
+  display: flex; flex-direction: column; align-items: center; gap: var(--hv-3);
+  text-align: center; padding: var(--hv-8) var(--hv-5);
+  border: 1px dashed var(--hv-line-2); border-radius: var(--hv-r-lg);
+  background: var(--hv-surface-2);
+}
+.hv-empty svg { width: 34px; height: 34px; color: var(--hv-ink-3); opacity: .55; }
+.hv-empty-title { font-weight: 650; font-size: var(--hv-t-body); }
+.hv-empty p { font-size: var(--hv-t-sm); max-width: 46ch; }
+
+.hv-skeleton {
+  background: linear-gradient(90deg, var(--hv-line) 25%, var(--hv-surface-2) 50%, var(--hv-line) 75%);
+  background-size: 200% 100%; animation: hv-shimmer 1.4s linear infinite;
+  border-radius: var(--hv-r-sm);
+}
+@keyframes hv-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .hv-skeleton { animation: none; background: var(--hv-line); } }
+
+.hv-note {
+  display: flex; gap: var(--hv-3); padding: var(--hv-4);
+  border-radius: var(--hv-r); border: 1px solid var(--hv-line);
+  background: var(--hv-surface-2); font-size: var(--hv-t-sm); line-height: 1.7;
+}
+.hv-note svg { width: 18px; height: 18px; flex: none; margin-block-start: 2px; }
+.hv-note-signal { background: var(--hv-signal-soft); border-color: var(--hv-signal-line); color: var(--hv-signal-ink); }
+.hv-note-signal svg { color: var(--hv-signal); }
+.hv-note-caution { background: var(--hv-unverified-soft); border-color: var(--hv-unverified-line); color: var(--hv-unverified); }
+.hv-note-conflict { background: var(--hv-conflict-soft); border-color: var(--hv-conflict-line); color: var(--hv-conflict); }
+
+/* Toasts */
+.hv-toasts { position: fixed; inset-block-end: var(--hv-5); inset-inline-start: var(--hv-5); z-index: 300; display: flex; flex-direction: column; gap: var(--hv-2); }
+.hv-toast {
+  display: flex; align-items: center; gap: var(--hv-3);
+  background: var(--hv-ink); color: var(--hv-paper);
+  padding: var(--hv-3) var(--hv-5); border-radius: var(--hv-r);
+  font-size: var(--hv-t-sm); font-weight: 550; box-shadow: var(--hv-shadow-lift);
+  animation: hv-toast-in .28s var(--hv-ease);
+}
+@keyframes hv-toast-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Demo-mode indicator ─────────────────────────────────────────────────────
+   Visible, permanent, and impossible to mistake for the real product. Anything
+   inside a demo surface is fictional. */
+
+.hv-demo-bar {
+  display: flex; align-items: center; justify-content: center; gap: var(--hv-3);
+  flex-wrap: wrap; text-align: center;
+  background: repeating-linear-gradient(135deg, var(--hv-clay) 0 12px, #8F3F20 12px 24px);
+  color: #fff; padding: 9px var(--hv-5);
+  font-size: var(--hv-t-xs); font-weight: 650; letter-spacing: .01em;
+}
+.hv-demo-bar a { text-decoration: underline; text-underline-offset: 3px; }
+.hv-demo-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--hv-clay-soft); color: var(--hv-clay);
+  border: 1px solid color-mix(in srgb, var(--hv-clay) 34%, transparent);
+  padding: 2px 9px; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; white-space: nowrap;
+}
+
+/* ── Diagrams ────────────────────────────────────────────────────────────────
+   Lightweight, explanatory, drawn with the same tokens. No decorative charts. */
+
+.hv-journey { display: grid; gap: var(--hv-3); grid-template-columns: repeat(4, 1fr); }
+.hv-journey-step {
+  position: relative; padding: var(--hv-5) var(--hv-4);
+  border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg);
+  background: var(--hv-surface);
+}
+.hv-journey-step[data-active="true"] { border-color: var(--hv-signal); background: var(--hv-signal-soft); }
+.hv-journey-num {
+  font-family: var(--hv-font-en); font-size: .74rem; font-weight: 700;
+  color: var(--hv-signal); letter-spacing: .1em;
+}
+.hv-journey-ar { font-size: var(--hv-t-h3); font-weight: 700; margin-block-start: var(--hv-2); }
+.hv-journey-en { font-family: var(--hv-font-en); font-size: var(--hv-t-xs); color: var(--hv-ink-3); letter-spacing: .04em; text-transform: uppercase; }
+.hv-journey-desc { font-size: var(--hv-t-xs); color: var(--hv-ink-2); margin-block-start: var(--hv-3); line-height: 1.65; }
+@media (max-width: 860px) { .hv-journey { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .hv-journey { grid-template-columns: 1fr; } }
+
+/* Editorial numbered list — replaces the repetitive card grid. */
+.hv-ordered { display: grid; gap: 0; }
+.hv-ordered-item {
+  display: grid; grid-template-columns: 78px 1fr; gap: var(--hv-5);
+  padding-block: var(--hv-6); border-block-start: 1px solid var(--hv-line);
+}
+.hv-ordered-item:first-child { border-block-start: 0; }
+.hv-ordered-num {
+  font-family: var(--hv-font-en); font-size: 2.1rem; font-weight: 300;
+  color: var(--hv-ink-3); line-height: 1; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 680px) {
+  .hv-ordered-item { grid-template-columns: 1fr; gap: var(--hv-3); padding-block: var(--hv-5); }
+  .hv-ordered-num { font-size: 1.5rem; }
+}
+
+/* Asymmetric feature rows — alternating, not a grid of identical boxes. */
+.hv-split { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(var(--hv-5), 5vw, var(--hv-8)); align-items: center; }
+.hv-split-reverse > :first-child { order: 2; }
+@media (max-width: 860px) {
+  .hv-split { grid-template-columns: 1fr; }
+  .hv-split-reverse > :first-child { order: 0; }
+}
+
+/* Situation list — "does this sound familiar?" */
+.hv-situations { display: grid; gap: var(--hv-3); grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.hv-situation {
+  display: flex; gap: var(--hv-3); align-items: flex-start;
+  padding: var(--hv-4) var(--hv-5);
+  background: var(--hv-surface); border: 1px solid var(--hv-line);
+  border-radius: var(--hv-r);
+  border-inline-start: 3px solid var(--hv-signal-line);
+  font-size: var(--hv-t-sm); line-height: 1.7;
+}
+.hv-situation svg { width: 18px; height: 18px; color: var(--hv-signal); flex: none; margin-block-start: 3px; }
+
+.hv-footer { border-block-start: 1px solid var(--hv-line); padding-block: var(--hv-7) var(--hv-6); }
+.hv-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--hv-6); }
+@media (max-width: 720px) { .hv-footer-grid { grid-template-columns: 1fr; gap: var(--hv-5); } }
+.hv-footer-title { font-size: var(--hv-t-xs); font-weight: 700; color: var(--hv-ink-3); letter-spacing: .08em; text-transform: uppercase; margin-block-end: var(--hv-3); }
+body[data-lang="ar"] .hv-footer-title { text-transform: none; letter-spacing: 0; }
+.hv-footer-link { display: block; padding-block: 5px; font-size: var(--hv-t-sm); color: var(--hv-ink-2); }
+.hv-footer-link:hover { color: var(--hv-ink); }
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@media print {
+  .hv-header, .hv-aside, .hv-demo-bar, .hv-toasts, .hv-btn { display: none !important; }
+  body { background: #fff; }
+  .hv-card, .hv-panel { border-color: #ccc; break-inside: avoid; }
+}
+
+/* ── The journey explorer ─────────────────────────────────────────────────
+   Used by /assets/hv-journey.js. The rail is a row of stage nodes joined by a
+   single line; on a phone it becomes a column, because five legible labels do
+   not fit across 360px and shrinking them until they do is how a signature
+   moment turns into a decoration.
+
+   The selected stage is marked THREE ways — filled node, heavier label, rule
+   beneath — so it does not depend on colour, and the unbuilt stages carry a
+   dashed node and a visible flag before anything is selected. */
+.jr-section { padding-block: clamp(48px, 7vw, 92px); }
+.jr-rail {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--hv-2);
+  margin-block-start: var(--hv-5); position: relative;
+}
+.jr-rail::before {
+  content: ''; position: absolute; inset-inline: 10%; inset-block-start: 21px;
+  border-block-start: 1px solid var(--hv-line-2); z-index: 0;
+}
+.jr-node {
+  position: relative; z-index: 1;
+  display: grid; justify-items: center; gap: 7px; text-align: center;
+  padding: 0 var(--hv-1) var(--hv-2); background: none; border: 0;
+  cursor: pointer; color: var(--hv-ink-3); font: inherit;
+  border-block-end: 2px solid transparent;
+  transition: color .18s var(--hv-ease), border-color .18s var(--hv-ease);
+}
+.jr-dot {
+  inline-size: 42px; block-size: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--hv-paper); border: 1.5px solid var(--hv-line-2); color: var(--hv-ink-3);
+  transition: transform .18s var(--hv-ease), background .18s var(--hv-ease),
+              border-color .18s var(--hv-ease), color .18s var(--hv-ease);
+}
+.jr-av-designed .jr-dot { border-style: dashed; }
+.jr-n { font-family: var(--hv-font-en); font-size: .68rem; font-weight: 700; letter-spacing: .06em; }
+.jr-label { font-size: var(--hv-t-sm); line-height: 1.45; max-inline-size: 18ch; }
+.jr-flag {
+  font-size: .68rem; line-height: 1.4; color: var(--hv-unverified);
+  border: 1px solid var(--hv-unverified-line); background: var(--hv-unverified-soft);
+  border-radius: 999px; padding: 2px 9px;
+}
+.jr-node:hover .jr-dot { border-color: var(--hv-signal-line); transform: translateY(-2px); }
+.jr-node:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 3px; border-radius: var(--hv-r-sm); }
+.jr-node.is-on { color: var(--hv-ink); border-block-end-color: var(--hv-signal); }
+.jr-node.is-on .jr-label { font-weight: 700; }
+.jr-node.is-on .jr-dot { background: var(--hv-signal); border-color: var(--hv-signal); color: var(--hv-paper); }
+.jr-hint { margin-block-start: var(--hv-3); }
+
+.jr-panel {
+  margin-block-start: var(--hv-4); padding: var(--hv-5);
+  background: var(--hv-surface); border: 1px solid var(--hv-line); border-radius: var(--hv-r);
+}
+.jr-panel:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+.jr-panel-head { display: flex; align-items: center; gap: var(--hv-3); flex-wrap: wrap; }
+.jr-av {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--hv-t-xs); font-weight: 600; border-radius: 999px; padding: 4px 11px;
+}
+.jr-av.jr-av-now { color: var(--hv-verified); background: var(--hv-verified-soft); border: 1px solid var(--hv-verified-line); }
+.jr-av.jr-av-designed { color: var(--hv-unverified); background: var(--hv-unverified-soft); border: 1px solid var(--hv-unverified-line); }
+.jr-av-note { font-size: var(--hv-t-xs); color: var(--hv-ink-2); line-height: 1.75; margin-block-start: var(--hv-2); max-inline-size: 78ch; }
+.jr-blocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--hv-4); margin-block-start: var(--hv-4); }
+.jr-block { border-block-start: 2px solid var(--hv-line-2); padding-block-start: var(--hv-3); }
+.jr-block-h { display: flex; align-items: center; gap: 7px; font-size: var(--hv-t-xs); font-weight: 700;
+              color: var(--hv-signal-ink); margin-block-end: 7px; }
+.jr-block p { font-size: var(--hv-t-sm); line-height: 1.75; color: var(--hv-ink-2); }
+
+@media (max-width: 860px) {
+  .jr-rail { grid-template-columns: 1fr; gap: var(--hv-1); }
+  .jr-rail::before { inset-inline: 21px auto; inset-block: 21px 21px;
+                     border-block-start: 0; border-inline-start: 1px solid var(--hv-line-2); }
+  .jr-node { grid-template-columns: 42px 1fr; justify-items: start; text-align: start;
+             align-items: center; gap: var(--hv-3); padding: var(--hv-2);
+             border-block-end: 0; border-inline-start: 2px solid transparent; }
+  .jr-node .jr-n { grid-row: 1; grid-column: 2; }
+  .jr-node .jr-dot { grid-row: 1 / span 2; grid-column: 1; }
+  .jr-node .jr-label { grid-row: 2; grid-column: 2; max-inline-size: none; }
+  .jr-node .jr-flag { grid-row: 3; grid-column: 2; justify-self: start; }
+  .jr-node.is-on { border-inline-start-color: var(--hv-signal); background: var(--hv-surface); border-radius: var(--hv-r-sm); }
+  .jr-blocks { grid-template-columns: 1fr; gap: var(--hv-3); }
+  .jr-panel { padding: var(--hv-4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jr-node, .jr-dot { transition: none; }
+  .jr-node:hover .jr-dot { transform: none; }
+}
+
+/* ── The administration entrance ──────────────────────────────────────────
+   Newly authorized 2026-09-18. It sits in the public header beside the
+   client-facing links but must not read as one of them: the audience is the
+   team, not a visitor. So it carries its own icon, a hairline frame and the
+   petrol ink — recognisable at a glance, and never mistaken for the primary
+   call to action, which stays the only filled button on the page.
+
+   44px minimum on touch, a visible focus ring that does not rely on colour
+   alone, and a pressed state, because a header link people use twenty times a
+   day should acknowledge the press. */
+.hv-admin-entry {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--hv-line-2); background: transparent;
+  color: var(--hv-signal-ink); font-size: var(--hv-t-sm); font-weight: 600;
+  line-height: 1.2; white-space: nowrap;
+  transition: border-color .16s var(--hv-ease), background .16s var(--hv-ease), color .16s var(--hv-ease);
+}
+.hv-admin-entry-ico { display: inline-flex; color: var(--hv-signal); }
+.hv-admin-entry:hover { border-color: var(--hv-signal-line); background: var(--hv-signal-soft); color: var(--hv-signal-ink); }
+.hv-admin-entry:active { background: var(--hv-signal-line); }
+.hv-admin-entry:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+.hv-admin-entry[aria-current="page"] { border-color: var(--hv-signal); background: var(--hv-signal-soft); }
+
+/* In the mobile drawer it becomes a full-width row under a rule, so the
+   separation from the client links above it is visible, not only stated. */
+.hv-mobile-admin { margin-block-start: var(--hv-3); padding-block-start: var(--hv-3);
+                   border-block-start: 1px solid var(--hv-line); }
+.hv-admin-entry-block { display: flex; width: 100%; justify-content: flex-start;
+                        min-block-size: 44px; padding-inline: var(--hv-3); border-radius: var(--hv-r-sm); }
+
+@media (prefers-reduced-motion: reduce) { .hv-admin-entry { transition: none; } }
+
+/* A plain inline link inside prose. Used by the journey explorer and the
+   management screens; the underline is the affordance, colour is the accent. */
+.hv-link { color: var(--hv-signal-ink); text-decoration: underline;
+           text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.hv-link:hover { color: var(--hv-ink); }
+.hv-link:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; border-radius: 2px; }
+
+/* Interactive targets should not wait 300ms for a double-tap that is not
+   coming. Applies to every control people press on a phone. */
+.hv-btn, .hv-nav-link, .hv-admin-entry, .hv-lang, .hv-burger, .hv-tab,
+.hv-footer-link, .mg-link, .mg-row, .mg-card { touch-action: manipulation; }
+
+/* ── Return links on the internal screens ─────────────────────────────────
+   ADDED 2026-09-19. The management entrance worked forwards only: request
+   review's header link went to the LEGACY /admin password screen and the
+   workspace could only reach request review, so the round trip ended on the
+   old internal page the entrance was built to replace.
+
+   These are the return links. They are a touch target first — 44px, which
+   `.hv-nav-link` at 9px padding was not — and they wrap rather than pushing
+   the header sideways at 390px, which is what a third link in a non-wrapping
+   flex row would otherwise do. */
+.hv-crumb {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-block-size: 44px; padding-inline: 12px; border-radius: var(--hv-r-sm);
+  font-size: var(--hv-t-sm); font-weight: 600; color: var(--hv-ink-2);
+  touch-action: manipulation;
+  transition: color .16s var(--hv-ease), background .16s var(--hv-ease);
+}
+.hv-crumb-ico { display: inline-flex; color: var(--hv-signal); }
+.hv-crumb:hover { color: var(--hv-ink); background: var(--hv-surface-2); }
+.hv-crumb:active { background: var(--hv-line); }
+.hv-crumb:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+.hv-crumb[aria-current="page"] { color: var(--hv-signal-ink); background: var(--hv-signal-soft); }
+/* The legacy panel is reachable on purpose, and is not the primary way back.
+   It is quieter, and its icon says "separate place" rather than "home". */
+.hv-crumb-legacy { font-weight: 500; color: var(--hv-ink-3); }
+.hv-crumb-legacy .hv-crumb-ico { color: var(--hv-ink-3); }
+
+/* The internal headers carry more than the public one — a store badge, the
+   language button and now two return links. They wrap instead of overflowing. */
+.hv-ops-nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 860px) {
+  .hv-header-inner:has(.hv-ops-nav) { flex-wrap: wrap; gap: var(--hv-2) var(--hv-3); padding-block: 8px; }
+  .hv-ops-nav { justify-content: flex-start; }
+}
+@media (prefers-reduced-motion: reduce) { .hv-crumb { transition: none; } }

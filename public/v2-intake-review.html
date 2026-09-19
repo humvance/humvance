@@ -1,283 +1,565 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Humvance — Intake Review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مراجعة الطلبات — Humvance</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
 <style>
-:root{--black:#0A0A0A;--warm:#F6F5F1;--surface:#FFFFFF;--border:#E2E1DD;--border-strong:#C8C7C3;--text:#0A0A0A;--text-2:#444;--text-3:#777;--error:#C0392B;--success:#1A7A4A;--warn:#8A6100;--r:8px;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
-@media(prefers-color-scheme:dark){:root{--warm:#111110;--surface:#1A1A19;--border:#2E2E2C;--border-strong:#444442;--text:#F0EFE9;--text-2:#BBB;--text-3:#888;--black:#F0EFE9}}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--warm);color:var(--text);padding:0 0 60px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 22px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
-h1{font-size:16px;font-weight:800;letter-spacing:-.2px}
-.wrap{max-width:1080px;margin:0 auto;padding:22px}
-.mono{font-family:var(--mono);font-size:12px;color:var(--text-3)}
-button{font:inherit;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:var(--r);padding:8px 14px}
-button.primary{background:var(--black);color:var(--warm);border-color:var(--black)}
-button:disabled{opacity:.45;cursor:not-allowed}
-input,textarea{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);color:var(--text)}
-.banner{padding:11px 14px;border-radius:var(--r);margin-bottom:16px;font-size:13.5px}
-.banner.bad{background:#fdecea;color:#7a1c12;border:1px solid #f0b8b0}
-.banner.info{background:var(--surface);border:1px solid var(--border);color:var(--text-2)}
-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-th,td{text-align:start;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13.5px;vertical-align:top}
-th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);font-weight:700}
-tr:last-child td{border-bottom:none}
-tr.row{cursor:pointer}
-tr.row:hover td{background:var(--warm)}
-.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--border-strong);color:var(--text-2);white-space:nowrap}
-.chip.bad{border-color:var(--error);color:var(--error)}
-.chip.good{border-color:var(--success);color:var(--success)}
-.chip.warn{border-color:var(--warn);color:var(--warn)}
-.panel{border:1px solid var(--border);border-radius:var(--r);background:var(--surface);margin-bottom:18px;overflow:hidden}
-.panel > h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;padding:11px 16px;border-bottom:1px solid var(--border)}
-.panel.client > h2{background:#eef3f8;color:#1c3d5a}
-.panel.humvance > h2{background:var(--black);color:var(--warm)}
-@media(prefers-color-scheme:dark){.panel.client > h2{background:#16242f;color:#9cc4e4}}
-.panel .body{padding:16px}
-.kv{display:grid;grid-template-columns:200px 1fr;gap:8px 18px;font-size:13.5px}
-.kv dt{color:var(--text-3)}
-.kv dd{white-space:pre-wrap;word-break:break-word}
-blockquote{border-inline-start:3px solid var(--border-strong);padding:8px 0 8px 14px;margin:8px 0;white-space:pre-wrap;color:var(--text)}
-.label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin:14px 0 4px;font-weight:700}
-.epistemic{font-size:12px;color:var(--text-3);border-inline-start:3px solid var(--border-strong);padding-inline-start:10px;margin-top:6px}
-ul{margin-inline-start:18px}
-.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
-@media(max-width:700px){.kv{grid-template-columns:1fr;gap:2px 0}.kv dt{margin-top:8px}.wrap{padding:14px}}
+  /* Two columns that must never be confused: what the client said, and what we
+     did about it. The separation is structural, not decorative. */
+  .rv-split { display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; align-items: start; }
+  /* Grid items default to min-width:auto and so refuse to be narrower than
+     their widest unbreakable content. Without this the audit table and the
+     case identifiers widened the whole page at 390px. 2026-09-19. */
+  .rv-split > * { min-inline-size: 0; }
+  @media (max-width: 1020px) { .rv-split { grid-template-columns: 1fr; } }
+
+  .rv-col-client { border-inline-start: 3px solid var(--hv-unverified-line); }
+  .rv-col-hv { border-inline-start: 3px solid var(--hv-signal-line); }
+  .rv-colhead { display: flex; align-items: center; gap: 9px; padding: 13px 18px; border-block-end: 1px solid var(--hv-line); font-size: var(--hv-t-xs); font-weight: 700; letter-spacing: .04em; }
+  .rv-colhead-client { background: var(--hv-unverified-soft); color: var(--hv-unverified); }
+  .rv-colhead-hv { background: var(--hv-signal-soft); color: var(--hv-signal); }
+
+  .rv-kv { display: grid; grid-template-columns: 150px 1fr; gap: 3px 16px; font-size: var(--hv-t-sm); }
+  .rv-kv dt { color: var(--hv-ink-3); font-size: var(--hv-t-xs); padding-block: 7px; }
+  .rv-kv dd { padding-block: 7px; border-block-end: 1px solid var(--hv-line); }
+  .rv-kv dt { border-block-end: 1px solid var(--hv-line); }
+  @media (max-width: 620px) { .rv-kv { grid-template-columns: 1fr; } .rv-kv dt { border: 0; padding-block-end: 0; } }
+
+  .rv-block + .rv-block { margin-block-start: 20px; padding-block-start: 20px; border-block-start: 1px solid var(--hv-line); }
+  .rv-block-title { font-size: var(--hv-t-xs); font-weight: 700; color: var(--hv-ink-3); letter-spacing: .05em; margin-block-end: 9px; }
+  .rv-list { display: grid; gap: 8px; font-size: var(--hv-t-sm); }
+  .rv-list li { padding: 10px 13px; background: var(--hv-surface-2); border: 1px solid var(--hv-line); border-radius: var(--hv-r-sm); }
+
+  .rv-row { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+            padding: 14px 18px; border-block-end: 1px solid var(--hv-line); cursor: pointer; transition: background .14s var(--hv-ease); }
+  .rv-row:hover { background: var(--hv-surface-2); }
+  .rv-row:last-child { border-block-end: 0; }
+  .rv-row-t { font-weight: 600; font-size: var(--hv-t-sm); line-height: 1.5; }
+  .rv-row-m { font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 3px; }
+  .rv-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rv-filter { padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--hv-line); font-size: var(--hv-t-xs); font-weight: 600; color: var(--hv-ink-2); }
+  .rv-filter[aria-pressed="true"] { background: var(--hv-ink); color: var(--hv-paper); border-color: var(--hv-ink); }
+  .rv-states { display: grid; gap: 10px; }
+  .rv-state { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border-radius: var(--hv-r); border: 1px solid var(--hv-line); background: var(--hv-surface-2); flex-wrap: wrap; }
+  .rv-state > * { min-inline-size: 0; }
+  .rv-state-k { font-size: var(--hv-t-xs); color: var(--hv-ink-3); }
 </style>
 </head>
-<body>
-<header>
-  <h1>Humvance — Intake Review</h1>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span class="mono" id="isolation"></span>
-    <button onclick="loadList()">Refresh</button>
-  </div>
-</header>
-<div class="wrap">
-  <div id="banner"></div>
-  <div id="view"></div>
-</div>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script src="/assets/hv-intake-copy.js"></script>
+<script src="/assets/hv-admin-copy.js"></script>
+<script src="/assets/hv-demo.js"></script>
 <script>
-'use strict';
-// The reviewer side of the holding area.
-//
-// Its whole job is to keep two things apart on the screen, because they are two
-// different kinds of statement: what the CLIENT REPORTED, and what HUMVANCE has
-// decided. Nothing on this page interprets, scores or concludes anything, and no
-// AI runs here — a submission moves only when a person presses a button.
+/* ===========================================================================
+   Requests and review — the human gate.
+   ---------------------------------------------------------------------------
+   WHAT DID NOT CHANGE, deliberately and completely:
+     · the endpoints  — GET /api/v2/intake-review (list and one), POST for ops
+     · the operations — decide_intake, resume_promotion, and only those
+     · the session    — sessionStorage 'hv_token', set by signing in at /admin
+     · expected_version on every decision, so a stale tab cannot overwrite
+     · the isolation header readout, so the reviewer can see which store this is
+   The network layer below is the existing one. Only the presentation changed.
 
-var S = { list: [], current: null };
+   WHAT THE PRESENTATION NOW MAKES UNMISSABLE:
 
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
-  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
-function el(id){ return document.getElementById(id); }
-function token(){ try { return sessionStorage.getItem('hv_token'); } catch(e){ return null; } }
-function fmt(ts){ try { return new Date(ts).toISOString().replace('T',' ').slice(0,16); } catch(e){ return ''; } }
-function banner(msg, kind){ el('banner').innerHTML = msg ? '<div class="banner '+(kind||'info')+'">'+esc(msg)+'</div>' : ''; }
+   1. DECISION STATE ≠ PROMOTION STATE. They are two rows, always both shown,
+      never merged into one "status". A submission can be ACCEPTED with its
+      promotion still PENDING, and that is precisely the case a reviewer must be
+      able to see and act on.
+   2. CLIENT-REPORTED ≠ HUMVANCE REVIEW. Two columns, two colours, two rules on
+      the edge. Everything on the client side is immutable and labelled
+      unverified. Nothing we conclude is ever rendered in that column.
+   3. An epistemic caption sits under every client block, carrying the label the
+      server assigned — not one this page invented.
+   =========================================================================== */
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
 
-async function api(path, opts){
-  var o = opts || {};
-  o.headers = Object.assign({ 'Content-Type':'application/json' }, o.headers||{});
-  var t = token();
-  if (t) o.headers['Authorization'] = 'Bearer ' + t;
-  var r = await fetch(path, o);
-  var iso = r.headers.get('X-Humvance-V2-Isolation');
-  if (iso) el('isolation').textContent = 'store: ' + (r.headers.get('X-Humvance-V2-Store')||'?') + ' · ' + iso;
-  var body = null;
-  try { body = await r.json(); } catch(e) {}
-  if (!r.ok) { var err = new Error((body && body.error) || ('HTTP '+r.status)); err.code = body && body.code; throw err; }
-  return body;
-}
+  var S = { list: [], current: null, filter: 'PENDING_REVIEW', banner: null, busy: false, isolation: null, store: null,
+            /* Demo mode only: which fixture is open. The fixture itself is
+               re-resolved for the current language on every render, so a
+               language switch does not leave stale demo text on screen. */
+            demoDetailId: null };
 
-async function loadList(){
-  banner('');
-  try {
-    var out = await api('/api/v2/intake-review?status=all&limit=100');
-    S.list = out.submissions || [];
-    renderList();
-  } catch (e) { renderError(e); }
-}
+  /* ── Network: unchanged from the working implementation ── */
 
-function renderError(e){
-  if (e.code === 'unauthenticated' || e.code === 'forbidden_role') {
-    banner('Sign in to /admin first — this page reads the admin session token from this origin.', 'bad');
-  } else if (e.code === 'store_misconfigured') {
-    banner('V2 storage is not configured on this deployment. It fails closed rather than falling back to the production database. ' + e.message, 'bad');
-  } else {
-    banner((e.code ? e.code + ': ' : '') + e.message, 'bad');
+  function token() { try { return sessionStorage.getItem('hv_token'); } catch (e) { return null; } }
+
+  async function api(path, opts) {
+    var o = opts || {};
+    o.headers = Object.assign({ 'Content-Type': 'application/json' }, o.headers || {});
+    var tk = token();
+    if (tk) o.headers['Authorization'] = 'Bearer ' + tk;
+    var r = await fetch(path, o);
+    var iso = r.headers.get('X-Humvance-V2-Isolation');
+    if (iso) { S.isolation = iso; S.store = r.headers.get('X-Humvance-V2-Store') || '?'; }
+    var body = null;
+    try { body = await r.json(); } catch (e) {}
+    if (!r.ok) { var err = new Error((body && body.error) || ('HTTP ' + r.status)); err.code = body && body.code; throw err; }
+    return body;
   }
-}
 
-function statusChip(s){
-  var cls = s === 'ACCEPTED' ? 'good' : (s === 'REJECTED' ? 'warn' : '');
-  return '<span class="chip '+cls+'">'+esc(s)+'</span>';
-}
+  function onError(e) {
+    if (e.code === 'unauthenticated' || e.code === 'forbidden_role') S.banner = { kind: 'conflict', msg: t('rv.err.signin') };
+    else if (e.code === 'store_misconfigured') S.banner = { kind: 'conflict', msg: t('rv.err.store') + ' ' + e.message };
+    else S.banner = { kind: 'conflict', msg: (e.code ? e.code + ': ' : '') + e.message };
+    render();
+  }
 
-function renderList(){
-  S.current = null;
-  if (!S.list.length) { el('view').innerHTML = '<p class="mono">No submissions yet.</p>'; return; }
-  el('view').innerHTML =
-    '<table><thead><tr><th>Received</th><th>Company</th><th>Why they came</th><th>Scope</th><th>Status</th><th>Flags</th></tr></thead><tbody>' +
-    S.list.map(function(r){
-      return '<tr class="row" onclick="openOne(\''+esc(r.intakeseed_id)+'\')">' +
-        '<td class="mono">'+fmt(r.submitted_at)+'</td>' +
-        '<td>'+esc(r.company_name)+'<div class="mono">'+esc(r.submission_reference)+'</div></td>' +
-        '<td><span class="chip">'+esc(r.case_intent)+'</span></td>' +
-        '<td class="mono">'+esc(r.scope_kind)+'</td>' +
-        '<td>'+statusChip(r.status)+(r.resulting_case_id?'<div class="mono">'+esc(r.resulting_case_id)+'</div>':'')+'</td>' +
-        '<td>'+(r.untrusted_flagged?'<span class="chip bad">untrusted content</span>':'')+'</td>' +
-      '</tr>';
-    }).join('') + '</tbody></table>';
-}
+  async function loadList() {
+    if (U.isDemo()) {
+      S.isolation = 'DEMO-FIXTURES'; S.store = 'fixtures'; render();
+      var dseed = urlSeedId();
+      if (dseed) openOne(dseed);
+      return;
+    }
+    S.banner = null;
+    try {
+      var out = await api('/api/v2/intake-review?status=all&limit=100');
+      S.list = out.submissions || [];
 
-async function openOne(id){
-  banner('');
-  try { S.current = await api('/api/v2/intake-review?intakeseed_id='+encodeURIComponent(id)); renderOne(); }
-  catch (e) { renderError(e); }
-}
+      /* CORRECTED 2026-09-19. This used to render the queue, then fetch the
+         request the deep link names, then render again. Two visible effects,
+         both bad: the queue flashed up for half a second on a link that was
+         never asking for the queue, and anything the person touched during that
+         window — the header's return links especially — was attached to markup
+         the second render then threw away, so the tap did nothing at all.
+         A link that silently does nothing is indistinguishable from a broken
+         one. On a first load with a request named, the detail is fetched BEFORE
+         the first render, so the screen is drawn once, already correct.
 
-function list(items, fn){ return items && items.length ? '<ul>'+items.map(fn).join('')+'</ul>' : '<p class="mono">none</p>'; }
+         Only on the first load, and only if nothing is open: a refresh of the
+         list must not yank the person out of a detail they are reading. */
+      var seed = urlSeedId();
+      if (seed && !S.current) {
+        try {
+          S.current = await api('/api/v2/intake-review?intakeseed_id=' + encodeURIComponent(seed));
+          syncUrl(seed);
+        } catch (e) {
+          /* The list is real and worth showing even when that one id is not. */
+          render(); onError(e); return;
+        }
+      }
+      render();
+    }
+    catch (e) { onError(e); }
+  }
 
-function renderOne(){
-  var seed = S.current.seed, review = S.current.review, audit = S.current.audit || [];
-  var pending = review && review.status === 'PENDING_REVIEW';
+  /* CORRECTED 2026-09-18. This fixture invented a nested shape —
+     `organization_context.company_name` — that `listSubmissions()` does not
+     return; the summary carries a flat `company_name`. The demo therefore
+     looked right while every real row rendered its company as an em dash, which
+     is precisely the failure mode the workspace fixtures were written to avoid:
+     a fixture that makes up its own field names is how a renderer stays wrong.
+     The fixture now matches the service. */
+  function demoRow(r) {
+    return Object.assign({}, HV.demo.resolve(r, I.lang), {
+      company_name: HV.demo.L(r.title, I.lang),
+      submitted_at: r.received_at
+    });
+  }
 
-  var impact = list(seed.observed_impact, function(i){
-    return '<li><strong>'+esc(i.kind)+'</strong>'+(i.description?' — '+esc(i.description):'') +
-      (i.quantification ? ' <span class="chip warn">client-stated: '+esc(i.quantification.value)+' '+esc(i.quantification.unit)+'</span>' +
-        (i.quantification.basis? '<div class="mono">basis: '+esc(i.quantification.basis)+'</div>':'') : '') + '</li>';
-  });
+  /* Demo state, rebuilt from the raw fixtures at render time so that it always
+     speaks the language now on screen. */
+  function applyDemoState() {
+    if (!U.isDemo()) return;
+    S.list = HV.demo.QUEUE.map(demoRow);
+    S.current = S.demoDetailId && HV.demo.DETAIL[S.demoDetailId]
+      ? HV.demo.resolve(HV.demo.DETAIL[S.demoDetailId], I.lang)
+      : null;
+  }
 
-  el('view').innerHTML =
-    '<p><button onclick="renderList()">&larr; All submissions</button></p>' +
+  /* ADDED 2026-09-18 — a request has an address.
+     The management entrance at `/manage` lists requests and links each row to
+     this screen with `?intakeseed_id=…`. Before this change the parameter was
+     accepted by the URL bar and ignored by the page: every link landed on the
+     queue, and the person had to find the row again by eye. That is the
+     "straightforward navigation between requests and cases" defect, not a
+     cosmetic one.
+     This is deliberately NOT a router. The parameter selects which submission
+     to OPEN; it grants nothing. The detail still comes from the protected API
+     under the caller's own token, so an unauthenticated or wrong-role visitor
+     with a valid-looking id still gets the same refusal they got before. */
+  function urlSeedId() {
+    try { return new URLSearchParams(location.search).get('intakeseed_id') || null; }
+    catch (e) { return null; }
+  }
+  function syncUrl(id) {
+    /* replaceState, not pushState: the screen has its own "back to the list"
+       control and two competing histories confuse more than they help. */
+    try {
+      var u = new URL(location.href);
+      if (id) u.searchParams.set('intakeseed_id', id); else u.searchParams.delete('intakeseed_id');
+      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    } catch (e) { /* an unsupported history API must not break the screen */ }
+  }
 
-    (seed.untrusted_scan && !seed.untrusted_scan.clean
-      ? '<div class="banner bad"><strong>This submission contains instruction-shaped text.</strong> It is stored verbatim as client content and confers no instruction or authority. Flagged: ' +
-        esc(seed.untrusted_scan.flagged_fields.join(', ')) + '</div>' : '') +
+  async function openOne(id) {
+    /* READING a fixture is not a write. Opening one shows the review screen
+       exactly as the backend shapes it; ACCEPT, REJECT and resume remain
+       guarded below and still change nothing. */
+    if (U.isDemo()) {
+      if (!HV.demo.DETAIL[id]) { U.demoGuard('open submission ' + id); return; }
+      S.demoDetailId = id; S.banner = null; syncUrl(id); render(); return;
+    }
+    S.banner = null;
+    try {
+      S.current = await api('/api/v2/intake-review?intakeseed_id=' + encodeURIComponent(id));
+      syncUrl(id);
+      render();
+    } catch (e) { onError(e); }
+  }
 
-    '<div class="panel client"><h2>Client-reported — nothing here has been verified</h2><div class="body">' +
-      '<dl class="kv">' +
-        '<dt>Reference</dt><dd class="mono">'+esc(seed.submission_reference)+'</dd>' +
-        '<dt>Received</dt><dd>'+fmt(seed.submitted_at)+'</dd>' +
-        '<dt>Company</dt><dd>'+esc(seed.organization_context.company_name)+
-          (seed.organization_context.sector?' · '+esc(seed.organization_context.sector):'')+
-          (seed.organization_context.employee_count_band?' · '+esc(seed.organization_context.employee_count_band)+' employees':'')+'</dd>' +
-        '<dt>Respondent</dt><dd>'+esc(seed.respondent_context.name)+' — '+esc(seed.respondent_context.role_title)+'<div class="mono">'+esc(seed.respondent_context.email)+'</div></dd>' +
-        '<dt>Why they came</dt><dd><span class="chip">'+esc(seed.case_intent)+'</span></dd>' +
-        '<dt>Scope</dt><dd>'+esc(seed.scope.kind)+(seed.scope.labels.length?' — '+esc(seed.scope.labels.join(', ')):'')+'</dd>' +
-        '<dt>Timeline</dt><dd>'+esc(seed.timeline.first_noticed_approx||'not given')+' · '+esc(seed.timeline.pattern)+'</dd>' +
-      '</dl>' +
+  async function resume() {
+    /* Demo mode opens the detail for READING. Every write is still refused
+       here, before any network call and before any confirm dialog. */
+    if (U.isDemo()) { U.demoGuard('resume promotion'); return; }
+    var seed = S.current.seed;
+    S.banner = null; S.busy = true; render();
+    try {
+      var out = await api('/api/v2/intake-review', {
+        method: 'POST',
+        body: JSON.stringify({ op: 'resume_promotion', intakeseed_id: seed.intakeseed_id })
+      });
+      S.busy = false;
+      await openOne(seed.intakeseed_id);
+      S.banner = { kind: 'signal', msg: out.already_complete ? t('rv.resume.noop') : t('rv.resume.done') };
+      render();
+    } catch (e) { S.busy = false; onError(e); }
+  }
 
-      '<div class="label">What they say is happening</div>' +
-      '<blockquote>'+esc(seed.reported_situation)+'</blockquote>' +
-      '<div class="epistemic">'+esc(seed.epistemic_status.reported_situation)+' — the sponsor\'s account, to be tested, not a finding.</div>' +
+  async function decide(decision) {
+    if (U.isDemo()) { U.demoGuard('decide intake: ' + decision); return; }
+    var seed = S.current.seed, review = S.current.review;
+    var titleEl = document.getElementById('rv-title');
+    var reasonEl = document.getElementById('rv-reason');
+    var title = (titleEl && titleEl.value.trim()) || null;
+    var reason = (reasonEl && reasonEl.value.trim()) || '';
 
-      '<div class="label">Recent examples ('+seed.recent_examples.length+')</div>' +
-      list(seed.recent_examples, function(x){
-        return '<li><strong>'+esc(x.what_happened)+'</strong>' +
-          (x.observable_consequence?'<div>Result: '+esc(x.observable_consequence)+'</div>':'') +
-          '<div class="mono">'+esc(x.approx_when||'no timing')+(x.area?' · '+esc(x.area):'')+'</div></li>';
-      }) +
-      '<div class="epistemic">'+esc(seed.epistemic_status.recent_examples)+' — one person\'s account of all of them.</div>' +
+    var ok = decision === 'ACCEPTED'
+      ? confirm(t('rv.confirm.accept', { org: seed.organization_context.company_name }))
+      : confirm(t('rv.confirm.reject'));
+    if (!ok) return;
 
-      '<div class="label">Observed impact</div>' + impact +
-      '<div class="epistemic">'+esc(seed.epistemic_status.observed_impact)+' — any number is the client\'s own estimate.</div>' +
+    S.banner = null; S.busy = true; render();
+    try {
+      await api('/api/v2/intake-review', {
+        method: 'POST',
+        body: JSON.stringify({
+          op: 'decide_intake',
+          intakeseed_id: seed.intakeseed_id,
+          decision: decision,
+          expected_version: review.version,
+          title: title,
+          reason: reason
+        })
+      });
+      S.busy = false;
+      await openOne(seed.intakeseed_id);
+      S.banner = { kind: 'signal', msg: decision === 'ACCEPTED' ? t('rv.decided.accept') : t('rv.decided.reject') };
+      render();
+    } catch (e) { S.busy = false; onError(e); }
+  }
 
-      '<div class="label">What changed around the same time</div>' +
-      list(seed.change_context, function(c){ return '<li>'+esc(c.kind)+(c.note?' — '+esc(c.note):'')+'</li>'; }) +
-      '<div class="epistemic">'+esc(seed.epistemic_status.change_context)+' — sequence is not mechanism.</div>' +
+  /* ── Presentation ── */
 
-      '<div class="label">What the client believes is causing it</div>' +
-      (seed.client_belief ? '<blockquote>'+esc(seed.client_belief)+'</blockquote>' : '<p class="mono">they did not say — uncertainty was an acceptable answer</p>') +
-      '<div class="epistemic">'+esc(seed.epistemic_status.client_belief)+' — a claim to be tested. It is not a cause and it is not a finding.</div>' +
+  function statusPill(s) {
+    if (s === 'ACCEPTED') return U.pill('approved', t('rv.s.ACCEPTED'));
+    if (s === 'REJECTED') return U.pill('neutral', t('rv.s.REJECTED'));
+    return U.pill('human', t('rv.s.PENDING_REVIEW'));
+  }
+  function promoPill(p) {
+    if (p === 'COMPLETE') return U.pill('approved', t('rv.p.COMPLETE'));
+    if (p === 'PENDING') return U.pill('conflict', t('rv.p.PENDING'));
+    return U.pill('neutral', t('rv.p.none'));
+  }
 
-      '<div class="label">Information they say already exists</div>' +
-      list(seed.evidence_availability, function(a){ return '<li>'+esc(a.kind)+(a.note?' — '+esc(a.note):'')+'</li>'; }) +
-      '<div class="epistemic">'+esc(seed.epistemic_status.evidence_availability)+' — nothing has been received; none of this is evidence.</div>' +
+  function listView() {
+    var counts = { PENDING_REVIEW: 0, ACCEPTED: 0, REJECTED: 0 };
+    S.list.forEach(function (r) { if (counts[r.status] !== undefined) counts[r.status]++; });
+    var shown = S.filter === 'all' ? S.list : S.list.filter(function (r) { return r.status === S.filter; });
 
-      '<div class="label">What they want to understand or decide</div>' +
-      '<blockquote>'+esc(seed.desired_outcome)+'</blockquote>' +
-      '<div class="epistemic">'+esc(seed.epistemic_status.desired_outcome)+'</div>' +
-    '</div></div>' +
+    var filters = ['PENDING_REVIEW', 'ACCEPTED', 'REJECTED', 'all'].map(function (f) {
+      return '<button class="rv-filter" type="button" data-hv-filter="' + f + '" aria-pressed="' + (S.filter === f) + '">' +
+        esc(f === 'all' ? t('rv.f.all') : t('rv.s.' + f)) +
+        (f !== 'all' ? ' <span class="hv-num">' + counts[f] + '</span>' : '') + '</button>';
+    }).join('');
 
-    '<div class="panel humvance"><h2>Humvance review — the only place a decision is made</h2><div class="body">' +
-      (review.status === 'ACCEPTED' && review.promotion_state === 'PENDING'
-        ? '<div class="banner bad"><strong>This submission was accepted, but the work of opening the case did not finish.</strong> ' +
-          'The decision stands and is not made again — resuming completes exactly what is missing and creates nothing twice.' +
-          (review.promotion_last_error ? '<div class="mono" style="margin-top:6px">stopped at: '+esc(review.promotion_last_error)+'</div>' : '') +
-          '<div class="actions"><button class="primary" onclick="resume()">Resume promotion</button>' +
-          '<span class="mono">attempt '+((review.promotion_attempts||0)+1)+'</span></div></div>'
-        : '') +
+    var rows = shown.map(function (r) {
+      return '<div class="rv-row" data-hv-open="' + esc(r.intakeseed_id) + '" tabindex="0" role="button">' +
+        '<div style="display:grid;gap:5px;justify-items:center">' + statusPill(r.status) +
+          (r.promotion_state === 'PENDING' ? promoPill('PENDING') : '') + '</div>' +
+        '<div><div class="rv-row-t">' + esc(r.company_name || '—') + '</div>' +
+          '<div class="rv-row-m">' + I.code(r.submission_reference || r.reference || '') +
+          ' · ' + I.dateTime(r.submitted_at) +
+          (r.case_intent || r.intent ? ' · ' + esc(t('o.case_intent.' + (r.case_intent || r.intent))) : '') + '</div></div>' +
+        '<div>' + ic('chevron', { size: 16 }) + '</div>' +
+        '</div>';
+    }).join('');
 
-      '<dl class="kv">' +
-        '<dt>Status</dt><dd>'+statusChip(review.status)+
-          (review.promotion_state ? ' <span class="chip '+(review.promotion_state==='COMPLETE'?'good':'bad')+'">promotion '+esc(review.promotion_state)+'</span>' : '')+'</dd>' +
-        '<dt>Review record</dt><dd class="mono">'+esc(review.intakereview_id)+' · v'+review.version+'</dd>' +
-        (review.decided_by ? '<dt>Decided by</dt><dd>'+esc(review.decided_by)+' · '+fmt(review.decided_at)+'</dd>' : '') +
-        (review.decision_reason ? '<dt>Reason</dt><dd>'+esc(review.decision_reason)+'</dd>' : '') +
-        (review.resulting_organization_id ? '<dt>Organization</dt><dd class="mono">'+esc(review.resulting_organization_id)+'</dd>' : '') +
-        (review.resulting_case_id ? '<dt>Case</dt><dd class="mono"><a href="/v2-workspace">'+esc(review.resulting_case_id)+'</a></dd>' : '') +
-      '</dl>' +
+    return '<div class="hv-stack-lg">' +
+      '<div class="hv-row-between">' +
+        '<div class="rv-filters">' + filters + '</div>' +
+        '<button class="hv-btn hv-btn-ghost hv-btn-sm" type="button" data-hv-reload>' + ic('history', { size: 14 }) + esc(t('rv.reload')) + '</button>' +
+      '</div>' +
+      (shown.length
+        ? '<div class="hv-panel">' + rows + '</div>'
+        : U.empty('inbox', t('rv.empty.t'), t('rv.empty.b'))) +
+      '</div>';
+  }
 
-      (pending
-        ? '<div class="label">Decision</div>' +
-          '<p style="font-size:13px;color:var(--text-3)">Accepting opens an Organization and a Case in INTAKE, records what they told us as an unverified sponsor claim, their belief as a second unverified claim, and each example as self-report evidence. It proposes no hypothesis and draws no conclusion. Rejecting creates nothing at all.</p>' +
-          '<div style="margin-top:12px"><input id="title" placeholder="Case title (optional — a neutral one is generated if you leave this blank)"></div>' +
-          '<div style="margin-top:8px"><textarea id="reason" rows="2" placeholder="Reason (recorded with your decision)"></textarea></div>' +
-          '<div class="actions">' +
-            '<button class="primary" onclick="decide(\'ACCEPTED\')">Accept and open a case</button>' +
-            '<button onclick="decide(\'REJECTED\')">Reject</button>' +
-            '<span class="mono">binds to review v'+review.version+'</span>' +
-          '</div>'
-        : '<p class="mono">This submission has been decided. A decided submission is not re-decided; further work happens on the case.</p>') +
-    '</div></div>' +
+  /* `suffixHtml` is rendered UNESCAPED and is only ever used for a count built
+     by I.num(), which returns a <bdi> wrapper. CORRECTED 2026-09-18: the count
+     used to be concatenated into `title`, which is escaped — so the examples
+     heading read `أمثلة (<bdi class="hv-num">0</bdi>)` on screen. */
+  function block(title, inner, epistemic, suffixHtml) {
+    return '<div class="rv-block"><div class="rv-block-title">' + esc(title) + (suffixHtml || '') + '</div>' + inner +
+      (epistemic ? '<div class="hv-provenance">' + ic('info', { size: 13 }) + '<span>' + esc(epistemic) + '</span></div>' : '') +
+      '</div>';
+  }
+  function ul(items, fn) {
+    return items && items.length ? '<ul class="rv-list">' + items.map(fn).join('') + '</ul>'
+      : '<p class="hv-xs hv-muted">' + esc(t('rv.none')) + '</p>';
+  }
 
-    '<div class="panel"><h2>Audit</h2><div class="body"><table><tbody>' +
-      audit.map(function(a){
-        return '<tr><td class="mono" style="width:140px">'+fmt(a.at)+'</td><td class="mono" style="width:150px">'+esc(a.event)+'</td>' +
-               '<td class="mono" style="width:60px">'+esc(a.actor_type)+'</td><td>'+esc(a.summary)+'</td></tr>';
-      }).join('') +
-    '</tbody></table></div></div>';
-}
+  function detailView() {
+    var seed = S.current.seed, review = S.current.review, audit = S.current.audit || [];
+    var pending = review && review.status === 'PENDING_REVIEW';
+    var needsResume = review && review.status === 'ACCEPTED' && review.promotion_state === 'PENDING';
+    var ep = seed.epistemic_status || {};
 
-async function resume(){
-  var seed = S.current.seed;
-  banner('');
-  try {
-    var out = await api('/api/v2/intake-review', { method:'POST', body: JSON.stringify({
-      op: 'resume_promotion', intakeseed_id: seed.intakeseed_id
-    })});
-    await openOne(seed.intakeseed_id);
-    banner(out.already_complete
-      ? 'Nothing to do — the promotion was already complete.'
-      : 'Promotion completed. Nothing was created twice.', 'info');
-  } catch (e) { renderError(e); }
-}
+    /* ── Client-reported: immutable, unverified, never edited here ── */
+    var clientCol =
+      '<div class="hv-panel rv-col-client">' +
+        '<div class="rv-colhead rv-colhead-client">' + ic('quote', { size: 15 }) + esc(t('rv.col.client')) +
+          '<span style="margin-inline-start:auto">' + U.pill('claim', t('rv.immutable')) + '</span></div>' +
+        '<div class="hv-panel-body">' +
+          (seed.untrusted_scan && !seed.untrusted_scan.clean
+            ? '<div style="margin-block-end:16px">' + U.note('caution',
+                '<strong>' + esc(t('rv.flagged.t')) + '</strong><br>' + esc(t('rv.flagged.b')) +
+                '<br><span class="hv-code">' + esc((seed.untrusted_scan.flagged_fields || []).join(', ')) + '</span>', 'alert') + '</div>'
+            : '') +
 
-async function decide(decision){
-  var seed = S.current.seed, review = S.current.review;
-  var title = (el('title') && el('title').value.trim()) || null;
-  var reason = (el('reason') && el('reason').value.trim()) || '';
-  if (decision === 'ACCEPTED' && !confirm('Open an Organization and a Case for "' + seed.organization_context.company_name + '"?')) return;
-  if (decision === 'REJECTED' && !confirm('Reject this submission? Nothing will be created.')) return;
-  banner('');
-  try {
-    await api('/api/v2/intake-review', { method:'POST', body: JSON.stringify({
-      op: 'decide_intake',
-      intakeseed_id: seed.intakeseed_id,
-      decision: decision,
-      expected_version: review.version,
-      title: title,
-      reason: reason
-    })});
-    await openOne(seed.intakeseed_id);
-    banner(decision === 'ACCEPTED' ? 'Accepted. A case was opened in INTAKE.' : 'Rejected. Nothing was created.', 'info');
-  } catch (e) { renderError(e); }
-}
+          '<dl class="rv-kv">' +
+            '<dt>' + esc(t('rv.k.ref')) + '</dt><dd>' + I.code(seed.submission_reference) + '</dd>' +
+            '<dt>' + esc(t('rv.k.received')) + '</dt><dd>' + I.dateTime(seed.submitted_at) + '</dd>' +
+            '<dt>' + esc(t('rv.k.company')) + '</dt><dd>' + esc(seed.organization_context.company_name) +
+              (seed.organization_context.sector ? ' · ' + esc(seed.organization_context.sector) : '') +
+              (seed.organization_context.employee_count_band ? ' · <bdi class="hv-num">' + esc(seed.organization_context.employee_count_band) + '</bdi>' : '') + '</dd>' +
+            '<dt>' + esc(t('rv.k.respondent')) + '</dt><dd>' + esc(seed.respondent_context.name) + ' — ' + esc(seed.respondent_context.role_title) +
+              '<div>' + I.mail(seed.respondent_context.email) + '</div></dd>' +
+            '<dt>' + esc(t('rv.k.intent')) + '</dt><dd>' + esc(t('o.case_intent.' + seed.case_intent)) + '</dd>' +
+            '<dt>' + esc(t('rv.k.scope')) + '</dt><dd>' + esc(t('o.scope_kind.' + seed.scope.kind)) +
+              (seed.scope.labels && seed.scope.labels.length ? ' — ' + esc(seed.scope.labels.join('، ')) : '') + '</dd>' +
+            '<dt>' + esc(t('rv.k.timeline')) + '</dt><dd>' + esc(seed.timeline.first_noticed_approx || t('rv.notGiven')) +
+              ' · ' + esc(t('o.pattern.' + seed.timeline.pattern)) + '</dd>' +
+          '</dl>' +
 
-loadList();
+          block(t('rv.b.situation'),
+            '<div class="hv-quote"><p class="hv-sm" style="color:var(--hv-ink);white-space:pre-wrap">' + esc(seed.reported_situation) + '</p></div>',
+            (ep.reported_situation || '') + ' — ' + t('rv.e.situation')) +
+
+          block(t('rv.b.examples'),
+            ul(seed.recent_examples, function (x) {
+              return '<li><div style="white-space:pre-wrap">' + esc(x.what_happened) + '</div>' +
+                '<div class="hv-xs hv-muted" style="margin-block-start:5px">' +
+                  [x.approx_when, x.area, x.observable_consequence].filter(Boolean).map(esc).join(' · ') + '</div></li>';
+            }),
+            (ep.recent_examples || '') + ' — ' + t('rv.e.examples'),
+            ' (' + I.num((seed.recent_examples || []).length) + ')') +
+
+          block(t('rv.b.impact'),
+            ul(seed.observed_impact, function (i) {
+              return '<li>' + esc(t('o.impact.' + i.kind)) + (i.description ? ' — ' + esc(i.description) : '') +
+                (i.quantification ? ' <bdi class="hv-num">' + esc(i.quantification.value) + ' ' + esc(i.quantification.unit) + '</bdi>' : '') + '</li>';
+            }),
+            (ep.observed_impact || '') + ' — ' + t('rv.e.impact')) +
+
+          block(t('rv.b.changes'),
+            ul(seed.change_context, function (c) {
+              return '<li>' + esc(t('o.change.' + c.kind)) + (c.note ? ' — ' + esc(c.note) : '') + '</li>';
+            }),
+            (ep.change_context || '') + ' — ' + t('rv.e.changes')) +
+
+          block(t('rv.b.belief'),
+            seed.client_belief
+              ? '<div class="hv-quote"><p class="hv-sm" style="color:var(--hv-ink);white-space:pre-wrap">' + esc(seed.client_belief) + '</p></div>'
+              : '<p class="hv-xs hv-muted">' + esc(t('rv.noBelief')) + '</p>',
+            (ep.client_belief || '') + ' — ' + t('rv.e.belief')) +
+
+          block(t('rv.b.availability'),
+            ul(seed.evidence_availability, function (a) {
+              return '<li>' + esc(t('o.avail.' + a.kind)) + (a.note ? ' — ' + esc(a.note) : '') + '</li>';
+            }),
+            (ep.evidence_availability || '') + ' — ' + t('rv.e.availability')) +
+
+          block(t('rv.b.outcome'),
+            '<p class="hv-sm" style="white-space:pre-wrap">' + esc(seed.desired_outcome) + '</p>',
+            (ep.desired_outcome || '') + ' — ' + t('rv.e.outcome')) +
+        '</div>' +
+      '</div>';
+
+    /* ── Humvance review: the decision, its two states, and the trail ── */
+    var hvCol =
+      '<div class="hv-panel rv-col-hv">' +
+        '<div class="rv-colhead rv-colhead-hv">' + ic('scale', { size: 15 }) + esc(t('rv.col.hv')) + '</div>' +
+        '<div class="hv-panel-body">' +
+
+          '<div class="rv-states">' +
+            '<div class="rv-state"><span class="rv-state-k">' + esc(t('rv.decisionState')) + '</span>' + statusPill(review.status) + '</div>' +
+            '<div class="rv-state"><span class="rv-state-k">' + esc(t('rv.promotionState')) + '</span>' + promoPill(review.promotion_state) + '</div>' +
+          '</div>' +
+          '<p class="hv-xs hv-muted" style="margin-block-start:10px;line-height:1.7">' + esc(t('rv.twoStates')) + '</p>' +
+
+          (review.decided_by ? '<div class="rv-block"><div class="rv-block-title">' + esc(t('rv.decidedBy')) + '</div>' +
+            '<p class="hv-sm">' + I.code(review.decided_by) + ' · ' + I.dateTime(review.decided_at) + '</p>' +
+            /* CORRECTED 2026-09-18. This read `review.reason`. The record built
+               by buildIntakeReview() and written by decideIntake() calls the
+               field `decision_reason`, so the reason a reviewer typed when
+               declining a request was stored, audited — and never shown. */
+            (review.decision_reason
+              ? '<div class="hv-quote" style="margin-block-start:10px"><p class="hv-sm" style="white-space:pre-wrap">' +
+                esc(review.decision_reason) + '</p></div>' : '') +
+            '</div>' : '') +
+
+          (review.resulting_case_id ? '<div class="rv-block"><div class="rv-block-title">' + esc(t('rv.resulting')) + '</div>' +
+            '<p class="hv-sm">' + esc(t('rv.case')) + ' ' + I.code(review.resulting_case_id) + '</p>' +
+            '<p class="hv-sm">' + esc(t('rv.org')) + ' ' + I.code(review.resulting_organization_id || '') + '</p>' +
+            '<a class="hv-btn hv-btn-outline hv-btn-sm" style="margin-block-start:10px" href="/v2-workspace?case=' + encodeURIComponent(review.resulting_case_id) + '">' +
+              ic('external', { size: 14 }) + esc(t('rv.openCase')) + '</a></div>' : '') +
+
+          (needsResume ? '<div class="rv-block">' +
+            U.note('conflict', '<strong>' + esc(t('rv.resume.t')) + '</strong><br>' + esc(t('rv.resume.b')) +
+              (review.promotion_last_error ? '<br><span class="hv-code">' + esc(review.promotion_last_error) + '</span>' : ''), 'alert') +
+            '<button class="hv-btn hv-btn-signal" style="margin-block-start:12px" type="button" data-hv-resume' + (S.busy ? ' disabled' : '') + '>' +
+              ic('history', { size: 15 }) + esc(t('rv.resume.action')) + '</button></div>' : '') +
+
+          (pending ? '<div class="rv-block">' +
+            '<div class="rv-block-title">' + esc(t('rv.decide')) + '</div>' +
+            '<div class="hv-field"><label class="hv-label" for="rv-title">' + esc(t('rv.title.label')) + '</label>' +
+              '<p class="hv-help">' + esc(t('rv.title.help')) + '</p>' +
+              '<input class="hv-input" id="rv-title"></div>' +
+            '<div class="hv-field" style="margin-block-start:12px"><label class="hv-label" for="rv-reason">' + esc(t('rv.reason.label')) + '</label>' +
+              '<p class="hv-help">' + esc(t('rv.reason.help')) + '</p>' +
+              '<textarea class="hv-textarea" id="rv-reason" style="min-height:84px"></textarea></div>' +
+            '<div class="hv-row" style="gap:10px;margin-block-start:16px">' +
+              '<button class="hv-btn hv-btn-signal" type="button" data-hv-accept' + (S.busy ? ' disabled' : '') + '>' + ic('check', { size: 15 }) + esc(t('rv.accept')) + '</button>' +
+              '<button class="hv-btn hv-btn-outline" type="button" data-hv-reject' + (S.busy ? ' disabled' : '') + '>' + esc(t('rv.reject')) + '</button>' +
+            '</div>' +
+            '<p class="hv-xs hv-muted" style="margin-block-start:12px;line-height:1.7">' + esc(t('rv.decide.note')) + '</p>' +
+            '</div>' : '') +
+
+          '<div class="rv-block"><div class="rv-block-title">' + esc(t('rv.audit')) + '</div>' +
+            (audit.length
+              ? '<div class="hv-table-wrap"><table class="hv-table"><thead><tr>' +
+                '<th>' + esc(t('rv.a.when')) + '</th><th>' + esc(t('rv.a.event')) + '</th><th>' + esc(t('rv.a.actor')) + '</th></tr></thead><tbody>' +
+                audit.map(function (a) {
+                  return '<tr><td>' + I.dateTime(a.at || a.occurred_at) + '</td>' +
+                    '<td><span class="hv-code">' + esc(a.event || a.type) + '</span></td>' +
+                    '<td>' + esc(a.actor_type || a.actor || '') + '</td></tr>';
+                }).join('') + '</tbody></table></div>'
+              : '<p class="hv-xs hv-muted">' + esc(t('rv.none')) + '</p>') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    return '<div class="hv-stack-lg">' +
+      '<button class="hv-btn hv-btn-ghost hv-btn-sm" type="button" data-hv-back>' + ic('arrowBack', { size: 15 }) + esc(t('rv.backToList')) + '</button>' +
+      '<div class="rv-split">' + clientCol + hvCol + '</div>' +
+      '</div>';
+  }
+
+  function render() {
+    applyDemoState();
+    document.title = (I.isAr() ? 'مراجعة الطلبات' : 'Requests and review') + ' — Humvance';
+    var storeLine = S.isolation
+      ? '<span class="hv-xs hv-muted">' + esc(t('rv.store')) + ' <span class="hv-code">' + esc(S.store) + ' · ' + esc(S.isolation) + '</span></span>'
+      : '';
+
+    document.getElementById('app').innerHTML =
+      U.demoBar() +
+      '<header class="hv-header" data-hv-header><div class="hv-container"><div class="hv-header-inner">' +
+        U.logo({ href: '/v2-intake-review' }) +
+        /* CORRECTED 2026-09-19. This header's one link went to `/admin` — the
+           LEGACY V1 password screen — under the label "لوحة الإدارة". So the
+           round trip built on 2026-09-18 ended on exactly the old internal page
+           the new entrance exists to replace: an independent probe clicked it
+           and landed on the legacy password field.
+
+           The primary return is now the management entrance. The legacy panel
+           is still reachable, because it is still the only way into the V1
+           screens, but it is labelled as what it is and styled as the quieter
+           of the two. Its authentication role is untouched. */
+        '<div class="hv-ops-nav">' + storeLine + U.langButton() +
+          U.manageReturn() +
+          U.crumb({ href: '/admin', icon: 'external', cls: 'hv-crumb-legacy',
+                    label: t('nav.legacyAdmin'), aria: t('nav.legacyAdminAria') }) +
+        '</div>' +
+      '</div></div></header>' +
+      '<main id="main"><div class="hv-container" style="padding-block:26px 90px">' +
+        '<div class="hv-row" style="gap:10px;margin-block-end:4px">' +
+          '<span class="hv-eyebrow" style="margin:0">' + esc(t('rv.eyebrow')) + '</span>' +
+          (U.isDemo() ? U.demoTag() : '') + '</div>' +
+        '<h1 class="hv-h2" style="font-size:1.5rem;margin-block-end:20px">' + esc(t('rv.title')) + '</h1>' +
+        (S.banner ? '<div style="margin-block-end:18px">' + U.note(S.banner.kind, esc(S.banner.msg)) + '</div>' : '') +
+        (S.current ? detailView() : listView()) +
+      '</div></main>';
+
+    U.wire();
+    wire();
+  }
+
+  function wire() {
+    var app = document.getElementById('app');
+    app.querySelectorAll('[data-hv-filter]').forEach(function (b) {
+      b.addEventListener('click', function () { S.filter = b.getAttribute('data-hv-filter'); render(); });
+    });
+    app.querySelectorAll('[data-hv-open]').forEach(function (r) {
+      var go = function () { openOne(r.getAttribute('data-hv-open')); };
+      r.addEventListener('click', go);
+      r.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+    var on = function (sel, fn) { var e = app.querySelector(sel); if (e) e.addEventListener('click', fn); };
+    on('[data-hv-back]', function () {
+      /* ADDED 2026-09-18 — leaving the screen discards what was typed into the
+         decision title and reason. Those fields are an unsaved draft like any
+         other, so the person is asked before they lose them. The warning fires
+         ONLY when something was actually typed, so the ordinary "I only came to
+         read this" path is untouched. Nothing is written to browser storage to
+         rescue the text: an unsaved draft here does not survive a reload, and
+         pretending otherwise would be worse than saying so. */
+      var titleEl = document.getElementById('rv-title');
+      var reasonEl = document.getElementById('rv-reason');
+      var typed = ((titleEl && titleEl.value.trim()) || '') + ((reasonEl && reasonEl.value.trim()) || '');
+      if (typed && !confirm(t('rv.leave.draft'))) return;
+      S.current = null; S.demoDetailId = null; S.banner = null; syncUrl(null); render();
+    });
+    on('[data-hv-reload]', loadList);
+    on('[data-hv-accept]', function () { decide('ACCEPTED'); });
+    on('[data-hv-reject]', function () { decide('REJECTED'); });
+    on('[data-hv-resume]', resume);
+  }
+
+  I.onChange(render);
+  render();
+  loadList();
+})();
 </script>
 </body>
 </html>

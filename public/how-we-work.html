@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>كيف نعمل — Humvance</title>
+<meta name="description" content="ست خطوات من الطلب الأولي إلى المتابعة: مراجعة بشرية، استكشاف مركّز، تشخيص بالأدلة، خطة متفق عليها، ثم متابعة لما تغيّر فعلاً.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  .step-role {
+    display: inline-flex; align-items: flex-start; gap: 8px; margin-block-start: 14px;
+    font-size: var(--hv-t-xs); color: var(--hv-signal-ink);
+    background: var(--hv-signal-soft); border: 1px solid var(--hv-signal-line);
+    padding: 8px 13px; border-radius: var(--hv-r-sm); line-height: 1.6;
+  }
+  .step-role svg { flex: none; margin-block-start: 2px; }
+  .ai-points { display: grid; gap: 10px; margin-block-start: 20px; }
+  .ai-point { display: flex; align-items: center; gap: 11px; font-size: var(--hv-t-sm); font-weight: 600; }
+  .ai-point .k { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); flex: none; }
+  .hv-steps-plain { display: grid; gap: 11px; margin-block-start: 18px; }
+  .hv-steps-plain li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start;
+                       font-size: var(--hv-t-sm); line-height: 1.75; }
+  .hv-steps-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+                border: 1.5px solid var(--hv-line-2); color: var(--hv-ink-3); font-size: .72rem;
+                font-family: var(--hv-font-en); font-weight: 700; }
+  .step-flag {
+    display: flex; align-items: flex-start; gap: 9px; margin-block-end: 12px;
+    font-size: var(--hv-t-xs); line-height: 1.7; color: var(--hv-unverified);
+    background: var(--hv-unverified-soft); border: 1px solid var(--hv-unverified-line);
+    padding: 9px 13px; border-radius: var(--hv-r-sm); max-width: 74ch;
+  }
+  .step-flag svg { flex: none; margin-block-start: 3px; }
+  .step-flag strong { display: inline-block; margin-inline-end: 4px; }
+  .gate { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--hv-r); background: var(--hv-clay-soft); border: 1px solid color-mix(in srgb, var(--hv-clay) 30%, transparent); color: var(--hv-clay); font-size: var(--hv-t-xs); font-weight: 600; }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+
+  /* Which steps are gated on a human decision. Stated on the page because it is
+     the single most important thing about how this works. */
+  var HUMAN_GATE = { 2: true, 5: true };
+
+  /* CORRECTED 2026-09-18. Steps 5 and 6 — the agreed plan and the follow-up —
+     are designed and not built: there is no plan entity, nowhere to record the
+     client's approval of one, and no measurement of what changed
+     (CASE-JOURNEY-AND-SERVICE-READINESS.md). The page kept drawing them exactly
+     like the four steps that work, which reads as a claim that they work. They
+     stay on the page, because they are what the service is for; they now carry
+     their real availability, stated before the description.
+
+     This is a correction to what the site CLAIMS. It is not a commercial or
+     product decision: no delivery owner, limit or price is asserted here. */
+  var NOT_BUILT = { 5: true, 6: true };
+
+  function step(n) {
+    return '<article class="hv-ordered-item">' +
+      '<div class="hv-ordered-num">0' + n + '</div>' +
+      '<div>' +
+        '<h2 class="hv-h3" style="margin-block-end:10px">' + esc(t('how.' + n + '.t')) + '</h2>' +
+        (NOT_BUILT[n]
+          ? '<p class="step-flag">' + ic('clock', { size: 14 }) +
+            '<span><strong>' + esc(t('how.notBuilt.t')) + '</strong> ' + esc(t('how.notBuilt.d')) + '</span></p>'
+          : '') +
+        '<p class="hv-prose">' + esc(t('how.' + n + '.d')) + '</p>' +
+        '<div class="step-role">' + ic('people', { size: 15 }) + '<span>' + esc(t('how.' + n + '.you')) + '</span></div>' +
+        (HUMAN_GATE[n]
+          ? '<div class="gate" style="margin-block-start:10px">' + ic('shield', { size: 15 }) +
+            esc(I.isAr() ? 'قرار بشري إلزامي — لا يتجاوزه النظام' : 'A human decision is required here — the system cannot pass it') + '</div>'
+          : '') +
+      '</div>' +
+      '</article>';
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'كيف نعمل' : 'How we work') + ' — Humvance';
+    document.getElementById('app').innerHTML =
+      U.demoBar() + U.siteHeader() +
+      '<main id="main">' +
+        '<section class="hv-section-tight"><div class="hv-container">' +
+          '<p class="hv-eyebrow">' + esc(t('how.eyebrow')) + '</p>' +
+          '<h1 class="hv-h1" style="margin-block:16px 18px;max-width:22ch">' + esc(t('how.title')) + '</h1>' +
+          '<p class="hv-lead hv-prose">' + esc(t('how.sub')) + '</p>' +
+        '</div></section>' +
+
+        '<section style="padding-block-end:clamp(40px,6vw,72px)"><div class="hv-container">' +
+          '<div class="hv-ordered">' + [1, 2, 3, 4, 5, 6].map(step).join('') + '</div>' +
+        '</div></section>' +
+
+        /* AI — a dark band, because it is the thing people most want a straight
+           answer about and it deserves the page's strongest moment. */
+        '<section class="hv-section hv-band-ink"><div class="hv-container"><div class="hv-split">' +
+          '<div>' +
+            '<h2 class="hv-h2" style="max-width:18ch">' + esc(t('how.ai.title')) + '</h2>' +
+            '<div class="ai-points">' +
+              ['how.ai.point1', 'how.ai.point2', 'how.ai.point3'].map(function (k, i) {
+                return '<div class="ai-point" style="color:var(--hv-paper)"><span class="k">' +
+                  ic(['branch', 'layers', 'scale'][i], { size: 14 }) + '</span>' + esc(t(k)) + '</div>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+          '<p style="font-size:var(--hv-t-lead);line-height:1.8">' + esc(t('how.ai.body')) + '</p>' +
+        '</div></div></section>' +
+
+        /* The commercial boundary. Written out because leaving it implicit is
+           how a visitor ends up wondering, halfway through, whether they have
+           already agreed to something. No prices, no durations, no meeting
+           counts — those belong to the scope discussion, not to a web page. */
+        '<section class="hv-section-tight"><div class="hv-container"><div class="hv-split">' +
+          '<div>' +
+            '<h2 class="hv-h2" style="max-width:16ch">' + esc(t('how.commercial.title')) + '</h2>' +
+          '</div>' +
+          '<div>' +
+            '<p class="hv-prose">' + esc(t('how.commercial.body')) + '</p>' +
+            '<ol class="hv-steps-plain">' +
+              ['how.commercial.1', 'how.commercial.2', 'how.commercial.3', 'how.commercial.4'].map(function (k, i) {
+                return '<li><span class="hv-steps-n">' + I.num(i + 1) + '</span>' +
+                  '<span>' + esc(t(k)) + '</span></li>';
+              }).join('') +
+            '</ol>' +
+            '<div style="margin-block-start:18px">' +
+              U.note('caution', esc(t('how.commercial.note')), 'info') +
+            '</div>' +
+          '</div>' +
+        '</div></div></section>' +
+
+        '<section class="hv-section-tight"><div class="hv-container"><div class="hv-split">' +
+          '<div>' +
+            '<h2 class="hv-h2" style="max-width:16ch">' + esc(t('how.privacy.title')) + '</h2>' +
+          '</div>' +
+          '<div>' +
+            '<p class="hv-prose">' + esc(t('how.privacy.body')) + '</p>' +
+            '<div style="margin-block-start:18px">' +
+              U.note('signal', esc(t('footer.privacyLine')), 'lock') +
+            '</div>' +
+          '</div>' +
+        '</div></div></section>' +
+
+        '<section class="hv-section"><div class="hv-container-narrow" style="text-align:center">' +
+          '<h2 class="hv-h2">' + esc(t('home.close.title')) + '</h2>' +
+          '<p class="hv-lead" style="margin-block:14px 26px;margin-inline:auto;max-width:46ch">' + esc(t('home.close.sub')) + '</p>' +
+          '<a class="hv-btn hv-btn-primary hv-btn-lg" href="/intake">' + esc(t('home.cta.primary')) + ic('arrow', { size: 17 }) + '</a>' +
+          '<p class="hv-xs hv-muted" style="margin-block-start:18px">' + esc(t('home.close.note')) + '</p>' +
+        '</div></section>' +
+      '</main>' + U.siteFooter();
+    U.wire();
+  }
+
+  I.onChange(render);
+  render();
+})();
+</script>
+</body>
+</html>

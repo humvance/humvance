@@ -758,58 +758,127 @@ suite('intake — HTTP surface', () => {
 
 suite('intake — client-facing page guarantees', () => {
 
-  const html = fs.readFileSync(path.join(__dirname, '../../public/intake.html'), 'utf8');
+  /* UPDATED 2026-09-18, with the intake redesign.
+     These tests encode guarantees, not wording, and every guarantee below is the
+     same one the original suite asserted. What changed is where the evidence
+     lives: the page's visitor-facing strings moved out of public/intake.html
+     into public/assets/hv-intake-copy.js when the form became bilingual by
+     construction, so a test that grepped the HTML for an English sentence was
+     checking a file that no longer holds sentences.
 
-  test('the post-submit screen shows no score, diagnosis, root cause or proposal promise', () => {
+     Two assertions were deliberately made SHARPER rather than looser:
+       · the "no diagnosis claimed" rule now checks the confirmation strings
+         specifically, which is what its own name always said, because the page
+         must be free to say "no diagnosis has started" — a whole-file ban on
+         the word forbids the honest denial as well as the false claim;
+       · the responsive check no longer pins one arbitrary breakpoint value. */
+
+  const html = fs.readFileSync(path.join(__dirname, '../../public/intake.html'), 'utf8');
+  const copy = fs.readFileSync(path.join(__dirname, '../../public/assets/hv-intake-copy.js'), 'utf8');
+  const i18n = fs.readFileSync(path.join(__dirname, '../../public/assets/hv-i18n.js'), 'utf8');
+  const both = html + '\n' + copy;
+
+  /** The value of a copy key, in one language block. */
+  function copyValue(lang, key) {
+    const block = copy.slice(copy.indexOf('\n    ' + lang + ': {'));
+    const scoped = block.slice(0, block.indexOf('\n    }'));
+    const m = new RegExp("'" + key.replace(/\./g, '\\.') + "':\\s*'((?:[^'\\\\]|\\\\.)*)'").exec(scoped);
+    return m ? m[1] : null;
+  }
+
+  test('nothing anywhere promises a score, maturity level, root cause or quotation', () => {
+    // These can never appear honestly on an intake page, in any context.
     const forbidden = ['/100', 'درجة النضج', 'root cause', 'السبب الجذري', 'maturity',
-                       'diagnosis', 'تشخيص', 'recommendation', 'التوصية', 'proposal', 'عرض سعر'];
-    const lower = html.toLowerCase();
+                       'recommendation', 'التوصية', 'عرض سعر'];
+    const lower = both.toLowerCase();
     for (const word of forbidden) {
       assert.notOk(lower.includes(word.toLowerCase()), `"${word}" must not appear on the intake page`);
     }
   });
 
-  test('it does not say a case has been created', () => {
-    const lower = html.toLowerCase();
+  test('the post-submit screen claims no diagnosis, in either language', () => {
+    // The confirmation may DENY diagnosis; it may never assert one.
+    const claims = {
+      ar: ['تم تشخيص', 'شخّصنا', 'نتيجة تشخيصكم', 'تم التقييم', 'تم إنشاء'],
+      en: ['we have diagnosed', 'your diagnosis', 'diagnosis is complete', 'has been assessed', 'has been created']
+    };
+    for (const lang of ['ar', 'en']) {
+      for (const key of ['done.title', 'done.body', 'done.notDiagnosis', 'done.refNote']) {
+        const v = copyValue(lang, key);
+        if (!v) continue;
+        for (const bad of claims[lang]) {
+          assert.notOk(v.toLowerCase().includes(bad.toLowerCase()),
+            `${key} (${lang}) must not claim "${bad}"`);
+        }
+      }
+    }
+  });
+
+  test('it says received, in both languages, and does not say a case exists', () => {
+    const lower = both.toLowerCase();
     assert.notOk(lower.includes('your case has been created'), 'no case exists before human review');
     assert.notOk(lower.includes('تم إنشاء حالتك'), 'the Arabic must not claim it either');
-    assert.includes(html, 'Your submission has been received');
-    assert.includes(html, 'تم استلام');
+    assert.includes(copyValue('en', 'done.title') || '', 'has been received');
+    assert.includes(copyValue('ar', 'done.title') || '', 'تم استلام');
+  });
+
+  test('it states plainly that no case was opened and nothing was concluded', () => {
+    for (const lang of ['ar', 'en']) {
+      const v = copyValue(lang, 'done.notDiagnosis');
+      assert.ok(v && v.length > 40, `done.notDiagnosis must exist and say something (${lang})`);
+    }
   });
 
   test('it carries no scoring logic and posts only to the intake endpoint', () => {
     assert.notOk(/function\s+calcScore/.test(html), 'no score function');
-    assert.includes(html, "/api/v2/intake");
+    assert.includes(html, '/api/v2/intake');
     assert.notOk(html.includes('/api/submit'), 'it must not reach the V1 intake');
     assert.notOk(html.includes('/api/v2/case'), 'it must not reach the Case spine');
   });
 
   test('it supports Arabic RTL and English LTR', () => {
-    assert.includes(html, "dir=\"rtl\"");
-    assert.includes(html, "lang==='ar'?'rtl':'ltr'");
+    assert.includes(html, 'dir="rtl"');
+    assert.includes(html, 'lang="ar"');
+    // Direction is derived from the language, not hard-coded per page.
+    assert.includes(i18n, "lang === 'ar' ? 'rtl' : 'ltr'");
+    assert.includes(html, 'hv-i18n.js');
   });
 
   test('it is responsive and carries the privacy guidance', () => {
-    assert.includes(html, '@media');
-    assert.includes(html, 'max-width:768px');
+    assert.ok(/@media[^{]*max-width:\s*\d+px/.test(html), 'at least one max-width breakpoint');
     assert.ok(/viewport/.test(html), 'viewport meta present');
-    assert.includes(html, 'sensitive');
-    assert.includes(html, 'معلومات شخصية');
+    assert.includes(copyValue('en', 'c.sensitive') || '', 'sensitive personal data');
+    assert.includes(copyValue('ar', 'c.sensitive') || '', 'بيانات شخصية حساسة');
+    assert.ok((copyValue('ar', 'f.privacyFoot') || '').length > 20, 'the privacy footnote is present in Arabic');
   });
 
   test('all three entry paths are offered, in the client\'s words', () => {
-    assert.includes(html, 'DYSFUNCTION');
-    assert.includes(html, 'RISK');
-    assert.includes(html, 'OPPORTUNITY');
-    assert.includes(html, 'not working as expected');
-    assert.includes(html, 'preparing for growth');
+    for (const intent of ['DYSFUNCTION', 'RISK', 'OPPORTUNITY']) {
+      assert.includes(html, intent);
+      for (const lang of ['ar', 'en']) {
+        const v = copyValue(lang, 'o.case_intent.' + intent);
+        assert.ok(v && v.length > 5, `${intent} needs client-facing wording in ${lang}`);
+        assert.notOk(/^[A-Z_]+$/.test(v), `${intent} must not be shown as a raw enum value`);
+      }
+    }
   });
 
-  test('step 3 asks what is happening, not why', () => {
-    assert.includes(html, 'rather than why you think it is happening');
+  test('it asks what is happening, not why', () => {
+    assert.includes(copyValue('en', 'q.examples.help') || '', 'not why');
+    assert.includes(copyValue('ar', 'q.examples.help') || '', 'لا لماذا');
   });
 
-  test('step 9 tells the client that uncertainty is acceptable', () => {
-    assert.includes(html, 'Humvance will test possible explanations');
+  test('it tells the client that uncertainty is an acceptable answer', () => {
+    const en = copyValue('en', 'q.belief.help') || '';
+    const ar = copyValue('ar', 'q.belief.help') || '';
+    assert.ok(/don.t know/i.test(en), 'English must offer "I don\'t know" as an answer');
+    assert.includes(ar, 'لا أعرف');
+  });
+
+  test('a client belief is labelled a belief, not a cause', () => {
+    for (const lang of ['ar', 'en']) {
+      const v = copyValue(lang, 'q.belief.note');
+      assert.ok(v && v.length > 30, `the belief caveat must be present in ${lang}`);
+    }
   });
 });

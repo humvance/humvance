@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مساحة العميل — Humvance</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  .cw-head { display: grid; gap: 6px; margin-block-end: 22px; }
+  .cw-answers { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .cw-answer { background: var(--hv-surface); border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); padding: 18px 20px; }
+  .cw-answer-q { font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-end: 6px; }
+  .cw-answer-a { font-weight: 650; font-size: 1.02rem; line-height: 1.5; }
+  .cw-answer-n { font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 8px; line-height: 1.6; }
+
+  .cw-timeline { display: grid; gap: 0; }
+  .cw-tl { display: grid; grid-template-columns: 26px 1fr; gap: 14px; padding-block: 12px; position: relative; }
+  .cw-tl + .cw-tl::before { content: ""; position: absolute; inset-block-start: -8px; inset-inline-start: 12px; width: 1.5px; height: 20px; background: var(--hv-line-2); }
+  .cw-tl-dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--hv-line-2); color: var(--hv-ink-3); background: var(--hv-surface); }
+  .cw-tl[data-s="done"] .cw-tl-dot { background: var(--hv-verified); border-color: var(--hv-verified); color: #fff; }
+  .cw-tl[data-s="current"] .cw-tl-dot { border-color: var(--hv-signal); color: var(--hv-signal); border-width: 2.5px; }
+  .cw-tl-label { font-size: var(--hv-t-sm); font-weight: 600; }
+  .cw-tl[data-s="todo"] .cw-tl-label { color: var(--hv-ink-3); font-weight: 500; }
+  .cw-tl-meta { font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 2px; }
+
+  .cw-req { border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); background: var(--hv-surface); overflow: hidden; }
+  .cw-req + .cw-req { margin-block-start: 12px; }
+  .cw-req-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 20px; }
+  .cw-req-why { background: var(--hv-signal-soft); border-block-start: 1px solid var(--hv-signal-line); padding: 13px 20px; font-size: var(--hv-t-sm); color: var(--hv-signal-ink); line-height: 1.7; display: flex; gap: 10px; }
+  .cw-req-why svg { flex: none; margin-block-start: 3px; }
+  .cw-req[data-s="ANSWERED"] { opacity: .82; }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script src="/assets/hv-client-copy.js"></script>
+<script src="/assets/hv-demo.js"></script>
+<script>
+/* ===========================================================================
+   Client workspace — overview and requested information.
+   ---------------------------------------------------------------------------
+   INTERNAL SCREEN. Not linked from the customer navigation, and it tells a
+   visitor who lands on it, in ordinary words, that it is not ready — with no
+   query-string instructions or API notes on the page. Those belong in
+   docs/WEBSITE-REDESIGN.md, and that is where they now are.
+
+   HONEST STATUS: this screen has NO BACKEND. V2 today has no client
+   authentication, no client-scoped read API, and no upload path. Every value
+   shown here comes from public/assets/hv-demo.js and is invented.
+
+   It is built anyway, and built properly, because the shape of this screen is a
+   product decision that should be reviewed before the backend is written — and
+   because the four questions it answers are the ones a client actually has:
+
+       Where are we now?   What has happened?
+       What do you need from me?   What happens next?
+
+   It refuses to invent the things that would be dishonest to invent: there is
+   no scheduled meeting, no delivery date, and no finding in the fixture,
+   because none exists. Where a section has nothing real to say, it says so.
+
+   When the backend arrives, the change is in one place: replace the `source`
+   adapter below. The markup does not move.
+   =========================================================================== */
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+  var D = HV.demo, L = function (v) { return D.L(v, I.lang); };
+
+  var TABS = ['overview', 'requests', 'reports', 'plan', 'followup'];
+  var READY = { overview: true, requests: true };   /* the rest are not built */
+  var state = { tab: 'overview' };
+
+  /* The single seam between this screen and its data. Today it returns
+     fixtures; tomorrow it returns a client-scoped API response. */
+  function source() {
+    if (!U.isDemo()) return null;
+    return D.CASE;
+  }
+
+  /* ── Not-signed-in / no-backend state ── */
+  function gate() {
+    return '<div class="hv-container" style="max-width:720px;padding-block:clamp(48px,9vw,110px)">' +
+      '<div class="hv-card" style="text-align:center;padding:40px 30px">' +
+        '<div style="width:52px;height:52px;border-radius:50%;background:var(--hv-signal-soft);color:var(--hv-signal);display:grid;place-items:center;margin:0 auto 20px;border:1px solid var(--hv-signal-line)">' +
+          ic('lock', { size: 24 }) + '</div>' +
+        '<h1 class="hv-h3">' + esc(t('cw.gate.title')) + '</h1>' +
+        '<p class="hv-sm hv-muted" style="margin-block:12px 22px;max-width:48ch;margin-inline:auto">' + esc(t('cw.gate.body')) + '</p>' +
+        '<div class="hv-row" style="justify-content:center;gap:10px">' +
+          '<a class="hv-btn hv-btn-primary" href="/">' + esc(t('cw.gate.home')) + '</a>' +
+          '<a class="hv-btn hv-btn-outline" href="/request-status">' + esc(t('cw.gate.status')) + '</a>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  /* ── Overview ── */
+
+  function answerCards(c) {
+    var open = c.requests.filter(function (r) { return r.status === 'OPEN'; }).length;
+    var cards = [
+      { q: t('cw.q.where'), a: L(c.client_visible_status),
+        n: t('cw.where.note') },
+      { q: t('cw.q.happened'), a: t('cw.happened.a'),
+        n: t('cw.happened.note') },
+      { q: t('cw.q.fromMe'), a: open ? t('cw.fromMe.open', { n: open }) : t('cw.fromMe.none'),
+        n: open ? t('cw.fromMe.note') : t('cw.fromMe.noneNote') },
+      { q: t('cw.q.next'), a: t('cw.next.a'), n: t('cw.next.note') }
+    ];
+    return '<div class="cw-answers">' + cards.map(function (x) {
+      return '<div class="cw-answer"><div class="cw-answer-q">' + esc(x.q) + '</div>' +
+        '<div class="cw-answer-a">' + esc(x.a) + '</div>' +
+        '<div class="cw-answer-n">' + esc(x.n) + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  function timeline(c) {
+    return '<div class="cw-timeline">' + c.timeline.map(function (s) {
+      var st = s.done ? 'done' : (s.current ? 'current' : 'todo');
+      return '<div class="cw-tl" data-s="' + st + '">' +
+        '<span class="cw-tl-dot">' + (s.done ? ic('check', { size: 13 }) : (s.current ? ic('clock', { size: 13 }) : '')) + '</span>' +
+        '<div><div class="cw-tl-label">' + esc(L(s.label)) +
+          (s.human ? ' ' + U.pill('human', t('cw.humanStep')) : '') + '</div>' +
+          (s.at ? '<div class="cw-tl-meta">' + I.date(s.at) + '</div>' : '') +
+        '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  function claims(c) {
+    return c.claims.map(function (cl) {
+      return '<div class="hv-quote" style="margin-block-start:12px">' +
+        '<div class="hv-row" style="gap:8px;margin-block-end:8px">' +
+          U.pill('claim', t('cw.claimPill')) +
+          '<span class="hv-xs hv-muted">' + esc(L(cl.source)) + '</span>' +
+        '</div>' +
+        '<p class="hv-sm" style="color:var(--hv-ink)">' + esc(L(cl.text)) + '</p>' +
+        '</div>';
+    }).join('');
+  }
+
+  function overview(c) {
+    return '<div class="hv-stack-lg">' +
+      answerCards(c) +
+
+      '<div class="hv-split" style="align-items:start;gap:28px">' +
+        '<div class="hv-panel">' +
+          '<div class="hv-panel-head"><strong class="hv-sm">' + esc(t('cw.progressTitle')) + '</strong>' +
+            U.pill('neutral', L(c.client_visible_status)) + '</div>' +
+          '<div class="hv-panel-body">' + timeline(c) + '</div>' +
+        '</div>' +
+        '<div class="hv-panel">' +
+          '<div class="hv-panel-head"><strong class="hv-sm">' + esc(t('cw.yourWords')) + '</strong></div>' +
+          '<div class="hv-panel-body">' +
+            '<p class="hv-xs hv-muted">' + esc(t('cw.yourWords.note')) + '</p>' +
+            claims(c) +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="hv-panel">' +
+        '<div class="hv-panel-head"><strong class="hv-sm">' + esc(t('cw.findings')) + '</strong></div>' +
+        '<div class="hv-panel-body">' +
+          (c.findings.length ? '' : U.empty('scale', t('cw.findings.emptyT'), t('cw.findings.emptyB'))) +
+        '</div>' +
+      '</div>' +
+
+      '<div class="hv-panel">' +
+        '<div class="hv-panel-head"><strong class="hv-sm">' + esc(t('cw.meetings')) + '</strong></div>' +
+        '<div class="hv-panel-body">' +
+          (c.meetings.length ? '' : U.empty('calendar', t('cw.meetings.emptyT'), t('cw.meetings.emptyB'))) +
+        '</div>' +
+      '</div>' +
+      '</div>';
+  }
+
+  /* ── Requested information ── */
+
+  function requests(c) {
+    var open = c.requests.filter(function (r) { return r.status === 'OPEN'; });
+    var done = c.requests.filter(function (r) { return r.status !== 'OPEN'; });
+
+    function card(r) {
+      return '<div class="cw-req" data-s="' + r.status + '">' +
+        '<div class="cw-req-head">' +
+          '<div>' +
+            '<div class="hv-row" style="gap:8px;margin-block-end:6px">' +
+              (r.status === 'OPEN' ? U.pill('human', t('cw.req.open')) : U.pill('approved', t('cw.req.answered'))) +
+              '<span class="hv-xs hv-muted">' + esc(t('cw.req.asked')) + ' ' + I.date(r.asked_at) + '</span>' +
+            '</div>' +
+            '<strong style="font-size:1.02rem;line-height:1.5">' + esc(L(r.title)) + '</strong>' +
+            (r.note ? '<p class="hv-xs hv-muted" style="margin-block-start:6px">' + ic('shield', { size: 12 }) + ' ' + esc(L(r.note)) + '</p>' : '') +
+            (r.answer_note ? '<p class="hv-xs hv-muted" style="margin-block-start:6px">' + esc(L(r.answer_note)) + '</p>' : '') +
+          '</div>' +
+          (r.status === 'OPEN'
+            ? '<button class="hv-btn hv-btn-outline hv-btn-sm" type="button" data-hv-answer="' + r.id + '">' +
+              ic('upload', { size: 14 }) + esc(t('cw.req.respond')) + '</button>'
+            : '<span class="hv-xs hv-muted" style="white-space:nowrap">' + I.date(r.answered_at) + '</span>') +
+        '</div>' +
+        '<div class="cw-req-why">' + ic('help', { size: 16 }) +
+          '<span><strong>' + esc(t('cw.req.why')) + '</strong> ' + esc(L(r.why)) + '</span></div>' +
+        '</div>';
+    }
+
+    return '<div class="hv-stack-lg">' +
+      U.note('signal', esc(t('cw.req.intro')), 'shield') +
+
+      '<div><h2 class="hv-h3" style="font-size:1.08rem;margin-block-end:12px">' +
+        esc(t('cw.req.openTitle')) + ' <span class="hv-muted hv-sm">(' + I.num(open.length) + ')</span></h2>' +
+        (open.length ? open.map(card).join('') : U.empty('check', t('cw.req.noneT'), t('cw.req.noneB'))) +
+      '</div>' +
+
+      (done.length ? '<div><h2 class="hv-h3" style="font-size:1.08rem;margin-block-end:12px">' +
+        esc(t('cw.req.doneTitle')) + ' <span class="hv-muted hv-sm">(' + I.num(done.length) + ')</span></h2>' +
+        done.map(card).join('') + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ── Not-yet-built tabs. Named, shown, and honestly labelled. ── */
+  function notReady(tab) {
+    return '<div class="hv-stack-lg">' +
+      U.empty('layers', t('cw.tab.' + tab), t('cw.notReady')) +
+      U.note('caution', esc(t('cw.notReady.detail')), 'info') +
+      '</div>';
+  }
+
+  /* ── Shell ── */
+
+  function shell(c) {
+    var tabs = TABS.map(function (k) {
+      return '<button class="hv-tab" type="button" role="tab" data-hv-tab="' + k + '"' +
+        (state.tab === k ? ' aria-selected="true"' : ' aria-selected="false"') + '>' +
+        esc(t('cw.tab.' + k)) + (READY[k] ? '' : ' <span class="hv-xs hv-muted">· ' + esc(t('common.notAvailable')) + '</span>') +
+        '</button>';
+    }).join('');
+
+    var body = state.tab === 'overview' ? overview(c)
+             : state.tab === 'requests' ? requests(c)
+             : notReady(state.tab);
+
+    return '<div class="hv-container" style="padding-block:28px 96px">' +
+      '<div class="cw-head">' +
+        '<div class="hv-row" style="gap:10px">' +
+          '<span class="hv-eyebrow" style="margin:0">' + esc(t('cw.title')) + '</span>' +
+          (U.isDemo() ? U.demoTag() : '') +
+        '</div>' +
+        '<h1 class="hv-h2" style="font-size:1.55rem">' + esc(L(c.title)) + '</h1>' +
+        '<div class="hv-row hv-xs hv-muted" style="gap:14px">' +
+          '<span>' + esc(L(c.organization)) + '</span>' +
+          '<span>' + esc(t('cw.ref')) + ' ' + I.code(c.reference) + '</span>' +
+          '<span>' + esc(t('cw.opened')) + ' ' + I.date(c.opened_at) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="hv-tabs" role="tablist" style="margin-block-end:26px">' + tabs + '</div>' +
+      body + '</div>';
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'مساحة العميل' : 'Client workspace') + ' — Humvance';
+    var c = source();
+    document.getElementById('app').innerHTML =
+      U.demoBar() + U.siteHeader() +
+      '<main id="main">' + (c ? shell(c) : gate()) + '</main>' + U.siteFooter();
+    U.wire();
+
+    document.querySelectorAll('[data-hv-tab]').forEach(function (b) {
+      b.addEventListener('click', function () { state.tab = b.getAttribute('data-hv-tab'); render(); });
+    });
+    /* Every client-side write is blocked: there is no endpoint behind it. */
+    document.querySelectorAll('[data-hv-answer]').forEach(function (b) {
+      b.addEventListener('click', function () { U.demoGuard('client evidence upload'); });
+    });
+  }
+
+  I.onChange(render);
+  render();
+})();
+</script>
+</body>
+</html>

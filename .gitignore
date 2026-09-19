@@ -14,6 +14,7 @@
 
 # ── Dependencies ──
 node_modules/
+preview-public/
 .npm/
 
 # ── Local databases ──

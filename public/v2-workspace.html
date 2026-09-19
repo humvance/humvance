@@ -1,339 +1,635 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Humvance V2 — Case Workspace</title>
+<title>مساحة التشخيص — Humvance</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
 <style>
-  :root{
-    --bg:#fbfaf9; --panel:#ffffff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e6e3e0;
-    --accent:#1f5f4f; --warn:#8a5a00; --bad:#8c2f2f; --good:#1f5f4f;
-    --chip:#f1efec;
+  .ws-head { border-block-end: 1px solid var(--hv-line); padding-block-end: 18px; margin-block-end: 22px; }
+  .ws-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 8px; }
+  .ws-item { border: 1px solid var(--hv-line); border-radius: var(--hv-r); background: var(--hv-surface); padding: 15px 18px; }
+  .ws-item + .ws-item { margin-block-start: 10px; }
+  .ws-item-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-block-end: 8px; }
+  .ws-limit { font-size: var(--hv-t-xs); color: var(--hv-ink-3); border-inline-start: 2px solid var(--hv-line-2);
+              padding-inline-start: 10px; margin-block-start: 10px; line-height: 1.65; }
+  .ws-bar { display: flex; gap: 3px; align-items: center; font-size: var(--hv-t-xs); color: var(--hv-ink-3); }
+  .ws-bar i { width: 7px; height: 7px; border-radius: 2px; display: block; }
+  .ws-bar .sup { background: var(--hv-verified); }
+  .ws-bar .ag { background: var(--hv-conflict); }
+  .ws-ae { font-weight: 600; }
+  .ws-section-note { font-size: var(--hv-t-xs); color: var(--hv-ink-3); line-height: 1.75; margin-block-end: 14px; max-width: 78ch; }
+
+  /* ── N-01: the practitioner write surface ──────────────────────────────────
+     Calm and dense on purpose. This is a working screen, not a page to be
+     persuaded by: no animation, no colour beyond what distinguishes a state,
+     and every control large enough to hit on a phone. The panel sits AFTER the
+     reading content of its tab, so a reviewer reads the case before acting on
+     it. */
+  .op-panel { margin-block-start: 30px; border: 1px solid var(--hv-line); border-radius: var(--hv-r);
+              background: var(--hv-surface-2); overflow: hidden; }
+  .op-panel-demo { opacity: .75; }
+  .op-panel-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+                   padding: 12px 16px; border-block-end: 1px solid var(--hv-line);
+                   font-size: var(--hv-t-sm); }
+  .op-panel-head > strong { font-weight: 600; }
+  .op-panel-sub { font-size: var(--hv-t-xs); color: var(--hv-ink-3); }
+  .op-panel > p { padding: 14px 16px; margin: 0; }
+
+  .op-form { border-block-start: 1px solid var(--hv-line-2); }
+  .op-form:first-of-type { border-block-start: 0; }
+  .op-form > summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+                       padding: 12px 16px; cursor: pointer; font-size: var(--hv-t-sm);
+                       list-style: none; min-block-size: 44px; }
+  .op-form > summary::-webkit-details-marker { display: none; }
+  .op-form > summary:hover { background: var(--hv-paper); }
+  .op-form > summary:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: -2px; }
+  .op-form[open] > summary { background: var(--hv-paper); font-weight: 600; }
+  .op-code { margin-inline-start: auto; font-family: var(--hv-font-mono);
+             font-size: .68rem; color: var(--hv-ink-3); letter-spacing: .01em; }
+  .op-form-body { padding: 4px 16px 18px; display: grid; gap: 14px; max-width: 72ch; }
+  .op-note { font-size: var(--hv-t-xs); color: var(--hv-ink-2); line-height: 1.7;
+             border-inline-start: 2px solid var(--hv-signal); padding-inline-start: 10px; margin: 0; }
+  .op-note .hv-ico { vertical-align: -2px; }
+
+  .op-checks { display: grid; gap: 7px; }
+  .op-check { display: grid; grid-template-columns: auto 1fr; gap: 9px; align-items: start;
+              font-size: var(--hv-t-sm); line-height: 1.55; cursor: pointer; padding-block: 3px; }
+  .op-check input { inline-size: 17px; block-size: 17px; margin-block-start: 2px; accent-color: var(--hv-signal); }
+
+  .op-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .op-status { font-size: var(--hv-t-xs); line-height: 1.5; }
+  .op-status-ok { color: var(--hv-verified); }
+  .op-status-bad { color: var(--hv-conflict); }
+  .op-status-busy { color: var(--hv-ink-3); }
+
+  .op-result:empty { display: none; }
+  .op-ok, .op-confirm, .op-conflict { border: 1px solid var(--hv-line); border-radius: var(--hv-r-sm);
+                                      padding: 12px 14px; display: grid; gap: 8px; font-size: var(--hv-t-xs); }
+  .op-ok { border-color: var(--hv-verified-line); }
+  .op-conflict { border-color: var(--hv-conflict-line); background: var(--hv-conflict-soft); }
+  .op-conflict-msg { font-family: var(--hv-font-mono); color: var(--hv-ink-2); }
+  .op-kv { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 10px; align-items: baseline; }
+  .op-kv > span:first-child { color: var(--hv-ink-3); font-family: var(--hv-font-mono); font-size: .68rem; }
+  .op-kv > span:last-child { font-family: var(--hv-font-mono); word-break: break-all; }
+  .op-caps ul { margin-block-start: 5px; display: grid; gap: 4px; padding-inline-start: 16px; }
+  .op-pre { font-family: var(--hv-font-mono); font-size: .68rem; line-height: 1.6;
+            background: var(--hv-paper); border-radius: 5px; padding: 10px;
+            max-block-size: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+            direction: ltr; text-align: start; }
+  /* The reviewed decision, in words first and JSON second (R01). */
+  .op-decision { display: grid; grid-template-columns: minmax(120px, 30%) 1fr; gap: 6px 12px;
+                 align-items: baseline; font-size: var(--hv-t-xs); }
+  .op-decision dt { color: var(--hv-ink-3); }
+  .op-decision dd { color: var(--hv-ink); font-weight: 600; white-space: pre-wrap; }
+  .op-raw > summary { cursor: pointer; color: var(--hv-ink-3); font-size: var(--hv-t-xs);
+                      list-style: none; padding-block: 4px; min-block-size: 28px; }
+  .op-raw > summary::-webkit-details-marker { display: none; }
+  .op-raw > summary:hover { color: var(--hv-ink); }
+  .op-raw > summary:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+  .op-confirm-stale { border-color: var(--hv-unverified-line); background: var(--hv-unverified-soft);
+                      color: var(--hv-unverified); }
+  /* A form holding unsaved work says so on its own summary row (R02). */
+  .op-draft { font-size: .68rem; line-height: 1.4; color: var(--hv-signal-ink);
+              border: 1px solid var(--hv-signal-line); background: var(--hv-signal-soft);
+              border-radius: 999px; padding: 2px 9px; }
+  .ws-lim { font-size: var(--hv-t-xs); color: var(--hv-ink-2); line-height: 1.75; max-width: 78ch;
+            border: 1px dashed var(--hv-line-2); border-radius: var(--hv-r-sm); padding: 11px 13px;
+            display: grid; gap: 6px; }
+  .ws-lim strong { color: var(--hv-ink); }
+  @media (max-width: 640px) {
+    .op-form-body { padding-inline: 13px; }
+    .op-kv, .op-decision { grid-template-columns: 1fr; gap: 2px; }
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#141414; --panel:#1c1c1c; --ink:#ececec; --muted:#9a9a9a; --line:#2e2e2e;
-      --accent:#5fbfa3; --warn:#d6a24a; --bad:#e08585; --good:#5fbfa3; --chip:#242424;
-    }
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.55 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif}
-  header{border-bottom:1px solid var(--line);padding:18px 20px;display:flex;
-    gap:12px;align-items:baseline;flex-wrap:wrap}
-  h1{font-size:17px;margin:0;font-weight:650;letter-spacing:-.01em}
-  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 80px}
-  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:16px 18px;margin:0 0 14px}
-  h2{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
-    margin:0 0 12px;font-weight:600}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline}
-  .chip{background:var(--chip);border:1px solid var(--line);border-radius:999px;
-    padding:2px 10px;font-size:12px;color:var(--muted)}
-  .chip.good{color:var(--good);border-color:var(--good)}
-  .chip.warn{color:var(--warn);border-color:var(--warn)}
-  .chip.bad{color:var(--bad);border-color:var(--bad)}
-  .item{border-top:1px solid var(--line);padding:10px 0}
-  .item:first-of-type{border-top:0}
-  .label{font-size:12px;color:var(--muted);margin-bottom:2px}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted)}
-  blockquote{margin:6px 0;padding:8px 12px;border-left:3px solid var(--line);
-    background:var(--chip);border-radius:0 6px 6px 0;white-space:pre-wrap}
-  ul{margin:6px 0;padding-inline-start:20px}
-  button{font:inherit;padding:8px 14px;border-radius:7px;border:1px solid var(--line);
-    background:var(--panel);color:var(--ink);cursor:pointer}
-  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  textarea,input{font:inherit;width:100%;padding:8px 10px;border-radius:7px;
-    border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-  .notice{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13.5px}
-  .err{border-color:var(--bad);color:var(--bad)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  td{padding:5px 8px 5px 0;vertical-align:top;border-top:1px solid var(--line)}
-  @media (max-width:640px){ .wrap{padding:14px 16px 60px} }
 </style>
 </head>
-<body>
-<header>
-  <h1>Humvance V2 — Case Workspace</h1>
-  <span class="chip" id="storeChip">store: —</span>
-  <span class="chip" id="isoChip">isolation: —</span>
-  <span class="mono" id="caseRef"></span>
-</header>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
 
-<div class="wrap">
-  <div id="banner"></div>
-
-  <section id="loader">
-    <h2>Open a case</h2>
-    <div class="row">
-      <input id="orgInput" placeholder="organization_id (org_…)" style="flex:1;min-width:220px">
-      <input id="caseInput" placeholder="case_id (case_…)" style="flex:1;min-width:220px">
-      <button class="primary" id="loadBtn">Load</button>
-    </div>
-    <p class="mono" style="margin-top:10px">
-      This workspace reads <code>/api/v2/case</code> with the admin token in sessionStorage
-      (<code>hv_token</code>). V2 requires the token to carry an <code>org</code> or <code>orgs</code>
-      claim; a V1 admin token without one is refused with <code>unscoped_token</code>, by design.
-    </p>
-  </section>
-
-  <div id="view" hidden>
-    <section>
-      <h2>Case</h2>
-      <div class="row" style="margin-bottom:8px">
-        <strong id="cTitle"></strong>
-        <span class="chip" id="cState"></span>
-        <span class="chip" id="cClient"></span>
-        <span class="chip mono" id="cVersion"></span>
-      </div>
-      <div class="label">Primary claim — the sponsor's account, under investigation</div>
-      <blockquote id="cClaim"></blockquote>
-      <div class="row"><span class="chip" id="cClaimStatus"></span></div>
-    </section>
-
-    <section>
-      <h2>Competing hypotheses</h2>
-      <div id="hyps"></div>
-    </section>
-
-    <section>
-      <h2>Evidence</h2>
-      <div id="evid"></div>
-    </section>
-
-    <section>
-      <h2>Contradictions</h2>
-      <div id="contra"></div>
-    </section>
-
-    <section>
-      <h2>Missing evidence — outstanding requests</h2>
-      <div id="reqs"></div>
-    </section>
-
-    <section>
-      <h2>Proposed finding</h2>
-      <div id="finding"></div>
-    </section>
-
-    <section>
-      <h2>Challenge review</h2>
-      <div id="challenge"></div>
-    </section>
-
-    <section>
-      <h2>Decision</h2>
-      <div id="approvalState"></div>
-      <div style="margin-top:10px">
-        <div class="label">Reviewer comment (required to approve over a blocked challenge)</div>
-        <textarea id="comment" rows="3" placeholder="What you read, what you accept, and why."></textarea>
-      </div>
-      <div class="controls">
-        <button class="primary" data-decision="APPROVED">Approve</button>
-        <button data-decision="MODIFIED">Modify</button>
-        <button data-decision="MORE_EVIDENCE_REQUIRED">Request more evidence</button>
-        <button data-decision="REJECTED">Reject</button>
-      </div>
-      <p class="mono" style="margin-top:8px">
-        A decision binds to the finding's exact version. Approving version N says nothing about version N+1.
-      </p>
-    </section>
-
-    <section>
-      <h2>Audit history</h2>
-      <table id="audit"></table>
-    </section>
-  </div>
-</div>
-
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script src="/assets/hv-intake-copy.js"></script>
+<script src="/assets/hv-admin-copy.js"></script>
+<script src="/assets/hv-case-view.js"></script>
+<script src="/assets/hv-demo.js"></script>
+<script src="/assets/hv-ops.js"></script>
 <script>
-(function(){
+/* ===========================================================================
+   Case and diagnostic workspace.
+   ---------------------------------------------------------------------------
+   UNCHANGED: the read path. GET /api/v2/case?organization_id=…&case_id=…&view=reviewer
+   with the admin session token from sessionStorage 'hv_token', exactly as
+   before.
+
+   CHANGED 2026-09-18 (N-01). This page used to perform no writes at all, which
+   meant every operation in the case API had to be typed as a raw HTTP call by
+   whoever was running a case. The write surface now lives in
+   /assets/hv-ops.js and is mounted at the foot of the tab it belongs to, after
+   the reading content — a reviewer reads the case, then acts on it.
+
+   What did NOT change: the API, its contracts, its gates and its vocabulary.
+   The panel offers exactly the operations api/v2/case.js already dispatches,
+   sends nothing at all in demonstration mode, and never replays a write the
+   server refused.
+
+   THE RULE THIS SCREEN EXISTS TO ENFORCE, visually:
+
+     an unverified statement must never look like a finding,
+     and a draft must never look approved.
+
+   So claims, evidence, hypotheses and findings each get their own tab, their
+   own pill shape and their own colour, and the findings tab stays visibly
+   empty rather than being filled with the nearest available content. Approval
+   is shown bound to a case version, because an approval that floats free of
+   the version it approved is not an approval.
+
+   NOT SHOWN, deliberately: the archived 14-domain taxonomy, the 3 playbooks
+   and calculateConfidence(). They are not current capabilities, and putting
+   them on a reviewer's screen would imply they are.
+   =========================================================================== */
+(function () {
   'use strict';
-  var S = { org:null, caseId:null, bundle:null };
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
 
-  function token(){ try { return sessionStorage.getItem('hv_token'); } catch(e){ return null; } }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  function el(id){ return document.getElementById(id); }
-  function banner(msg, bad){
-    el('banner').innerHTML = msg ? '<div class="notice'+(bad?' err':'')+'">'+esc(msg)+'</div>' : '';
-  }
-  function fmt(ts){ try { return new Date(ts).toISOString().replace('T',' ').slice(0,19); } catch(e){ return ''; } }
+  var TABS = ['overview', 'claims', 'evidence', 'hypotheses', 'gaps', 'findings', 'plan', 'followup', 'audit'];
+  var S = { tab: 'overview', bundle: null, banner: null, store: null, isolation: null, org: '', caseId: '' };
 
-  async function api(path, opts){
+  function token() { try { return sessionStorage.getItem('hv_token'); } catch (e) { return null; } }
+
+  async function api(path, opts) {
     opts = opts || {};
-    opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
-    var t = token();
-    if (t) opts.headers['Authorization'] = 'Bearer ' + t;
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    var tk = token();
+    if (tk) opts.headers['Authorization'] = 'Bearer ' + tk;
     var res = await fetch(path, opts);
-    el('storeChip').textContent = 'store: ' + (res.headers.get('X-Humvance-V2-Store') || '—');
-    var iso = res.headers.get('X-Humvance-V2-Isolation') || '—';
-    var chip = el('isoChip');
-    chip.textContent = 'isolation: ' + iso;
-    chip.className = 'chip ' + (iso === 'SHARED-WITH-PRODUCTION' ? 'bad' : 'good');
-    var body = await res.json().catch(function(){ return {}; });
+    S.store = res.headers.get('X-Humvance-V2-Store') || '—';
+    S.isolation = res.headers.get('X-Humvance-V2-Isolation') || '—';
+    var body = await res.json().catch(function () { return {}; });
     if (!res.ok) { var e = new Error(body.error || res.statusText); e.code = body.code; throw e; }
     return body;
   }
 
-  function renderList(target, items, fn){
-    var node = el(target);
-    if (!items.length) { node.innerHTML = '<p class="mono">none</p>'; return; }
-    node.innerHTML = items.map(fn).join('');
-  }
-
-  function render(b){
-    S.bundle = b;
-    var c = b.case;
-    el('view').hidden = false;
-    el('loader').hidden = true;
-    el('caseRef').textContent = c.case_id;
-    el('cTitle').textContent = c.title;
-    el('cState').textContent = c.status;
-    el('cClient').textContent = 'client sees: ' + c.client_visible_status;
-    el('cVersion').textContent = 'case v' + c.version;
-
-    var claim = b.claims.filter(function(x){ return x.is_primary; })[0] || b.claims[0];
-    el('cClaim').textContent = claim ? claim.statement : '—';
-    el('cClaimStatus').textContent = claim ? claim.verification_status : '—';
-
-    renderList('hyps', b.hypotheses, function(h){
-      var cls = h.state === 'NOT_SUPPORTED' ? '' : (h.state === 'STRENGTHENED' ? 'warn' : '');
-      return '<div class="item"><div class="row"><strong>'+esc(h.label||'—')+'</strong>'+
-        '<span class="chip '+cls+'">'+esc(h.state)+'</span></div><div>'+esc(h.statement)+'</div></div>';
-    });
-
-    renderList('evid', b.evidence, function(e){
-      var flags = (e.untrusted_scan && e.untrusted_scan.flags) || [];
-      return '<div class="item"><div class="row">'+
-        '<span class="chip">'+esc(e.source_type)+'</span>'+
-        '<strong>'+esc(e.source_name)+'</strong>'+
-        '<span class="chip">'+esc(e.verification_status)+'</span>'+
-        (flags.length ? '<span class="chip bad">untrusted content flagged: '+esc(flags.join(', '))+'</span>' : '')+
-        '</div>'+
-        '<div class="label">Source (verbatim)</div><blockquote>'+esc(e.original_content)+'</blockquote>'+
-        (e.ai_interpretation ? '<div class="label">AI interpretation — not evidence</div><blockquote>'+esc(e.ai_interpretation)+'</blockquote>' : '')+
-        ((e.limitations&&e.limitations.length) ? '<div class="label">Limitations</div><ul>'+e.limitations.map(function(l){return '<li>'+esc(l)+'</li>';}).join('')+'</ul>' : '')+
-        '</div>';
-    });
-
-    renderList('contra', b.contradictions, function(x){
-      return '<div class="item"><div class="row"><span class="chip '+(x.state==='OPEN'?'bad':'')+'">'+esc(x.kind)+' · '+esc(x.state)+'</span></div>'+
-        '<div>'+esc(x.summary)+'</div></div>';
-    });
-
-    renderList('reqs', b.evidenceRequests.filter(function(r){ return r.status!=='REJECTED'; }), function(r){
-      return '<div class="item"><div class="row"><span class="chip">'+esc(r.status)+'</span>'+
-        '<strong>'+esc(r.requested_item)+'</strong></div>'+
-        '<div class="label">Why</div><div>'+esc(r.reason)+'</div></div>';
-    });
-
-    var findings = b.findings.slice().sort(function(a,b2){ return b2.updated_at - a.updated_at; });
-    var f = findings[0];
-    if (!f) { el('finding').innerHTML = '<p class="mono">no finding drafted</p>'; }
-    else {
-      el('finding').innerHTML =
-        '<div class="row"><span class="chip">v'+f.version+'</span><span class="chip">'+esc(f.state)+'</span>'+
-        '<span class="chip '+(f.evidence_strength==='STRONG'?'good':(f.evidence_strength==='LIMITED'?'bad':'warn'))+'">evidence: '+esc(f.evidence_strength)+'</span></div>'+
-        '<blockquote>'+esc(f.statement)+'</blockquote>'+
-        '<div class="label">Scope</div><div>'+esc(f.scope)+'</div>'+
-        '<div class="label" style="margin-top:8px">Why it is rated '+esc(f.evidence_strength)+'</div>'+
-        '<ul>'+(f.strength_reasons||[]).map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+
-        (f.strength_caps||[]).map(function(r){return '<li><strong>cap:</strong> '+esc(r)+'</li>';}).join('')+'</ul>'+
-        '<div class="label">Counter-evidence</div><div>'+ (f.counter_evidence||[]).length +' item(s)</div>'+
-        '<div class="label" style="margin-top:8px">Alternative explanations</div>'+
-        '<ul>'+(f.alternative_explanations||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>'+
-        '<div class="label">Limitations</div>'+
-        '<ul>'+(f.limitations||[]).map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>';
-      S.finding = f;
-    }
-
-    var challenges = b.challenges.filter(function(x){ return !f || x.finding_id === f.finding_id; })
-      .sort(function(a,b2){ return b2.created_at - a.created_at; });
-    var ch = challenges[0];
-    if (!ch) { el('challenge').innerHTML = '<p class="mono">not yet run for this finding</p>'; }
-    else {
-      el('challenge').innerHTML =
-        '<div class="row"><span class="chip '+(ch.verdict==='BLOCKED'?'bad':(ch.verdict==='PASSED'?'good':'warn'))+'">'+esc(ch.verdict)+'</span>'+
-        '<span class="chip mono">against finding v'+ch.finding_version+'</span></div>'+
-        '<p>'+esc(ch.summary)+'</p>'+
-        '<table>'+ch.checks.map(function(k){
-          return '<tr><td style="width:24px">'+(k.passed?'·':'!')+'</td><td style="width:180px" class="mono">'+esc(k.id)+'</td>'+
-                 '<td>'+esc(k.conclusion)+'</td></tr>';
-        }).join('')+'</table>';
-    }
-
-    var approvals = b.approvals.slice().sort(function(a,b2){ return b2.created_at - a.created_at; });
-    var covering = f && approvals.filter(function(a){
-      return a.artifact_type==='finding' && a.artifact_id===f.finding_id &&
-             a.artifact_version===f.version && a.decision==='APPROVED'; })[0];
-    el('approvalState').innerHTML = covering
-      ? '<div class="row"><span class="chip good">APPROVED</span><span class="mono">'+esc(covering.reviewer_id)+' · '+fmt(covering.created_at)+' · finding v'+covering.artifact_version+'</span></div>'+
-        '<blockquote>'+esc(covering.comment||'')+'</blockquote>'
-      : '<div class="row"><span class="chip warn">no approval covers the current finding version</span></div>' +
-        (approvals.length ? '<p class="mono">'+approvals.length+' earlier decision(s) on record, none covering v'+(f?f.version:'—')+'</p>' : '');
-
-    el('audit').innerHTML = b.audit.slice().reverse().map(function(a){
-      return '<tr><td class="mono" style="width:150px">'+fmt(a.at)+'</td>'+
-             '<td class="mono" style="width:190px">'+esc(a.event)+'</td>'+
-             '<td class="mono" style="width:60px">'+esc(a.actor_type)+'</td>'+
-             '<td>'+esc(a.summary)+'</td></tr>';
-    }).join('');
-  }
-
-  async function load(org, caseId){
-    banner('');
+  async function load() {
+    if (U.isDemo()) { S.bundle = demoBundle(); S.store = 'fixtures'; S.isolation = 'DEMO-FIXTURES'; render(); return; }
+    var q = new URLSearchParams(location.search);
+    S.org = q.get('organization_id') || q.get('org') || '';
+    S.caseId = q.get('case_id') || q.get('case') || '';
+    if (!S.org || !S.caseId) { S.banner = { kind: 'caution', msg: t('ws.needIds') }; render(); return; }
     try {
-      var b = await api('/api/v2/case?organization_id='+encodeURIComponent(org)+'&case_id='+encodeURIComponent(caseId)+'&view=reviewer');
-      S.org = org; S.caseId = caseId;
-      render(b);
+      S.bundle = await api('/api/v2/case?organization_id=' + encodeURIComponent(S.org) +
+        '&case_id=' + encodeURIComponent(S.caseId) + '&view=reviewer');
+      S.banner = null;
+      render();
     } catch (e) {
-      if (e.code === 'unscoped_token') {
-        banner('Your admin token is not scoped to an organization. V2 requires an "org" or "orgs" claim and refuses unscoped tokens by design — the admin login needs to issue org-scoped tokens before this workspace can be used.', true);
-      } else if (e.code === 'store_misconfigured') {
-        banner('V2 storage is not configured on this deployment. It fails closed rather than falling back to the production database. ' + e.message, true);
-      } else {
-        banner((e.code ? e.code + ': ' : '') + e.message, true);
-      }
+      S.banner = { kind: 'conflict', msg: (e.code ? e.code + ': ' : '') + e.message };
+      render();
     }
   }
 
-  el('loadBtn').addEventListener('click', function(){
-    load(el('orgInput').value.trim(), el('caseInput').value.trim());
-  });
-
-  document.querySelectorAll('[data-decision]').forEach(function(btn){
-    btn.addEventListener('click', async function(){
-      if (!S.finding) return banner('There is no finding to decide on.', true);
-      var decision = btn.getAttribute('data-decision');
-      banner('');
-      try {
-        await api('/api/v2/case', { method:'POST', body: JSON.stringify({
-          op: 'record_approval',
-          organization_id: S.org,
-          case_id: S.caseId,
-          artifact_type: 'finding',
-          artifact_id: S.finding.finding_id,
-          artifact_version: S.finding.version,
-          decision: decision,
-          comment: el('comment').value
-        })});
-        el('comment').value = '';
-        await load(S.org, S.caseId);
-      } catch (e) {
-        banner((e.code ? e.code + ': ' : '') + e.message, true);
-      }
-    });
-  });
-
-  var q = new URLSearchParams(location.search);
-  if (q.get('org') && q.get('case')) {
-    el('orgInput').value = q.get('org');
-    el('caseInput').value = q.get('case');
-    load(q.get('org'), q.get('case'));
+  /* Backend-shaped fixtures. Every field name below is the one
+     `getReviewerView` actually returns — verified against the real service in
+     tests/ui/case-fixture.js. A fixture that invents its own field names is how
+     a renderer stays wrong, so these do not. */
+  function demoBundle() {
+    var W = HV.demo.WORKSPACE, C = HV.demo.CASE, L = function (v) { return HV.demo.L(v, I.lang); };
+    var ORG = C.organization_id;
+    return {
+      case: {
+        case_id: C.case_id, organization_id: ORG, title: L(C.title), status: C.status,
+        version: C.version, client_visible_status: L(C.client_visible_status)
+      },
+      claims: C.claims.map(function (c, i) {
+        return { claim_id: c.id, organization_id: ORG, statement: L(c.text),
+                 verification_status: c.status, is_primary: i === 0, origin: c.origin };
+      }),
+      evidence: W.evidence.map(function (e) {
+        return { evidence_id: e.id, organization_id: ORG, source_type: e.source_type,
+                 source_name: L(e.source_name), verification_status: e.verification_status,
+                 limitations: (e.limitations || []).map(L), untrusted_scan: e.untrusted_scan };
+      }),
+      hypotheses: W.hypotheses.map(function (h) {
+        return { hypothesis_id: h.id, organization_id: ORG, label: h.label, statement: L(h.statement),
+                 state: h.state, supporting_evidence: h.supporting_evidence,
+                 contradicting_evidence: h.contradicting_evidence };
+      }),
+      contradictions: W.contradictions.map(function (c) {
+        return { contradiction_id: c.id, organization_id: ORG, kind: c.kind, state: c.state,
+                 summary: L(c.summary), left_evidence_id: c.left_evidence_id, right_evidence_id: c.right_evidence_id };
+      }),
+      findings: W.findings.map(function (f) {
+        return { finding_id: f.id, organization_id: ORG, version: f.version, state: f.state,
+                 statement: L(f.statement), scope: L(f.scope),
+                 limitations: (f.limitations || []).map(L),
+                 alternative_explanations: (f.alternative_explanations || []).map(L),
+                 evidence_strength: f.evidence_strength };
+      }),
+      approvals: W.approvals.map(function (a) {
+        return { approval_id: a.id, organization_id: ORG, artifact_type: a.artifact_type,
+                 artifact_id: a.artifact_id, artifact_version: a.artifact_version,
+                 decision: a.decision, comment: L(a.comment), created_at: a.created_at,
+                 created_by: a.created_by };
+      }),
+      challenges: W.challenges.map(function (c) {
+        return { challenge_id: c.id, organization_id: ORG, finding_id: c.finding_id,
+                 finding_version: c.finding_version, verdict: c.verdict, summary: L(c.summary) };
+      }),
+      evidenceRequests: [],
+      audit: W.audit.map(function (a) {
+        return { audit_id: a.id, at: a.at, event: a.event, actor_type: a.actor_type, summary: L(a.summary) };
+      })
+      /* NOTE: no `unknowns` key — the real bundle has none either. */
+    };
   }
+
+  /* ── Views ── */
+
+  function claimPill(status) {
+    return status === 'CORROBORATED' || status === 'VERIFIED'
+      ? U.pill('approved', t('ws.v.' + status, null) || status) : U.pill('claim', vs(status));
+  }
+  /** Readable label for a backend enumeration, with the raw value kept secondary. */
+  function label(ns, v) { return v && I.has(ns + '.' + v) ? t(ns + '.' + v) : (v || '—'); }
+  function vs(v) { return label('ws.v', v); }
+  function raw(v) { return v ? '<span class="hv-code hv-xs hv-muted" title="' + esc(v) + '">' + esc(v) + '</span>' : ''; }
+
+  /* The approval and contradiction rules live in /assets/hv-case-view.js so that
+     the page and tests/ui/workspace-mapping.test.js run the same code. See that
+     file for why, and for what the previous version got wrong. */
+  var CV = HV.caseView;
+  function findingApproval(finding, approvals) { return CV.findingApprovalState(finding, approvals); }
+  function byNewest(a, b) { return Number(b.created_at || 0) - Number(a.created_at || 0); }
+
+  function approvalPill(st, finding) {
+    if (st.kind === 'approved') {
+      return U.pill('approved', t('ws.approvedV', { v: st.approval.artifact_version }));
+    }
+    if (st.kind === 'stale') {
+      return U.pill('conflict', t('ws.staleApproval', { v: st.approval.artifact_version, cur: finding.version }));
+    }
+    if (st.kind === 'rejected') return U.pill('conflict', t('ws.rejected'));
+    if (st.kind === 'decided' || st.kind === 'supersededDecision') {
+      return U.pill('human', label('ws.d', st.approval.decision));
+    }
+    return U.pill('finding', t('ws.draft'));
+  }
+
+  function listOrDash(arr) {
+    if (!Array.isArray(arr) || !arr.length) return '';
+    return '<ul style="display:grid;gap:5px;margin-block-start:6px">' +
+      arr.map(function (x) { return '<li style="display:grid;grid-template-columns:8px 1fr;gap:9px">' +
+        '<span style="color:var(--hv-ink-3)">·</span><span>' + esc(x) + '</span></li>'; }).join('') + '</ul>';
+  }
+
+  function overview(b) {
+    var c = b.case;
+    var primary = (b.claims || []).filter(function (x) { return x.is_primary; })[0] || (b.claims || [])[0];
+    /* R4. A case can sit in APPROVED with `approved_finding_id` null — the
+       state and the artifact it is supposed to be about have come apart. The
+       screen says so rather than presenting the state as if it meant something.
+       It is NOT repaired here: a silent lifecycle fix is out of scope, and
+       guessing which finding was meant would be inventing the record. */
+    var approvedWithoutFinding = c.status === 'APPROVED' && !c.approved_finding_id;
+    return '<div class="hv-stack-lg">' +
+      (approvedWithoutFinding
+        ? U.note('conflict', esc(t('ws.lim.approvedNoFinding')), 'alert')
+        : '') +
+      '<div class="hv-split" style="gap:22px;align-items:start">' +
+        '<div class="hv-panel"><div class="hv-panel-head"><strong class="hv-sm">' + esc(t('ws.tab.overview')) + '</strong>' +
+          U.pill('neutral', label('ws.cs', c.status)) + '</div>' +
+          '<div class="hv-panel-body">' +
+            '<dl style="display:grid;grid-template-columns:150px 1fr;gap:8px 16px;font-size:var(--hv-t-sm)">' +
+              '<dt class="hv-muted hv-xs">' + esc(t('ws.k.case')) + '</dt><dd>' + I.code(c.case_id) + '</dd>' +
+              '<dt class="hv-muted hv-xs">' + esc(t('ws.k.version')) + '</dt><dd><bdi class="hv-num">v' + esc(c.version) + '</bdi></dd>' +
+              '<dt class="hv-muted hv-xs">' + esc(t('ws.k.state')) + '</dt><dd>' + esc(label('ws.cs', c.status)) + ' ' + raw(c.status) + '</dd>' +
+              '<dt class="hv-muted hv-xs">' + esc(t('ws.k.clientSees')) + '</dt><dd>' + esc(c.client_visible_status || '—') + '</dd>' +
+            '</dl>' +
+          '</div></div>' +
+        '<div class="hv-panel"><div class="hv-panel-head"><strong class="hv-sm">' + esc(t('ws.primaryClaim')) + '</strong>' +
+          (primary ? claimPill(primary.verification_status) : '') + '</div>' +
+          '<div class="hv-panel-body">' +
+            (primary
+              ? '<div class="hv-quote"><p class="hv-sm" style="color:var(--hv-ink)">' + esc(primary.statement) + '</p></div>' +
+                '<div class="hv-provenance">' + ic('info', { size: 13 }) + '<span>' + esc(t('ws.claims.note')) + '</span></div>'
+              : U.empty('quote', t('rv.none'), '')) +
+          '</div></div>' +
+      '</div>' +
+      '<div class="hv-row" style="gap:10px">' +
+        counter('claims', (b.claims || []).length) +
+        counter('evidence', (b.evidence || []).length) +
+        counter('hypotheses', (b.hypotheses || []).length) +
+        counter('gaps', (b.contradictions || []).length) +
+        counter('findings', (b.findings || []).length) +
+      '</div>' +
+      '</div>';
+  }
+
+  function counter(tab, n) {
+    return '<button class="hv-card" type="button" data-hv-tab="' + tab + '" ' +
+      'style="padding:14px 18px;text-align:start;cursor:pointer;min-width:150px">' +
+      '<div class="hv-xs hv-muted">' + esc(t('ws.tab.' + tab)) + '</div>' +
+      '<div style="font-size:1.5rem;font-weight:700;margin-block-start:4px"><bdi class="hv-num">' + n + '</bdi></div>' +
+      '</button>';
+  }
+
+  function claims(b) {
+    return section(t('ws.claims.note'),
+      (b.claims || []).length
+        ? (b.claims || []).map(function (c) {
+            return '<div class="ws-item">' +
+              '<div class="ws-item-head">' + claimPill(c.verification_status) +
+                (c.origin ? U.pill('neutral', label('ws.origin', c.origin)) : '') +
+                (c.is_primary ? U.pill('neutral', t('ws.primary')) : '') + '</div>' +
+              '<p class="hv-sm" style="white-space:pre-wrap">' + esc(c.statement) + '</p>' +
+              '</div>';
+          }).join('')
+        : U.empty('quote', t('rv.none'), ''));
+  }
+
+  function evidence(b) {
+    return section(t('ws.evidence.note'),
+      (b.evidence || []).length
+        ? (b.evidence || []).map(function (e) {
+            var flags = (e.untrusted_scan && e.untrusted_scan.flags) || [];
+            return '<div class="ws-item">' +
+              '<div class="ws-item-head">' + U.pill('evidence', label('ws.src', e.source_type)) +
+                U.pill(e.verification_status === 'CORROBORATED' ? 'approved' : 'claim', vs(e.verification_status)) +
+                (flags.length ? U.pill('conflict', t('ws.flagged')) : '') + '</div>' +
+              '<strong class="hv-sm">' + esc(e.source_name || '—') + '</strong>' +
+              (Array.isArray(e.limitations) && e.limitations.length
+                ? '<div class="ws-limit"><strong>' + esc(t('ws.limits')) + '</strong>' + listOrDash(e.limitations) + '</div>'
+                : '') +
+              '</div>';
+          }).join('')
+        : U.empty('evidence', t('rv.none'), ''));
+  }
+
+  function hypotheses(b) {
+    return section(t('ws.hyp.note'),
+      (b.hypotheses || []).length
+        ? (b.hypotheses || []).map(function (h) {
+            var st = h.state || 'PROPOSED';
+            var sup = (h.supporting_evidence || []).length;
+            var ag = (h.contradicting_evidence || []).length;
+            var weak = st === 'NOT_SUPPORTED' || st === 'WEAKENED';
+            return '<div class="ws-item">' +
+              '<div class="ws-item-head">' +
+                (h.label ? U.pill('neutral', h.label) : '') +
+                U.pill(weak ? 'neutral' : 'claim', label('ws.hyp', st)) +
+                '<span class="ws-bar"><i class="sup"></i><bdi class="hv-num">' + sup + '</bdi> ' + esc(t('ws.hyp.supporting')) +
+                ' · <i class="ag"></i><bdi class="hv-num">' + ag + '</bdi> ' + esc(t('ws.hyp.against')) + '</span>' +
+              '</div>' +
+              '<p class="hv-sm" style="white-space:pre-wrap">' + esc(h.statement || '') + '</p>' +
+              '</div>';
+          }).join('')
+        : U.empty('branch', t('rv.none'), ''));
+  }
+
+  /* Contradictions and unknowns.
+     CORRECTED 2026-09-18 — the renderer read `statement`; the backend writes
+     `summary`, and also carries `state` and two evidence references that were
+     not shown at all. `unknowns` is NOT part of the reviewer bundle: the section
+     says the API does not supply it, which is a different statement from "there
+     are none", and the difference matters to a reviewer reading this screen. */
+  function gaps(b) {
+    var cons = b.contradictions || [];
+    var evById = {};
+    (b.evidence || []).forEach(function (e) { evById[e.evidence_id] = e; });
+    function evRef(id) {
+      if (!id) return '';
+      var e = evById[id];
+      return '<li style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:baseline">' +
+        ic('evidence', { size: 13 }) +
+        '<span>' + (e ? esc(e.source_name) + ' ' + raw(id) : raw(id)) + '</span></li>';
+    }
+    var unknowns = CV.sectionAvailability(b, 'unknowns');
+
+    return '<div class="hv-stack-lg">' +
+      '<div><h2 class="hv-h3" style="font-size:1.05rem;margin-block-end:8px">' + esc(t('ws.contradictions')) + '</h2>' +
+        '<p class="ws-section-note">' + esc(t('ws.contradictions.note')) + '</p>' +
+        (cons.length ? cons.map(function (c) {
+          var live = CV.contradictionIsLive(c);
+          var refs = CV.contradictionEvidenceIds(c);
+          return '<div class="ws-item"' +
+              (live ? ' style="border-color:var(--hv-conflict-line);background:var(--hv-conflict-soft)"' : '') + '>' +
+            '<div class="ws-item-head">' +
+              U.pill(live ? 'conflict' : 'neutral', label('ws.cstate', c.state)) +
+              U.pill('neutral', label('ws.ckind', c.kind)) + '</div>' +
+            '<p class="hv-sm" style="color:var(--hv-ink);white-space:pre-wrap">' + esc(CV.contradictionText(c)) + '</p>' +
+            (refs.length
+              ? '<div class="ws-limit"><strong>' + esc(t('ws.between')) + '</strong>' +
+                '<ul style="display:grid;gap:5px;margin-block-start:6px">' + refs.map(evRef).join('') + '</ul></div>'
+              : '') +
+            '</div>';
+        }).join('') : U.empty('scale', t('ws.noContradictions'), t('ws.noContradictions.b'))) +
+      '</div>' +
+      '<div><h2 class="hv-h3" style="font-size:1.05rem;margin-block-end:8px">' + esc(t('ws.unknowns')) + '</h2>' +
+        (unknowns === 'present'
+          ? '<p class="ws-section-note">' + esc(t('ws.unknowns.note')) + '</p>' +
+            '<div style="display:grid;gap:8px">' + b.unknowns.map(function (u) {
+              return '<div class="ws-item"><p class="hv-sm">' + esc(u) + '</p></div>'; }).join('') + '</div>'
+          : unknowns === 'empty'
+            ? U.empty('help', t('ws.unknowns.emptyT'), t('ws.unknowns.emptyB'))
+            : U.note('caution', esc(t('ws.unknowns.unsupported')), 'info')) +
+      '</div></div>';
+  }
+
+  /* ── Known limitations, stated on the screen that displays the thing ──────
+     D1, D2 and R4 are confirmed properties of the stored data, and this build
+     does not change any of them. What it does is stop the screen implying more
+     than the record supports: a strength category is a stored rule-based
+     assessment, and a recorded approval is a decision taken at a version and a
+     moment, not a statement that it is still current.
+
+     This is disclosure, not repair. The backend behaviour is unchanged, and a
+     warning in an interface is not a correctness fix. */
+  function limitations(keys) {
+    return '<div class="ws-lim">' +
+      '<strong>' + esc(t('ws.lim.title')) + '</strong>' +
+      keys.map(function (k) { return '<span>' + esc(t(k)) + '</span>'; }).join('') +
+      '</div>';
+  }
+
+  function findings(b) {
+    var f = b.findings || [], ap = b.approvals || [], ch = b.challenges || [];
+    if (!f.length) {
+      return '<div class="hv-stack-lg">' +
+        U.empty('scale', t('ws.findings.emptyT'), t('ws.findings.emptyB')) +
+        U.note('signal', esc(t('ws.approvalNote')), 'shield') +
+        '</div>';
+    }
+    return '<div class="hv-stack-lg">' +
+      '<p class="ws-section-note">' + esc(t('ws.approvalNote')) + '</p>' +
+      limitations(['ws.lim.strength', 'ws.lim.freshness']) +
+      f.map(function (x) {
+        var st = findingApproval(x, ap);
+        var challenge = CV.challengeForFinding(x, ch);
+        return '<div class="ws-item">' +
+          '<div class="ws-item-head">' + approvalPill(st, x) +
+            U.pill('neutral', t('ws.k.version') + ' v' + x.version) +
+            (x.evidence_strength ? U.pill('neutral', label('ws.strength', x.evidence_strength)) : '') +
+            (challenge ? U.pill(challenge.verdict === 'BLOCKED' ? 'conflict' : 'neutral',
+                t('ws.challenge') + ': ' + label('ws.verdict', challenge.verdict)) : '') +
+          '</div>' +
+          '<p class="hv-sm" style="white-space:pre-wrap">' + esc(x.statement || '') + '</p>' +
+          (x.scope ? '<div class="ws-limit"><strong>' + esc(t('ws.scope')) + '</strong> ' + esc(x.scope) + '</div>' : '') +
+          (Array.isArray(x.limitations) && x.limitations.length
+            ? '<div class="ws-limit"><strong>' + esc(t('ws.limits')) + '</strong>' + listOrDash(x.limitations) + '</div>' : '') +
+          (Array.isArray(x.alternative_explanations) && x.alternative_explanations.length
+            ? '<div class="ws-limit"><strong>' + esc(t('ws.alternatives')) + '</strong>' + listOrDash(x.alternative_explanations) + '</div>' : '') +
+          (st.approval
+            ? '<div class="ws-limit"><strong>' + esc(t('ws.decisionRecord')) + '</strong> ' +
+              esc(label('ws.d', st.approval.decision)) + ' · ' + esc(t('ws.k.version')) + ' v' + esc(st.approval.artifact_version) +
+              (st.approval.created_at ? ' · ' + I.dateTime(st.approval.created_at) : '') +
+              (st.kind === 'stale' ? '<br><strong>' + esc(t('ws.staleWhy')) + '</strong>' : '') +
+              '</div>'
+            : '') +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
+  function audit(b) {
+    var a = b.audit || [];
+    if (!a.length) return U.empty('history', t('rv.none'), '');
+    return '<div class="hv-table-wrap"><table class="hv-table"><thead><tr>' +
+      '<th>' + esc(t('rv.a.when')) + '</th><th>' + esc(t('rv.a.event')) + '</th><th>' + esc(t('rv.a.actor')) + '</th></tr></thead><tbody>' +
+      a.map(function (x) {
+        /* CORRECTED 2026-09-18 (C-02). This column rendered the raw event id and
+           nothing else, so on an Arabic page the whole history read as a list of
+           English identifiers — and the `summary` the backend writes for every
+           entry was fetched and then discarded. Same treatment as every other
+           enumeration on this page: readable label first, stored value beside it
+           as technical detail. An event with no label falls back to its id
+           rather than to a guess. */
+        var ev = x.event || x.type || '';
+        return '<tr><td>' + I.dateTime(x.at || x.occurred_at) + '</td>' +
+          '<td><span class="ws-ae">' + esc(label('ws.ae', ev)) + '</span> ' + raw(ev) +
+            (x.summary ? '<div class="hv-xs hv-muted" style="margin-block-start:4px">' + esc(x.summary) + '</div>' : '') +
+          '</td>' +
+          '<td>' + esc(label('ws.actor', x.actor_type || x.actor || '')) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function section(note, inner) {
+    return '<div>' + (note ? '<p class="ws-section-note">' + esc(note) + '</p>' : '') + inner + '</div>';
+  }
+
+  function notBuilt(tab) {
+    var empt = tab === 'plan'
+      ? U.empty('target', t('ws.plan.emptyT'), t('ws.plan.emptyB'))
+      : U.empty('history', t('ws.followup.emptyT'), t('ws.followup.emptyB'));
+    return '<div class="hv-stack-lg">' + empt + U.note('caution', esc(t('ws.notImplemented')), 'info') + '</div>';
+  }
+
+  /* The context the write surface needs. Everything in it already existed on
+     this page: the same `api`, the same ids from the URL, the same bundle, and
+     `load` as the read-back. hv-ops.js holds no state of the case itself. */
+  function opCtx() {
+    return { api: api, org: S.org, caseId: S.caseId, bundle: S.bundle, reload: load, isDemo: U.isDemo() };
+  }
+
+  function body(b) {
+    return tabBody(b) + (HV.ops ? HV.ops.panelFor(S.tab, opCtx()) : '');
+  }
+
+  function tabBody(b) {
+    switch (S.tab) {
+      case 'claims': return claims(b);
+      case 'evidence': return evidence(b);
+      case 'hypotheses': return hypotheses(b);
+      case 'gaps': return gaps(b);
+      case 'findings': return findings(b);
+      case 'plan': case 'followup': return notBuilt(S.tab);
+      case 'audit': return audit(b);
+      default: return overview(b);
+    }
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'مساحة التشخيص' : 'Diagnostic workspace') + ' — Humvance';
+    var b = S.bundle;
+    var storeLine = S.isolation
+      ? '<span class="hv-xs hv-muted">' + esc(t('rv.store')) + ' <span class="hv-code">' + esc(S.store) + ' · ' + esc(S.isolation) + '</span></span>' : '';
+
+    var tabs = TABS.map(function (k) {
+      return '<button class="hv-tab" type="button" role="tab" data-hv-tab="' + k + '" ' +
+        'aria-selected="' + (S.tab === k ? 'true' : 'false') + '">' + esc(t('ws.tab.' + k)) + '</button>';
+    }).join('');
+
+    document.getElementById('app').innerHTML =
+      U.demoBar() +
+      '<header class="hv-header" data-hv-header><div class="hv-container"><div class="hv-header-inner">' +
+        U.logo({ href: '/v2-intake-review' }) +
+        /* CORRECTED 2026-09-19. The workspace could only go back to request
+           review, so a practitioner who arrived here from `/manage` had no way
+           home except the browser's Back button or a remembered URL. Both
+           returns are now explicit, and both are guarded: everything typed into
+           these forms lives in page memory only, so leaving discards it. The
+           guard asks first, and only when there is something to lose. */
+        '<div class="hv-ops-nav">' + storeLine + U.langButton() +
+          U.crumb({ href: '/v2-intake-review', icon: 'requests', guard: 'leave',
+                    label: t('rv.title'), aria: t('ws.backToReviewAria') }) +
+          U.manageReturn({ guard: 'leave' }) +
+        '</div>' +
+      '</div></div></header>' +
+      '<main id="main"><div class="hv-container" style="padding-block:26px 90px">' +
+        '<div class="ws-head">' +
+          '<div class="hv-row" style="gap:10px;margin-block-end:4px">' +
+            '<span class="hv-eyebrow" style="margin:0">' + esc(t('ws.eyebrow')) + '</span>' +
+            (U.isDemo() ? U.demoTag() : '') + '</div>' +
+          '<h1 class="hv-h2" style="font-size:1.45rem">' + esc(b ? b.case.title : t('ws.title')) + '</h1>' +
+          (b ? '<div class="ws-meta"><span>' + I.code(b.case.case_id) + '</span>' +
+               '<span>' + esc(t('ws.k.version')) + ' <bdi class="hv-num">v' + esc(b.case.version) + '</bdi></span>' +
+               /* CORRECTED 2026-09-18 (follow-up). The header printed the raw
+                  case state, so an Arabic page showed `AWAITING_EVIDENCE` as its
+                  only status text. `ws.cs.*` labels already existed for every
+                  value of CASE_STATES and were used everywhere else on this
+                  page; the header was simply never wired to them. The stored
+                  value is kept beside the label, as secondary detail, because a
+                  reviewer reading this screen does want to know it. */
+               '<span>' + esc(label('ws.cs', b.case.status)) + ' ' + raw(b.case.status) + '</span></div>' : '') +
+        '</div>' +
+        (S.banner ? '<div style="margin-block-end:18px">' + U.note(S.banner.kind, esc(S.banner.msg)) + '</div>' : '') +
+        (b ? '<div class="hv-tabs" role="tablist" style="margin-block-end:24px">' + tabs + '</div>' + body(b)
+           : U.empty('inbox', t('ws.noCase'), t('ws.needIds'))) +
+      '</div></main>';
+
+    U.wire();
+    document.querySelectorAll('[data-hv-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () { S.tab = btn.getAttribute('data-hv-tab'); render(); });
+    });
+    if (HV.ops) HV.ops.wire(opCtx());
+    wireLeaveGuard();
+  }
+
+  /* ADDED 2026-09-19 — the header's return links, guarded.
+     Nothing typed into these forms is persisted: drafts live in page memory so
+     that case evidence never lands in browser storage. Following a header link
+     therefore loses them, and the person is asked first. The question is only
+     asked when there is something to lose, so the ordinary "I came to read this
+     case" path is untouched, and a refusal simply stays put. Nothing is saved
+     behind the person's back to make the warning unnecessary — that would be
+     the storage shortcut this product does not take. */
+  function wireLeaveGuard() {
+    if (!HV.ops || !HV.ops.hasDrafts) return;
+    document.querySelectorAll('[data-hv-guard="leave"]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        if (!HV.ops.hasDrafts(opCtx())) return;
+        if (!confirm(t('ws.leave.draft'))) e.preventDefault();
+      });
+    });
+  }
+
+  I.onChange(render);
+  render();
+  load();
 })();
 </script>
 </body>

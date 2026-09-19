@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الإدارة — Humvance</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  /* The management shell. Calm, dense, and unmistakably the same product as
+     the public site — same tokens, same type, same icon family. Not a
+     dashboard template: there are no invented metrics, gauges or sparklines,
+     because the only honest numbers here are counts whose scope we can state. */
+  .mg-bar { border-block-end: 1px solid var(--hv-line); background: var(--hv-surface); }
+  .mg-bar-inner { display: flex; align-items: center; gap: var(--hv-4); flex-wrap: wrap;
+                  padding-block: 12px; }
+  .mg-nav { display: flex; gap: 4px; flex-wrap: wrap; margin-inline-start: auto; align-items: center; }
+  .mg-link { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px;
+             border-radius: 999px; font-size: var(--hv-t-sm); color: var(--hv-ink-2);
+             min-block-size: 40px; transition: background .16s var(--hv-ease), color .16s var(--hv-ease); }
+  .mg-link:hover { background: var(--hv-paper); color: var(--hv-ink); }
+  .mg-link:active { background: var(--hv-line); }
+  .mg-link:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+  .mg-link[aria-current="page"] { background: var(--hv-signal-soft); color: var(--hv-signal-ink);
+                                  font-weight: 700; box-shadow: inset 0 0 0 1px var(--hv-signal-line); }
+  .mg-link .hv-ico { color: var(--hv-signal); }
+  .mg-sep { inline-size: 1px; block-size: 22px; background: var(--hv-line); margin-inline: 4px; }
+
+  .mg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--hv-4); }
+  .mg-card { display: grid; gap: 10px; align-content: start; padding: 20px 22px;
+             border: 1px solid var(--hv-line); border-radius: var(--hv-r); background: var(--hv-surface);
+             color: inherit; text-align: start;
+             transition: border-color .16s var(--hv-ease), transform .16s var(--hv-ease); }
+  a.mg-card:hover { border-color: var(--hv-signal-line); transform: translateY(-2px); }
+  a.mg-card:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+  .mg-card-h { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.02rem; }
+  .mg-card-h .hv-ico { color: var(--hv-signal); }
+  .mg-card p { font-size: var(--hv-t-sm); color: var(--hv-ink-2); line-height: 1.7; }
+  .mg-count { font-family: var(--hv-font-en); font-size: 1.5rem; font-weight: 700; }
+  .mg-scope { font-size: var(--hv-t-xs); color: var(--hv-ink-3); line-height: 1.6; }
+
+  .mg-row { display: grid; grid-template-columns: auto 1fr auto; gap: var(--hv-3);
+            align-items: center; padding: 13px 16px; border: 1px solid var(--hv-line);
+            border-radius: var(--hv-r-sm); background: var(--hv-surface); text-align: start; color: inherit; }
+  .mg-row + .mg-row { margin-block-start: 8px; }
+  a.mg-row:hover { border-color: var(--hv-signal-line); }
+  a.mg-row:focus-visible { outline: 2px solid var(--hv-signal); outline-offset: 2px; }
+  .mg-row-t { font-weight: 600; font-size: var(--hv-t-sm); }
+  .mg-row-m { font-size: var(--hv-t-xs); color: var(--hv-ink-3); margin-block-start: 3px;
+              display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .mg-open { display: grid; gap: 12px; max-inline-size: 60ch; }
+  .mg-open-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) {
+    .mg-open-fields { grid-template-columns: 1fr; }
+    .mg-nav { margin-inline-start: 0; }
+    /* CORRECTED 2026-09-18 — at 390px the status pill and the company name
+       fought for the same line and the name wrapped three times beside empty
+       space. The name now gets the full width and the pill sits beneath it
+       with the chevron at the end of the same line, which is also the order
+       somebody reads the row in. */
+    .mg-row { grid-template-columns: 1fr auto; gap: 10px var(--hv-3);
+              grid-template-areas: "body body" "lead go"; align-items: center; }
+    .mg-row > :nth-child(1) { grid-area: lead; justify-self: start; }
+    .mg-row > :nth-child(2) { grid-area: body; min-inline-size: 0; }
+    .mg-row > :nth-child(3) { grid-area: go; justify-self: end; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mg-link, .mg-card { transition: none; }
+    a.mg-card:hover { transform: none; }
+  }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script src="/assets/hv-admin-copy.js"></script>
+<script>
+/* ===========================================================================
+   /manage — the one management entrance.
+   ---------------------------------------------------------------------------
+   WHY THIS EXISTS. Until now the internal screens could only be reached by
+   typing a URL somebody remembered. That is not navigation. This is the single
+   landing that connects them, reached from the administration entrance in the
+   public header and from the mobile menu.
+
+   WHAT IT IS NOT. It is not a new authentication system, and it holds no
+   authority of its own. It reads the same `sessionStorage.hv_token` that
+   `/admin` writes and that `/v2-intake-review` and `/v2-workspace` already
+   read, and every list on it comes from an API that enforces its own gates
+   server-side. A token in storage proves nothing here: this page believes the
+   API's answer, not the token's presence, and a 401 or 403 is rendered as
+   itself rather than as an empty list.
+
+   WHAT IT DOES NOT INVENT. There is no global case-list API, so this page does
+   not pretend there is one. Cases are listed from ACCEPTED requests, which is
+   a real and limited scope, and the page says so in those words. Opening any
+   other authorized case by its organization and case id stays available, which
+   is the supported route the reviewer screen already uses.
+   =========================================================================== */
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+
+  var TABS = ['overview', 'requests', 'cases'];
+  var S = {
+    tab: 'overview',
+    state: 'loading',      // loading | ready | anon | denied | error | offline
+    error: null,
+    submissions: null,     // the page of requests actually returned
+    listLimit: 100,        // the limit we asked for, so a count can state its scope
+    store: null, isolation: null,
+    local: false,          // true only when the local beta harness answers
+    /* The list summary carries `resulting_case_id` but NOT the organization it
+       belongs to, and a case cannot be opened without both. So the organization
+       is read from the request's own detail record — the backend's answer, not
+       a guess assembled on this page. Resolved lazily, only when the Cases tab
+       is opened, and a failure is shown as a failure rather than as a link that
+       would land on an empty workspace. */
+    orgOf: {},             // intakeseed_id -> organization_id | null (failed)
+    casesResolved: false,
+    casesResolving: false
+  };
+
+  function token() { try { return sessionStorage.getItem('hv_token'); } catch (e) { return null; } }
+
+  async function api(path) {
+    var opts = { headers: { 'Content-Type': 'application/json' } };
+    var tk = token();
+    if (tk) opts.headers['Authorization'] = 'Bearer ' + tk;
+    var res = await fetch(path, opts);
+    S.store = res.headers.get('X-Humvance-V2-Store') || S.store;
+    S.isolation = res.headers.get('X-Humvance-V2-Isolation') || S.isolation;
+    var body = await res.json().catch(function () { return {}; });
+    if (!res.ok) { var e = new Error(body.error || res.statusText); e.code = body.code; e.status = res.status; throw e; }
+    return body;
+  }
+
+  /* Is this the local harness? Asked of the harness itself, never assumed from
+     the hostname — and used ONLY to offer the local sign-in route. It grants
+     nothing. */
+  async function detectLocal() {
+    try {
+      var r = await fetch('/__beta/env');
+      if (!r.ok) return false;
+      var env = await r.json();
+      return env && env.mode === 'LOCAL_INTEGRATION' && env.deployed === false;
+    } catch (e) { return false; }
+  }
+
+  async function load() {
+    S.local = await detectLocal();
+    if (!token()) { S.state = 'anon'; render(); return; }
+    try {
+      var out = await api('/api/v2/intake-review?status=all&limit=' + S.listLimit);
+      S.submissions = out.submissions || [];
+      S.state = 'ready';
+    } catch (e) {
+      S.error = e;
+      /* 401 and 403 are different facts and are shown as different things. A
+         wrong role is not an expired session, and neither is an empty list. */
+      S.state = (e.status === 401) ? 'anon' : (e.status === 403 ? 'denied' : 'error');
+    }
+    render();
+  }
+
+  async function resolveCaseOrganizations() {
+    if (S.casesResolving || S.casesResolved) return;
+    S.casesResolving = true;
+    var rows = casesFromAccepted();
+    for (var i = 0; i < rows.length; i++) {
+      var x = rows[i];
+      if (S.orgOf[x.intakeseed_id] !== undefined) continue;
+      try {
+        var one = await api('/api/v2/intake-review?intakeseed_id=' + encodeURIComponent(x.intakeseed_id));
+        S.orgOf[x.intakeseed_id] = (one.review && one.review.resulting_organization_id) || null;
+      } catch (e) {
+        S.orgOf[x.intakeseed_id] = null;
+      }
+    }
+    S.casesResolving = false;
+    S.casesResolved = true;
+    render();
+  }
+
+  /* ── Derived, with their scope stated ─────────────────────────────────── */
+  function subs() { return S.submissions || []; }
+  function pending()  { return subs().filter(function (x) { return x.status === 'PENDING_REVIEW'; }); }
+  function accepted() { return subs().filter(function (x) { return x.status === 'ACCEPTED'; }); }
+  function casesFromAccepted() {
+    return accepted().filter(function (x) { return x.resulting_case_id; });
+  }
+  function stalledPromotions() {
+    return accepted().filter(function (x) { return x.promotion_state !== 'COMPLETE'; });
+  }
+  /** True when the API returned exactly the page we asked for — so the count
+      below it may be a page, not a total, and must not be printed as one. */
+  function maybeMore() { return subs().length >= S.listLimit; }
+
+  /** CORRECTED 2026-09-18 — "3 request(s)" is not a sentence anyone writes.
+      Arabic is worse served by a parenthesis than English is: it distinguishes
+      one, two, a few and many, and a screen that says «3 طلب» reads as broken.
+      This picks the variant the copy file actually provides and falls back to
+      the plain key, so a language that needs no variants declares none.
+      It is presentation only — the number it is given is unchanged. */
+  function plural(key, n) {
+    var suffix = n === 1 ? '.one' : n === 2 ? '.two' : (n % 100 >= 3 && n % 100 <= 10) ? '.few' : '';
+    return (suffix && I.hasOwn(key + suffix)) ? key + suffix : key;
+  }
+
+  function scopeLine(n) {
+    return maybeMore()
+      ? t('mg.scope.page', { n: String(n), limit: String(S.listLimit) })
+      : t(plural('mg.scope.all', n), { n: String(n) });
+  }
+
+  /* ── Shell ────────────────────────────────────────────────────────────── */
+
+  function navLink(tab) {
+    var icons = { overview: 'overview', requests: 'requests', cases: 'caseFile' };
+    return '<button class="mg-link" type="button" data-mg-tab="' + tab + '"' +
+      (S.tab === tab ? ' aria-current="page"' : '') + '>' +
+      ic(icons[tab], { size: 16 }) + '<span>' + esc(t('mg.tab.' + tab)) + '</span></button>';
+  }
+
+  function bar() {
+    var storeLine = S.isolation
+      ? '<span class="hv-xs hv-muted">' + esc(t('rv.store')) + ' <span class="hv-code">' +
+        esc(S.store) + ' · ' + esc(S.isolation) + '</span></span>' : '';
+    return '<div class="mg-bar"><div class="hv-container"><div class="mg-bar-inner">' +
+      U.logo({ href: '/manage', sub: false }) +
+      '<nav class="mg-nav" aria-label="' + esc(t('mg.nav')) + '">' +
+        (S.state === 'ready' ? TABS.map(navLink).join('') : '') +
+        '<span class="mg-sep" aria-hidden="true"></span>' +
+        storeLine +
+        U.langButton() +
+        '<a class="mg-link" href="/">' + ic('arrowBack', { size: 16 }) +
+          '<span>' + esc(t('mg.backToSite')) + '</span></a>' +
+        (S.state === 'ready'
+          ? '<button class="mg-link" type="button" data-mg-signout>' + ic('signOut', { size: 16 }) +
+            '<span>' + esc(t('mg.signOut')) + '</span></button>'
+          : '') +
+      '</nav>' +
+    '</div></div></div>';
+  }
+
+  /* ── States that are not the happy one ────────────────────────────────── */
+
+  function gate(kind) {
+    var title = t('mg.gate.' + kind + '.t');
+    var body  = t('mg.gate.' + kind + '.b');
+    /* The sign-in route differs by environment, and the page asks the
+       environment rather than guessing from the hostname. On a deployment it
+       is the established /admin flow with a FIXED return; there is no
+       arbitrary return URL anywhere in this page. */
+    var action = S.local
+      ? '<a class="hv-btn hv-btn-primary" href="/__beta/">' + esc(t('mg.gate.local')) + ic('arrow', { size: 16 }) + '</a>'
+      : '<a class="hv-btn hv-btn-primary" href="/admin?return=manage">' + esc(t('mg.gate.signin')) + ic('arrow', { size: 16 }) + '</a>';
+    return '<div class="hv-container" style="padding-block:60px 90px">' +
+      '<div class="hv-container-narrow" style="display:grid;gap:18px;justify-items:start">' +
+        '<span class="hv-eyebrow" style="margin:0">' + esc(t('mg.eyebrow')) + '</span>' +
+        '<h1 class="hv-h2">' + esc(title) + '</h1>' +
+        '<p class="hv-prose hv-sm" style="max-width:60ch">' + esc(body) + '</p>' +
+        (kind === 'error' && S.error
+          ? '<p class="hv-xs hv-muted"><span class="hv-code">' +
+            esc((S.error.code ? S.error.code + ': ' : '') + (S.error.message || '')) + '</span></p>'
+          : '') +
+        '<div class="hv-row" style="gap:10px">' + action +
+          (kind === 'error'
+            ? '<button class="hv-btn hv-btn-outline" type="button" data-mg-retry>' + esc(t('mg.retry')) + '</button>'
+            : '') +
+        '</div>' +
+        (S.local
+          ? '<p class="hv-xs hv-muted" style="max-width:60ch">' + esc(t('mg.gate.localNote')) + '</p>'
+          : '') +
+      '</div></div>';
+  }
+
+  /* ── Overview ─────────────────────────────────────────────────────────── */
+
+  function overview() {
+    var stalled = stalledPromotions();
+    return '<div class="hv-stack-lg">' +
+      (stalled.length
+        ? U.note('caution',
+            esc(t('mg.attention', { n: String(stalled.length) })) +
+            ' <a class="hv-link" href="#" data-mg-tab="requests">' + esc(t('mg.attention.go')) + '</a>', 'alert')
+        : '') +
+      '<div class="mg-grid">' +
+        '<button class="mg-card" type="button" data-mg-tab="requests">' +
+          '<div class="mg-card-h">' + ic('requests', { size: 19 }) + esc(t('mg.tab.requests')) + '</div>' +
+          '<div class="mg-count">' + I.num(pending().length) + '</div>' +
+          '<p>' + esc(t('mg.card.requests')) + '</p>' +
+          '<p class="mg-scope">' + esc(t('mg.card.requestsScope')) + '</p>' +
+        '</button>' +
+        '<button class="mg-card" type="button" data-mg-tab="cases">' +
+          '<div class="mg-card-h">' + ic('caseFile', { size: 19 }) + esc(t('mg.tab.cases')) + '</div>' +
+          '<div class="mg-count">' + I.num(casesFromAccepted().length) + '</div>' +
+          '<p>' + esc(t('mg.card.cases')) + '</p>' +
+          '<p class="mg-scope">' + esc(t('mg.card.casesScope')) + '</p>' +
+        '</button>' +
+        '<a class="mg-card" href="/v2-intake-review">' +
+          '<div class="mg-card-h">' + ic('humanReview', { size: 19 }) + esc(t('mg.card.review')) + '</div>' +
+          '<p>' + esc(t('mg.card.reviewB')) + '</p>' +
+          '<p class="mg-scope">' + esc(t('mg.card.reviewScope')) + '</p>' +
+        '</a>' +
+      '</div>' +
+      U.note('signal', esc(t('mg.distinct')), 'info') +
+      '</div>';
+  }
+
+  /* ── Requests ─────────────────────────────────────────────────────────── */
+
+  function statusPill(s) {
+    if (s === 'ACCEPTED') return U.pill('approved', t('rv.s.ACCEPTED'));
+    if (s === 'REJECTED') return U.pill('neutral', t('rv.s.REJECTED'));
+    return U.pill('claim', t('rv.s.PENDING_REVIEW'));
+  }
+
+  function requestRow(x) {
+    /* Decision status and promotion status are two different facts and are
+       never merged into one badge. */
+    var promo = x.status === 'ACCEPTED' && x.promotion_state !== 'COMPLETE'
+      ? U.pill('conflict', t('rv.p.PENDING')) : '';
+    return '<a class="mg-row" href="/v2-intake-review?intakeseed_id=' + encodeURIComponent(x.intakeseed_id) + '">' +
+      '<span>' + statusPill(x.status) + '</span>' +
+      '<span><span class="mg-row-t">' + esc(x.company_name || '—') + '</span>' +
+        '<span class="mg-row-m">' + I.code(x.submission_reference || '') +
+          '<span>' + I.dateTime(x.submitted_at) + '</span>' + promo + '</span></span>' +
+      '<span>' + ic('chevron', { size: 16 }) + '</span>' +
+      '</a>';
+  }
+
+  function requests() {
+    var list = subs();
+    return '<div class="hv-stack-lg">' +
+      '<p class="hv-sm hv-muted" style="max-width:74ch">' + esc(t('mg.requests.note')) + '</p>' +
+      (list.length
+        ? '<div>' + list.map(requestRow).join('') + '</div>' +
+          '<p class="mg-scope">' + esc(scopeLine(list.length)) + '</p>'
+        : U.empty('inbox', t('mg.requests.emptyT'), t('mg.requests.emptyB'))) +
+      '</div>';
+  }
+
+  /* ── Cases ────────────────────────────────────────────────────────────── */
+
+  function caseRow(x) {
+    var org = S.orgOf[x.intakeseed_id];
+    var inner =
+      '<span>' + ic('caseFile', { size: 17 }) + '</span>' +
+      '<span><span class="mg-row-t">' + esc(x.company_name || '—') + '</span>' +
+        '<span class="mg-row-m">' + I.code(x.resulting_case_id) +
+          '<span>' + esc(t('rv.k.ref')) + ' ' + esc(x.submission_reference || '') + '</span>' +
+          (org === null ? '<span style="color:var(--hv-conflict)">' + esc(t('mg.cases.noOrg')) + '</span>' : '') +
+        '</span></span>';
+    if (!org) {
+      /* Not resolved, or could not be resolved. Either way this is not a link:
+         a workspace opened without its organization shows nothing, and a link
+         that goes nowhere is worse than an honest row. */
+      return '<div class="mg-row">' + inner +
+        '<span class="hv-xs hv-muted">' + esc(t(org === null ? 'mg.cases.noOrgShort' : 'mg.cases.resolving')) + '</span></div>';
+    }
+    var href = '/v2-workspace?organization_id=' + encodeURIComponent(org) +
+               '&case_id=' + encodeURIComponent(x.resulting_case_id);
+    return '<a class="mg-row" href="' + href + '">' + inner +
+      '<span>' + ic('chevron', { size: 16 }) + '</span></a>';
+  }
+
+  function cases() {
+    var list = casesFromAccepted();
+    var stalled = stalledPromotions();
+    return '<div class="hv-stack-lg">' +
+      /* The scope is stated before the list, not after it, because a reader who
+         only sees the list will otherwise read it as "all cases". */
+      U.note('caution', esc(t('mg.cases.scopeNote')), 'info') +
+      (stalled.length
+        ? U.note('conflict',
+            esc(t(plural('mg.cases.stalled', stalled.length), { n: String(stalled.length) })) +
+            ' <a class="hv-link" href="/v2-intake-review">' + esc(t('mg.cases.stalledGo')) + '</a>', 'alert')
+        : '') +
+      (list.length
+        ? '<div>' + list.map(caseRow).join('') + '</div>' +
+          '<p class="mg-scope">' + esc(t(plural('mg.cases.count', list.length), { n: String(list.length) })) + '</p>'
+        : U.empty('caseFile', t('mg.cases.emptyT'), t('mg.cases.emptyB'))) +
+      '<div>' +
+        '<h2 class="hv-h3" style="font-size:1.02rem;margin-block-end:8px">' + esc(t('mg.open.t')) + '</h2>' +
+        '<p class="hv-sm hv-muted" style="max-width:70ch;margin-block-end:14px">' + esc(t('mg.open.b')) + '</p>' +
+        '<form class="mg-open" id="mg-open-form">' +
+          '<div class="mg-open-fields">' +
+            '<div class="hv-field"><label class="hv-label" for="mg-org">' + esc(t('mg.open.org')) + '</label>' +
+              '<input class="hv-input hv-code" id="mg-org" autocomplete="off" spellcheck="false"></div>' +
+            '<div class="hv-field"><label class="hv-label" for="mg-case">' + esc(t('mg.open.case')) + '</label>' +
+              '<input class="hv-input hv-code" id="mg-case" autocomplete="off" spellcheck="false"></div>' +
+          '</div>' +
+          '<div class="hv-row" style="gap:10px;align-items:center">' +
+            '<button class="hv-btn hv-btn-outline" type="submit">' + esc(t('mg.open.go')) + ic('arrow', { size: 15 }) + '</button>' +
+            '<span class="hv-xs" id="mg-open-msg" role="status"></span>' +
+          '</div>' +
+        '</form>' +
+      '</div>' +
+      '</div>';
+  }
+
+  /* ── Render ───────────────────────────────────────────────────────────── */
+
+  function body() {
+    switch (S.tab) {
+      case 'requests': return requests();
+      case 'cases': return cases();
+      default: return overview();
+    }
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'الإدارة' : 'Management') + ' — Humvance';
+
+    var main;
+    if (S.state === 'loading') {
+      main = '<div class="hv-container" style="padding-block:70px">' +
+        '<p class="hv-sm hv-muted" role="status">' + esc(t('mg.loading')) + '</p></div>';
+    } else if (S.state === 'ready') {
+      main = '<div class="hv-container" style="padding-block:26px 90px">' +
+        '<div style="margin-block-end:22px">' +
+          '<span class="hv-eyebrow" style="margin:0">' + esc(t('mg.eyebrow')) + '</span>' +
+          '<h1 class="hv-h2" style="font-size:1.45rem;margin-block-start:6px">' + esc(t('mg.tab.' + S.tab)) + '</h1>' +
+        '</div>' + body() + '</div>';
+    } else {
+      main = gate(S.state);
+    }
+
+    document.getElementById('app').innerHTML = bar() + '<main id="main">' + main + '</main>';
+
+    U.wire();
+    document.querySelectorAll('[data-mg-tab]').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        S.tab = el.getAttribute('data-mg-tab');
+        render();
+        var h = document.querySelector('#main h1');
+        if (h) { h.setAttribute('tabindex', '-1'); h.focus(); }
+      });
+    });
+    var out = document.querySelector('[data-mg-signout]');
+    if (out) out.addEventListener('click', signOut);
+    var retry = document.querySelector('[data-mg-retry]');
+    if (retry) retry.addEventListener('click', function () { S.state = 'loading'; render(); load(); });
+
+    if (S.tab === 'cases' && S.state === 'ready') resolveCaseOrganizations();
+
+    var form = document.getElementById('mg-open-form');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var org = (document.getElementById('mg-org').value || '').trim();
+        var kase = (document.getElementById('mg-case').value || '').trim();
+        var msg = document.getElementById('mg-open-msg');
+        if (!org || !kase) { msg.className = 'hv-xs'; msg.style.color = 'var(--hv-conflict)';
+          msg.textContent = t('mg.open.need'); return; }
+        location.href = '/v2-workspace?organization_id=' + encodeURIComponent(org) +
+          '&case_id=' + encodeURIComponent(kase);
+      });
+    }
+  }
+
+  /* Sign out clears what THIS browser holds. It does not claim to revoke a
+     token on the server, because the existing API has no revocation endpoint
+     and saying otherwise would be a security claim we cannot keep. */
+  function signOut() {
+    try {
+      sessionStorage.removeItem('hv_token');
+      sessionStorage.removeItem('hv_admin');
+    } catch (e) {}
+    S.submissions = null; S.state = 'anon'; S.tab = 'overview'; S.error = null;
+    render();
+  }
+
+  I.onChange(render);
+  render();
+  load();
+})();
+</script>
+</body>
+</html>

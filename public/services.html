@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>خدماتنا — Humvance</title>
+<meta name="description" content="أربعة أنواع من العمل: تشخيص مشكلات الأشخاص والتنظيم، الجاهزية للنمو والتغيير، تصميم التحسينات ودعم تنفيذها، ومتابعة التنفيذ.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  .svc-flag {
+    display: flex; align-items: flex-start; gap: 9px; margin-block-end: 12px;
+    font-size: var(--hv-t-xs); line-height: 1.7; color: var(--hv-unverified);
+    background: var(--hv-unverified-soft); border: 1px solid var(--hv-unverified-line);
+    padding: 9px 13px; border-radius: var(--hv-r-sm); max-width: 74ch;
+  }
+  .svc-flag svg { flex: none; margin-block-start: 3px; }
+  .svc-flag strong { display: inline-block; margin-inline-end: 4px; }
+  .svc-row { display: grid; grid-template-columns: 96px 1fr; gap: clamp(20px, 4vw, 44px); padding-block: clamp(36px, 5vw, 60px); border-block-start: 1px solid var(--hv-line); }
+  .svc-row:first-of-type { border-block-start: 0; }
+  .svc-glyph { width: 56px; height: 56px; border-radius: var(--hv-r); display: grid; place-items: center; background: var(--hv-signal-soft); color: var(--hv-signal); border: 1px solid var(--hv-signal-line); }
+  .svc-body { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(20px, 3vw, 40px); align-items: start; }
+  .svc-scope { display: grid; gap: 14px; }
+  .svc-scope-block { padding: 14px 16px; border-radius: var(--hv-r); font-size: var(--hv-t-xs); line-height: 1.75; }
+  .svc-in  { background: var(--hv-signal-soft); border: 1px solid var(--hv-signal-line); color: var(--hv-signal-ink); }
+  .svc-out { background: var(--hv-surface-2); border: 1px dashed var(--hv-line-2); color: var(--hv-ink-3); }
+  .svc-scope-title { font-weight: 700; display: flex; align-items: center; gap: 7px; margin-block-end: 6px; }
+  @media (max-width: 900px) { .svc-body { grid-template-columns: 1fr; } }
+  @media (max-width: 680px) { .svc-row { grid-template-columns: 1fr; gap: 16px; } .svc-glyph { width: 46px; height: 46px; } }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script>
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+
+  var GLYPHS = ['investigate', 'growth', 'agreedAction', 'followup'];
+
+  /* CORRECTED 2026-09-18. Services 3 and 4 — designing improvements and
+     following up — have no delivery mechanism in the product: no plan entity,
+     nowhere to record the client's approval of one, and no measurement
+     (CASE-JOURNEY-AND-SERVICE-READINESS.md). They stay on the page because they
+     are part of the service as designed; they no longer read as things that are
+     running. No owner, limit or price is asserted here — those are decisions
+     nobody has made. */
+  var NOT_BUILT = { 3: true, 4: true };
+
+  function service(n) {
+    return '<article class="svc-row">' +
+      '<div><div class="svc-glyph">' + ic(GLYPHS[n - 1], { size: 26 }) + '</div></div>' +
+      '<div>' +
+        '<h2 class="hv-h3" style="margin-block-end:10px">' + esc(t('svc.' + n + '.t')) + '</h2>' +
+        (NOT_BUILT[n]
+          ? '<p class="svc-flag">' + ic('clock', { size: 14 }) +
+            '<span><strong>' + esc(t('how.notBuilt.t')) + '</strong> ' + esc(t('how.notBuilt.d')) + '</span></p>'
+          : '') +
+        '<div class="svc-body">' +
+          '<p class="hv-lead" style="font-size:1.05rem">' + esc(t('svc.' + n + '.d')) + '</p>' +
+          '<div class="svc-scope">' +
+            '<div class="svc-scope-block svc-in">' +
+              '<div class="svc-scope-title">' + ic('check', { size: 14 }) + esc(t('svc.scope.in')) + '</div>' +
+              esc(t('svc.' + n + '.in')) + '</div>' +
+            '<div class="svc-scope-block svc-out">' +
+              '<div class="svc-scope-title">' + ic('minus', { size: 14 }) + esc(t('svc.scope.out')) + '</div>' +
+              esc(t('svc.' + n + '.out')) + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '</article>';
+  }
+
+  function render() {
+    document.title = (I.isAr() ? 'خدماتنا' : 'Services') + ' — Humvance';
+    document.getElementById('app').innerHTML =
+      U.demoBar() + U.siteHeader() +
+      '<main id="main">' +
+        '<section class="hv-section-tight"><div class="hv-container">' +
+          '<p class="hv-eyebrow">' + esc(t('svc.eyebrow')) + '</p>' +
+          '<h1 class="hv-h1" style="margin-block:16px 18px;max-width:20ch">' + esc(t('svc.title')) + '</h1>' +
+          '<p class="hv-lead hv-prose">' + esc(t('svc.sub')) + '</p>' +
+        '</div></section>' +
+
+        '<section style="padding-block-end:clamp(48px,7vw,88px)"><div class="hv-container">' +
+          [1, 2, 3, 4].map(service).join('') +
+        '</div></section>' +
+
+        '<section class="hv-section-tight" style="background:var(--hv-surface-2);border-block:1px solid var(--hv-line)">' +
+          '<div class="hv-container-narrow">' +
+            U.note('signal', '<strong>' + esc(I.isAr() ? 'عن النطاق التجاري' : 'On commercial scope') + '</strong><br>' + esc(t('svc.commercial')), 'info') +
+          '</div>' +
+        '</section>' +
+
+        '<section class="hv-section"><div class="hv-container-narrow" style="text-align:center">' +
+          '<h2 class="hv-h2">' + esc(t('home.close.title')) + '</h2>' +
+          '<p class="hv-lead" style="margin-block:14px 26px;margin-inline:auto;max-width:46ch">' + esc(t('home.close.sub')) + '</p>' +
+          '<a class="hv-btn hv-btn-primary hv-btn-lg" href="/intake">' + esc(t('home.cta.primary')) + ic('arrow', { size: 17 }) + '</a>' +
+        '</div></section>' +
+      '</main>' + U.siteFooter();
+    U.wire();
+  }
+
+  I.onChange(render);
+  render();
+})();
+</script>
+</body>
+</html>

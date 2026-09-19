@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Humvance — تشخيص مشكلات الأشخاص والتنظيم</title>
+<meta name="description" content="نساعد المنظمات على فهم مشكلاتها في الأشخاص والأدوار وطريقة العمل، وتشخيصها بالأدلة، ثم متابعة التحسين. كل نتيجة تمرّ على مراجعة بشرية.">
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/hv.css">
+<style>
+  /* Page-specific composition. Everything reusable lives in hv.css. */
+  .home-hero { padding-block: clamp(48px, 7vw, 104px) clamp(56px, 8vw, 112px); position: relative; overflow: hidden; }
+  .home-hero::after {
+    content: ""; position: absolute; inset-block-start: -240px; inset-inline-start: -180px;
+    width: 620px; height: 620px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, var(--hv-signal-soft) 0%, transparent 68%); opacity: .8; z-index: 0;
+  }
+  .home-hero > * { position: relative; z-index: 1; }
+  .home-hero-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(32px, 5vw, 72px); align-items: center; }
+  @media (max-width: 900px) { .home-hero-grid { grid-template-columns: 1fr; gap: 40px; } }
+  .home-hero h1 span { display: block; }
+  .home-hero h1 span:last-child { color: var(--hv-signal); }
+
+  /* The chain diagram: the product's discipline, drawn. */
+  .chain { display: grid; gap: 0; }
+  .chain-node {
+    display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start;
+    padding-block: 14px; position: relative;
+  }
+  .chain-node + .chain-node::before {
+    content: ""; position: absolute; inset-block-start: -14px; inset-inline-start: 14px;
+    width: 1.5px; height: 28px; background: var(--hv-line-2);
+  }
+  .chain-glyph {
+    width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    border: 1.5px solid currentColor; flex: none;
+  }
+  .chain-glyph i { display: block; width: 9px; height: 9px; background: currentColor; }
+  .chain-1 { color: var(--hv-unverified); } .chain-1 i { border-radius: 50%; background: none; border: 1.5px solid currentColor; }
+  .chain-2 { color: var(--hv-signal); }    .chain-2 i { border-radius: 1px; }
+  .chain-3 { color: var(--hv-signal-ink); } .chain-3 i { transform: rotate(45deg); border-radius: 1px; }
+  .chain-4 { color: var(--hv-verified); }  .chain-4 i { border-radius: 50%; }
+  .chain-t { display: block; font-weight: 650; font-size: var(--hv-t-sm); color: var(--hv-ink); }
+  .chain-d { display: block; font-size: var(--hv-t-xs); color: var(--hv-ink-3); line-height: 1.6; margin-block-start: 3px; }
+
+  .deliver-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--hv-line); border: 1px solid var(--hv-line); border-radius: var(--hv-r-lg); overflow: hidden; }
+  .deliver-cell { background: var(--hv-surface); padding: var(--hv-5); }
+  .deliver-cell svg { color: var(--hv-signal); }
+  @media (max-width: 860px) { .deliver-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .deliver-grid { grid-template-columns: 1fr; } }
+
+  .bounds-list { display: grid; gap: var(--hv-4); }
+  .bounds-item { display: grid; grid-template-columns: 22px 1fr; gap: var(--hv-3); align-items: start; }
+  .bounds-item svg { color: rgba(242,240,234,.5); margin-block-start: 3px; }
+  .bounds-item p { color: rgba(242,240,234,.82); font-size: var(--hv-t-sm); line-height: 1.75; }
+</style>
+</head>
+<body data-lang="ar">
+<a class="hv-skip" href="#main" data-hv-t="a11y.skip">تخطَّ إلى المحتوى</a>
+<div id="app"></div>
+
+<script src="/assets/hv-i18n.js"></script>
+<script src="/assets/hv-icons.js"></script>
+<script src="/assets/hv-copy.js"></script>
+<script src="/assets/hv-ui.js"></script>
+<script src="/assets/hv-journey.js"></script>
+<script>
+(function () {
+  'use strict';
+  var I = HV.i18n, U = HV.ui, ic = HVIcons.icon, t = I.t, esc = I.esc;
+
+  /* The whole page renders from this function, so switching language re-renders
+     it and nothing is lost — there is no state in the DOM to lose. */
+
+  function chain() {
+    var rows = [
+      ['1', t('home.why.claim'),    t('home.why.claimD')],
+      ['2', t('home.why.evidence'), t('home.why.evidenceD')],
+      ['3', t('home.why.finding'),  t('home.why.findingD')],
+      ['4', t('home.why.approved'), t('home.why.approvedD')]
+    ];
+    return '<div class="chain">' + rows.map(function (r) {
+      return '<div class="chain-node chain-' + r[0] + '">' +
+        '<span class="chain-glyph"><i></i></span>' +
+        '<span><span class="chain-t">' + esc(r[1]) + '</span>' +
+        '<span class="chain-d">' + esc(r[2]) + '</span></span></div>';
+    }).join('') + '</div>';
+  }
+
+  function hero() {
+    return '<section class="home-hero"><div class="hv-container"><div class="home-hero-grid">' +
+      '<div>' +
+        '<p class="hv-eyebrow">' + esc(t('home.eyebrow')) + '</p>' +
+        '<h1 class="hv-display" style="margin-block:20px 22px">' +
+          '<span>' + esc(t('home.title.a')) + '</span>' +
+          '<span>' + esc(t('home.title.b')) + '</span>' +
+        '</h1>' +
+        '<p class="hv-lead hv-prose">' + esc(t('home.sub')) + '</p>' +
+        '<div class="hv-row" style="gap:12px;margin-block-start:32px">' +
+          '<a class="hv-btn hv-btn-primary hv-btn-lg" href="/intake">' + esc(t('home.cta.primary')) + ic('arrow', { size: 17 }) + '</a>' +
+          '<a class="hv-btn hv-btn-outline hv-btn-lg" href="/how-we-work">' + esc(t('home.cta.secondary')) + '</a>' +
+        '</div>' +
+        '<p class="hv-xs hv-muted" style="margin-block-start:22px;max-width:52ch;display:flex;gap:9px;align-items:flex-start">' +
+          ic('shield', { size: 16 }) + '<span>' + esc(t('home.hero.assurance')) + '</span></p>' +
+      '</div>' +
+      '<div class="hv-card hv-card-lift" style="padding:28px">' +
+        '<p class="hv-eyebrow" style="margin-block-end:18px">' + esc(t('home.why.eyebrow')) + '</p>' +
+        chain() +
+      '</div>' +
+      '</div></div></section>';
+  }
+
+  function situations() {
+    var items = ['1','2','3','4','5','6'].map(function (n) {
+      return '<div class="hv-situation">' + ic('quote', { size: 18 }) + '<span>' + esc(t('home.sit.' + n)) + '</span></div>';
+    }).join('');
+    return '<section class="hv-section" style="background:var(--hv-surface-2);border-block:1px solid var(--hv-line)">' +
+      '<div class="hv-container">' +
+      '<p class="hv-eyebrow">' + esc(t('home.sit.eyebrow')) + '</p>' +
+      '<h2 class="hv-h2" style="margin-block:14px 28px;max-width:22ch">' + esc(t('home.sit.title')) + '</h2>' +
+      '<div class="hv-situations">' + items + '</div>' +
+      '<div style="margin-block-start:24px;max-width:70ch">' +
+        U.note('caution', esc(t('home.sit.caveat')), 'info') +
+      '</div>' +
+      '</div></section>';
+  }
+
+  /* THE SIGNATURE MOMENT (BETA-01 Rev 2 §4).
+     This was a static four-tile strip that named the stages and said nothing
+     about them — and, worse, drew the two unbuilt stages exactly like the three
+     that work. It is now the journey explorer in /assets/hv-journey.js: five
+     stages, selectable by click, tap or keyboard, each answering what the
+     client contributes, what the practitioner does and what the stage produces,
+     with its real availability stated on the rail before anything is selected.
+
+     The same content exists as plain text on /how-we-work, so this is the best
+     way to read the journey and never the only way. */
+  function journey() { return HV.journey.section(); }
+
+  function deliverables() {
+    /* The domain icon set, drawn for these six things specifically:
+       understanding a situation, competing explanations, evidence, a human
+       review, an agreed action, and follow-up. See /assets/hv-icons.js. */
+    var icons = ['understand', 'alternatives', 'evidence', 'humanReview', 'agreedAction', 'followup'];
+    var cells = [1, 2, 3, 4, 5, 6].map(function (n) {
+      return '<div class="deliver-cell">' + ic(icons[n - 1], { size: 22 }) +
+        '<h3 class="hv-h3" style="font-size:1.02rem;margin-block:12px 6px">' + esc(t('home.deliver.' + n + '.t')) + '</h3>' +
+        '<p class="hv-sm hv-muted">' + esc(t('home.deliver.' + n + '.d')) + '</p></div>';
+    }).join('');
+    return '<section class="hv-section-tight"><div class="hv-container">' +
+      '<p class="hv-eyebrow">' + esc(t('home.deliver.eyebrow')) + '</p>' +
+      '<h2 class="hv-h2" style="margin-block:14px 28px;max-width:24ch">' + esc(t('home.deliver.title')) + '</h2>' +
+      '<div class="deliver-grid">' + cells + '</div>' +
+      '</div></section>';
+  }
+
+  function why() {
+    return '<section class="hv-section"><div class="hv-container"><div class="hv-split">' +
+      '<div>' +
+        '<h2 class="hv-h2" style="max-width:20ch">' + esc(t('home.why.title')) + '</h2>' +
+        '<p class="hv-lead" style="margin-block-start:20px">' + esc(t('home.why.p1')) + '</p>' +
+        '<p style="margin-block-start:16px">' + esc(t('home.why.p2')) + '</p>' +
+      '</div>' +
+      '<div class="hv-card" style="padding:26px">' +
+        '<div class="hv-row" style="gap:8px;margin-block-end:18px">' +
+          U.pill('claim', t('home.why.claim')) + U.pill('evidence', t('home.why.evidence')) +
+          U.pill('finding', t('home.why.finding')) + U.pill('approved', t('home.why.approved')) +
+        '</div>' +
+        '<div class="hv-quote">' +
+          '<p class="hv-sm" style="color:var(--hv-ink)">' +
+            (I.isAr()
+              ? '«كل القرارات لازم ترجع لي، وهذا يعطّل الفريق.»'
+              : '“Everything has to come back to me, and it is holding the team up.”') +
+          '</p>' +
+          '<div class="hv-provenance">' + ic('info', { size: 14 }) +
+            '<span>' + (I.isAr()
+              ? 'مثال توضيحي. عبارة كهذه تُسجَّل كما قيلت، وتُوسم «غير متحقَّق منها» — وليست نتيجة.'
+              : 'Illustrative example. A statement like this is recorded as spoken and labelled unverified — it is not a finding.') +
+            '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '</div></div></section>';
+  }
+
+  function boundaries() {
+    var items = [1, 2, 3, 4].map(function (n) {
+      return '<div class="bounds-item">' + ic('minus', { size: 18 }) + '<p>' + esc(t('home.bounds.' + n)) + '</p></div>';
+    }).join('');
+    return '<section class="hv-section hv-band-ink"><div class="hv-container"><div class="hv-split">' +
+      '<div><h2 class="hv-h2" style="max-width:14ch">' + esc(t('home.bounds.title')) + '</h2></div>' +
+      '<div class="bounds-list">' + items + '</div>' +
+      '</div></div></section>';
+  }
+
+  function closing() {
+    return '<section class="hv-section"><div class="hv-container-narrow" style="text-align:center">' +
+      '<h2 class="hv-h2">' + esc(t('home.close.title')) + '</h2>' +
+      '<p class="hv-lead" style="margin-block:16px 28px;margin-inline:auto;max-width:48ch">' + esc(t('home.close.sub')) + '</p>' +
+      '<div class="hv-row" style="justify-content:center;gap:12px">' +
+        '<a class="hv-btn hv-btn-signal hv-btn-lg" href="/intake">' + esc(t('home.cta.primary')) + ic('arrow', { size: 17 }) + '</a>' +
+        '<a class="hv-btn hv-btn-outline hv-btn-lg" href="/request-status">' + esc(t('nav.track')) + '</a>' +
+      '</div>' +
+      '<p class="hv-xs hv-muted" style="margin-block-start:20px">' + esc(t('home.close.note')) + '</p>' +
+      '</div></section>';
+  }
+
+  function render() {
+    document.title = I.isAr()
+      ? 'Humvance — تشخيص مشكلات الأشخاص والتنظيم'
+      : 'Humvance — People and organizational diagnosis';
+    document.getElementById('app').innerHTML =
+      U.demoBar() + U.siteHeader() +
+      '<main id="main">' + hero() + situations() + journey() + deliverables() + why() + boundaries() + closing() + '</main>' +
+      U.siteFooter();
+    U.wire();
+    HV.journey.wire();
+  }
+
+  I.onChange(render);
+  render();
+})();
+</script>
+</body>
+</html>
